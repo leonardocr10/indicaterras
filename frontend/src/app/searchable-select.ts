@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { matchesSearch } from './search.util';
 import {
   AfterViewInit,
   Component,
@@ -139,8 +140,7 @@ export class SearchableSelectComponent implements ControlValueAccessor, AfterVie
   }
 
   protected get filteredOptions(): SelectOption[] {
-    const query = this.normalize(this.query);
-    return query ? this.options.filter((option) => this.normalize(option.label).includes(query)) : this.options;
+    return this.options.filter((option) => matchesSearch(option.label, this.query));
   }
 
   protected get selectedLabel(): string {
@@ -239,9 +239,5 @@ export class SearchableSelectComponent implements ControlValueAccessor, AfterVie
   private readProperty(item: unknown, key: string, fallback: unknown) {
     if (!key || item === null || typeof item !== 'object') return fallback;
     return (item as Record<string, unknown>)[key];
-  }
-
-  private normalize(value: string) {
-    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 }

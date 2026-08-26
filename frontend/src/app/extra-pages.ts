@@ -4,6 +4,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from './services/auth.service';
 import { ApiService } from './services/api.service';
+import { matchesSearch } from './search.util';
 import { LucideChevronLeft, LucideChevronRight, LucideSearch } from '@lucide/angular';
 import { SearchableSelectComponent } from './searchable-select';
 import { PhoneMaskDirective } from './phone-mask.directive';
@@ -167,8 +168,8 @@ export class AdminSectionPageComponent implements OnInit {
   protected readonly pageSizeOptions = [5, 10, 25];
   protected readonly currentRows = computed(() => this.section() === 'reviews' ? this.reviews() : this.section() === 'recommendations' ? this.recommendations() : this.reports());
   protected readonly filteredRows = computed(() => {
-    const search = this.normalize(this.searchTerm());
-    return this.currentRows().filter((row) => (!search || Object.values(row).some((value) => this.normalize(String(value)).includes(search))) && (!this.statusFilter() || row['status'] === this.statusFilter()));
+    const search = this.searchTerm();
+    return this.currentRows().filter((row) => matchesSearch(Object.values(row).join(' '), search) && (!this.statusFilter() || row['status'] === this.statusFilter()));
   });
   protected readonly statusOptions = computed(() => [...new Set(this.currentRows().map((row) => row['status']).filter(Boolean))].sort());
   protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize())));

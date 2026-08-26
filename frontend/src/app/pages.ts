@@ -23,10 +23,13 @@ import {
   LucideStar, LucideUserRoundPlus, LucideCircleAlert,
   LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound,
   LucideHouse, LucideHandshake, LucideX,
-  LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideMessageSquare,
+  LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideShieldCheck,
 } from '@lucide/angular';
 import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
+import { matchesSearch } from './search.util';
+import { environment } from '../environments/environment';
+import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import { SearchableSelectComponent } from './searchable-select';
 import { PhoneMaskDirective } from './phone-mask.directive';
 
@@ -77,6 +80,16 @@ export class LoginPageComponent {
     this.showPassword.update((value) => !value);
   }
 
+  private connectionMessage(status?: number) {
+    if (!environment.apiUrl) {
+      return 'Este site ainda não sabe o endereço da API. Configure a variável API_URL na hospedagem e publique de novo.';
+    }
+    if (!status || status === 0 || status === 405 || status === 504) {
+      return 'Não conseguimos falar com o servidor. Verifique se a API está no ar.';
+    }
+    return 'Não foi possível entrar. Tente novamente.';
+  }
+
   private homeForRole(role: string) {
     if (role === 'RESIDENT') return '/app/home';
     if (role === 'PROFESSIONAL') return '/profissional/perfil';
@@ -94,9 +107,10 @@ export class LoginPageComponent {
     this.hasError.set(false);
     this.auth.login(this.form.getRawValue()).subscribe({
       next: (session) => void this.router.navigateByUrl(this.homeForRole(session.user.role)),
-      error: (error: { error?: { message?: string | string[] } }) => {
+      error: (error: { status?: number; error?: { message?: string | string[] } }) => {
         const message = error.error?.message;
-        this.feedback.set(Array.isArray(message) ? message.join(', ') : message ?? 'Não foi possível entrar. Tente novamente.');
+        const text = Array.isArray(message) ? message.join(', ') : message;
+        this.feedback.set(text || this.connectionMessage(error.status));
         this.hasError.set(true);
       },
     });
@@ -364,17 +378,25 @@ export class VerifyEmailPageComponent {
     ProfessionalCardComponent,
     MobileTopbarComponent,
     LucideSearch,
+    LucideSlidersHorizontal,
+    LucideShieldCheck,
+    LucideChevronRight,
   ],
   template: `
     <section class="mobile-page home-page" *ngIf="payload() as home">
       <mobile-topbar />
       <section class="home-surface">
         <h1>O que você precisa hoje?</h1>
+        <p class="home-subtitle">Encontre profissionais e serviços de confiança.</p>
         <form class="home-search" role="search" (ngSubmit)="searchProfessionals()">
           <svg lucideSearch aria-hidden="true" />
           <input name="homeSearch" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" [(ngModel)]="searchText" (keydown.enter)="searchProfessionals(); $event.preventDefault()" placeholder="Buscar profissional ou serviço..." aria-label="Buscar profissional ou serviço" />
-          <button type="submit" aria-label="Pesquisar"><svg lucideSearch /></button>
+          <a class="home-search-filters" routerLink="/app/profissionais" aria-label="Abrir filtros de busca"><svg lucideSlidersHorizontal /></a>
         </form>
+        <div class="home-popular" *ngIf="popularCategories(home).length">
+          <span>Mais buscados:</span>
+          <a *ngFor="let category of popularCategories(home)" routerLink="/app/profissionais" [queryParams]="{ categoria: category.slug }">{{ category.name }}</a>
+        </div>
       </section>
       <section class="home-content">
         <div class="section-title">
@@ -384,14 +406,21 @@ export class VerifyEmailPageComponent {
         <div class="category-grid">
           <category-card *ngFor="let category of home.categories" [category]="category" />
         </div>
+        <a class="home-verified" routerLink="/app/profissionais">
+          <span><svg lucideShieldCheck /></span>
+          <div><strong>Profissionais verificados</strong><small>Mais segurança para você e sua família.</small></div>
+          <svg lucideChevronRight />
+        </a>
       </section>
 
       <section class="home-content recommended-section">
         <div class="section-title">
-          <h2>Mais recomendados do Terras Alphas</h2>
+          <h2>Mais recomendados do {{ home.condominium.name }}</h2>
           <a routerLink="/app/profissionais">Ver todos</a>
         </div>
-        <professional-card *ngFor="let professional of home.featuredProfessionals" [professional]="professional" [compact]="true" />
+        <div class="recommended-strip">
+          <professional-card *ngFor="let professional of home.featuredProfessionals" [professional]="professional" [compact]="true" [condominiumName]="home.condominium.name" />
+        </div>
       </section>
 
     </section>
@@ -415,6 +444,13 @@ export class HomePageComponent implements OnInit {
       this.payload.set(payload);
       this.theme.applyCondominiumTheme(payload.condominium);
     });
+  }
+
+  protected popularCategories(home: HomePayload) {
+    const preferred = ['encanador', 'eletricista', 'diarista', 'ar-condicionado'];
+    const actives = home.categories.filter((category) => category.active !== false && category.slug !== 'mais');
+    const picked = preferred.map((slug) => actives.find((category) => category.slug === slug)).filter(Boolean) as Category[];
+    return picked.length ? picked : actives.slice(0, 4);
   }
 
   protected searchProfessionals() {
@@ -550,7 +586,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 
   protected readonly filteredProfessionals = computed(() => {
     const category = this.selectedCategory();
-    const search = this.normalize(this.searchText());
+    const search = this.searchText();
     const city = this.cityFilter();
     const neighborhood = this.neighborhoodFilter();
     const service = this.serviceFilter();
@@ -558,8 +594,8 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 
     return this.professionals()
       .filter((professional) => {
-        const searchable = this.normalize([professional.name, professional.companyName ?? '', professional.bio, ...professional.categories.map((item) => item.name), ...professional.serviceDetails.flatMap((item) => [item.name, ...item.aliases])].join(' '));
-        const intelligentSearch = !search || searchable.includes(search) || professional.serviceDetails.some((item) => [item.name, ...item.aliases].some((term) => search.includes(this.normalize(term))));
+        const searchable = [professional.name, professional.companyName ?? '', professional.bio, professional.city, professional.neighborhood, ...professional.categories.map((item) => item.name), ...professional.serviceDetails.flatMap((item) => [item.name, ...item.aliases])].join(' ');
+        const intelligentSearch = matchesSearch(searchable, search);
         return (!category || professional.categories.some((item) => item.slug === category))
           && intelligentSearch
           && (!city || professional.city === city)
@@ -641,7 +677,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'professional-profile-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideArrowLeft, LucideShare2, LucideHeart, LucideMessageCircle, LucideMessageSquare, LucidePhone, LucideUsersRound, LucideCheckCircle2],
+  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideArrowLeft, LucideShare2, LucideHeart, LucideMessageCircle, LucidePhone, LucideUsersRound, LucideCheckCircle2],
   template: `
     <section class="mobile-page profile-page" *ngIf="professional() as professional">
       <header class="profile-topbar">
@@ -671,9 +707,8 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
           <span>{{ professional.recommendationCount }} moradores do Terras Alphas recomendam este profissional</span>
         </div>
         <div class="quick-actions">
-          <a [href]="'https://wa.me/' + professional.whatsapp"><b><svg lucideMessageCircle /></b>WhatsApp</a>
-          <a [href]="'tel:' + professional.phone"><b><svg lucidePhone /></b>Ligar</a>
-          <a [href]="'sms:' + professional.phone"><b><svg lucideMessageSquare /></b>Mensagem</a>
+          <a [href]="whatsappLink(professional)" target="_blank" rel="noopener"><b><svg lucideMessageCircle /></b>WhatsApp</a>
+          <a [href]="phoneLink(professional)"><b><svg lucidePhone /></b>Ligar</a>
           <button type="button" (click)="shareProfessional(professional)"><b><svg lucideShare2 /></b>Compartilhar</button>
         </div>
         <section class="detail-section" *ngIf="professional.bio">
@@ -715,8 +750,10 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 })
 export class ProfessionalProfilePageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly toast = inject(ToastService);
+  protected readonly condominiumName = signal('');
   protected readonly professional = signal<Professional | null>(null);
   protected readonly initials = computed(() =>
     this.professional()
@@ -750,6 +787,14 @@ export class ProfessionalProfilePageComponent implements OnInit {
     return this.api.assetUrl(path);
   }
 
+  protected whatsappLink(professional: Professional) {
+    return buildWhatsappLink(professional, this.auth.user()?.name ?? '', this.condominiumName());
+  }
+
+  protected phoneLink(professional: Professional) {
+    return buildPhoneLink(professional);
+  }
+
   protected avatarUrl() {
     return this.api.assetUrl(this.professional()?.avatar) || '/assets/placeholders/default-avatar.svg';
   }
@@ -772,6 +817,13 @@ export class ProfessionalProfilePageComponent implements OnInit {
     this.api.getProfessionalWorks(id).subscribe({
       next: (works) => this.works.set(works),
       error: () => this.works.set([]),
+    });
+    this.api.getCondominiums().subscribe({
+      next: (condominiums) => {
+        const mine = condominiums.find((item) => item.id === this.auth.user()?.condominiumId);
+        this.condominiumName.set(mine?.name ?? condominiums[0]?.name ?? '');
+      },
+      error: () => this.condominiumName.set(''),
     });
   }
 
@@ -963,15 +1015,15 @@ export class IndicatePageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly filteredCategories = computed(() => {
-    const query = this.normalize(this.categorySearch());
+    const query = this.categorySearch();
     const categories = this.categories().filter((category) => category.active);
-    return query ? categories.filter((category) => this.normalize(category.name).includes(query)) : categories;
+    return categories.filter((category) => matchesSearch(category.name, query));
   });
   protected readonly filteredServices = computed(() => {
-    const query = this.normalize(this.serviceSearch());
+    const query = this.serviceSearch();
     return this.availableServices()
       .map((service, index) => ({ service, index }))
-      .filter(({ service }) => !query || this.normalize([service.name, ...(service.aliases ?? [])].join(' ')).includes(query));
+      .filter(({ service }) => matchesSearch([service.name, ...(service.aliases ?? [])].join(' '), query));
   });
 
   get services(): FormArray {
@@ -1646,13 +1698,13 @@ export class AdminCrudPageComponent implements OnInit {
   get config() { return this.configs[this.resource()]; }
   selectedCategories() { return this.categories().filter((category) => this.selectedCategoryIds().includes(category.id)); }
   protected readonly filteredRecords = computed(() => {
-    const search = this.normalize(this.searchTerm());
+    const search = this.searchTerm();
     const filter = this.normalize(this.filterValue());
     const filterKey = this.filterKey();
     return this.records().filter((record) => {
-      const matchesSearch = !search || Object.values(record).some((entry) => this.normalize(Array.isArray(entry) ? entry.join(' ') : String(entry ?? '')).includes(search));
+      const searchable = Object.values(record).map((entry) => (Array.isArray(entry) ? entry.join(' ') : String(entry ?? ''))).join(' ');
       const matchesFilter = !filter || this.normalize(String(record[filterKey] ?? '')).includes(filter);
-      return matchesSearch && matchesFilter;
+      return matchesSearch(searchable, search) && matchesFilter;
     });
   });
   protected readonly filterOptions = computed(() => {

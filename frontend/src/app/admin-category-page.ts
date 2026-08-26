@@ -19,6 +19,7 @@ import {
 } from '@lucide/angular';
 import { Category, CategoryService } from './models';
 import { ApiService } from './services/api.service';
+import { normalizeSearch } from './search.util';
 import { ToastService } from './services/toast.service';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { SearchableSelectComponent } from './searchable-select';
@@ -423,7 +424,7 @@ export class AdminCategoryPageComponent implements OnInit {
   private emptyCategory(): CategoryDraft { return { name: '', slug: '', icon: 'bolt', description: '', displayOrder: this.categories().length + 1 || 1, active: true }; }
   private emptyService(order = 1): ServiceDraft { return { name: '', slug: '', icon: 'plug', displayOrder: order, active: true, aliases: [] }; }
   private slugify(value: string): string { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
-  private normalize(value: string): string { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+  private normalize(value: string): string { return normalizeSearch(value); }
   private clearFeedback(): void { this.feedback.set(''); this.hasError.set(false); }
   private showFeedback(message: string, error = false): void {
     this.feedback.set(message);

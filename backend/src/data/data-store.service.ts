@@ -1286,7 +1286,29 @@ export class DataStoreService implements OnModuleInit {
   }
 
   private normalize(value: string) {
-    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * "ar condicionado", "Ar-Condicionado" e "arcondicionado" encontram a mesma coisa:
+   * cada palavra digitada precisa aparecer, em qualquer ordem. Palavras de até dois
+   * caracteres exigem correspondência exata, para "ar" não casar com "reparo".
+   */
+  private matchesSearch(haystack: string, query: string) {
+    const terms = this.normalize(query).split(' ').filter(Boolean);
+    if (!terms.length) return true;
+    const target = this.normalize(haystack);
+    if (!target) return false;
+    const compact = target.replace(/ /g, '');
+    return terms.every((term) =>
+      term.length <= 2 ? new RegExp(`(^| )${term}( |$)`).test(target) : target.includes(term) || compact.includes(term),
+    );
   }
 
   private updateMemoryProfessionalTaxonomy(professional: DemoProfessional, payload: Record<string, unknown>) {
@@ -1314,21 +1336,21 @@ export class DataStoreService implements OnModuleInit {
   }
 
   getProfessionals(categorySlug?: string, serviceSlug?: string, search?: string): DemoProfessional[] {
-    const normalizedSearch = this.normalize(search ?? '');
+    const query = search ?? '';
     return this.professionals.filter((professional) => {
       const categoryMatch = !categorySlug || professional.categories.some((category) => category.slug === categorySlug);
       const serviceMatch = !serviceSlug || professional.serviceDetails.some((service) => service.slug === serviceSlug);
       if (!categoryMatch || !serviceMatch) return false;
-      if (!normalizedSearch) return true;
-      const searchable = this.normalize([
+      const searchable = [
         professional.name,
         professional.companyName ?? '',
         professional.bio,
+        professional.city,
+        professional.neighborhood,
         ...professional.categories.map((category) => category.name),
         ...professional.serviceDetails.flatMap((service) => [service.name, ...service.aliases]),
-      ].join(' '));
-      return searchable.includes(normalizedSearch)
-        || professional.serviceDetails.some((service) => [service.name, ...service.aliases].some((term) => normalizedSearch.includes(this.normalize(term))));
+      ].join(' ');
+      return this.matchesSearch(searchable, query);
     });
   }
 

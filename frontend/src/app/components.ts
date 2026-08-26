@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, HostListener, Input, OnDestroy, Output, computed, inject, signal } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { Category, Professional } from './models';
 import { ApiService } from './services/api.service';
 import { ToastService } from './services/toast.service';
 import { AuthService } from './services/auth.service';
+import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import {
   LucideBell,
   LucideBriefcaseBusiness,
@@ -14,8 +15,10 @@ import {
   LucideHeart,
   LucideHouse,
   LucideLayoutDashboard,
+  LucideMapPin,
   LucideMenu,
   LucideMessageCircle,
+  LucidePhone,
   LucideThumbsUp,
   LucideSearch,
   LucideSettings,
@@ -126,7 +129,7 @@ export class CategoryCardComponent {
 @Component({
   selector: 'professional-card',
   standalone: true,
-  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideHeart, LucideEllipsis, LucideMessageCircle, LucideThumbsUp],
+  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideHeart, LucideEllipsis, LucideMessageCircle, LucidePhone, LucideThumbsUp],
   template: `
     <article class="professional-card" [class.compact-card]="compact" [class.favorite-card]="mode === 'favorite'">
       <div class="avatar" [class]="avatarClass">
@@ -150,7 +153,8 @@ export class CategoryCardComponent {
         <div class="professional-card-icon-actions">
           <button *ngIf="compact" class="card-recommend-button" [class.active]="recommended()" type="button" [attr.aria-pressed]="recommended()" [attr.aria-label]="'Recomendar ' + professional.name" (click)="toggleRecommendation()"><svg lucideThumbsUp [attr.fill]="recommended() ? 'currentColor' : 'none'" /></button>
           <button *ngIf="!compact && mode !== 'favorite'" class="favorite-button" type="button" (click)="toggleFavorite()" [attr.aria-label]="'Favoritar ' + professional.name"><svg lucideHeart [attr.fill]="favorite() ? 'currentColor' : 'none'" /></button>
-          <a [href]="'https://wa.me/' + professional.whatsapp" class="card-whatsapp" [attr.aria-label]="'Conversar com ' + professional.name + ' no WhatsApp'"><svg lucideMessageCircle /></a>
+          <a [href]="whatsappLink" target="_blank" rel="noopener" class="card-whatsapp" [attr.aria-label]="'Conversar com ' + professional.name + ' no WhatsApp'"><svg lucideMessageCircle /></a>
+          <a [href]="phoneLink" class="card-phone" [attr.aria-label]="'Ligar para ' + professional.name"><svg lucidePhone /></a>
           <div *ngIf="mode === 'favorite'" class="card-menu-wrapper">
             <button class="more-button" type="button" [attr.aria-expanded]="menuOpen()" [attr.aria-label]="'Mais opções para ' + professional.name" (click)="menuOpen.set(!menuOpen())"><svg lucideEllipsis /></button>
             <div *ngIf="menuOpen()" class="card-menu" role="menu">
@@ -169,8 +173,10 @@ export class ProfessionalCardComponent {
   @Input({ required: true }) professional!: Professional;
   @Input() compact = false;
   @Input() mode: 'default' | 'favorite' = 'default';
+  @Input() condominiumName = '';
   @Output() removed = new EventEmitter<string>();
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
   protected readonly favorite = signal(false);
   protected readonly recommended = signal(false);
@@ -194,6 +200,14 @@ export class ProfessionalCardComponent {
   }
 
   get displayedRecommendationCount(): number { return this.recommendationCount() ?? this.professional.recommendationCount; }
+
+  get whatsappLink(): string {
+    return buildWhatsappLink(this.professional, this.auth.user()?.name ?? '', this.condominiumName);
+  }
+
+  get phoneLink(): string {
+    return buildPhoneLink(this.professional);
+  }
 
   removeFromFavorites() {
     this.menuOpen.set(false);
@@ -231,10 +245,12 @@ export class ProfessionalCardComponent {
 @Component({
   selector: 'mobile-topbar',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideMenu, LucideBell, LucideX, LucideHouse, LucideSearch, LucideHandshake, LucideHeart, LucideBriefcaseBusiness, LucideUserRound],
+  imports: [CommonModule, RouterLink, LucideMenu, LucideBell, LucideMapPin, LucideX, LucideHouse, LucideSearch, LucideHandshake, LucideHeart, LucideBriefcaseBusiness, LucideUserRound],
   template: `
     <div class="home-topbar">
-      <button type="button" aria-label="Menu" [attr.aria-expanded]="menuOpen()" (click)="openMenu()"><svg lucideMenu /></button><strong>Olá, {{ userName() }}! <span>👋</span></strong><button type="button" aria-label="Notificações"><svg lucideBell /></button>
+      <button type="button" aria-label="Menu" [attr.aria-expanded]="menuOpen()" (click)="openMenu()"><svg lucideMenu /></button>
+      <div class="home-topbar-title"><strong>Olá, {{ userName() }}! <span>👋</span></strong><small *ngIf="placeName()"><svg lucideMapPin />{{ placeName() }}</small></div>
+      <button type="button" class="home-topbar-bell" aria-label="Notificações"><svg lucideBell /><i *ngIf="notifications()">{{ notifications() }}</i></button>
     </div>
 
     <div class="mobile-menu-backdrop" *ngIf="menuOpen()" (click)="closeMenu()">
@@ -260,11 +276,24 @@ export class ProfessionalCardComponent {
     </div>
   `,
 })
-export class MobileTopbarComponent implements OnDestroy {
+export class MobileTopbarComponent implements OnDestroy, OnInit {
+  private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly menuOpen = signal(false);
   protected readonly userName = computed(() => this.auth.user()?.name ?? 'Morador');
+  protected readonly placeName = signal('');
+  protected readonly notifications = signal(0);
+
+  ngOnInit() {
+    this.api.getCondominiums().subscribe({
+      next: (condominiums) => {
+        const mine = condominiums.find((item) => item.id === this.auth.user()?.condominiumId);
+        this.placeName.set(mine?.name ?? condominiums[0]?.name ?? '');
+      },
+      error: () => this.placeName.set(''),
+    });
+  }
 
   protected openMenu() {
     this.menuOpen.set(true);

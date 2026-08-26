@@ -15,8 +15,11 @@ ENV NODE_ENV=production
 
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npm ci --omit=dev && npx prisma generate
+RUN npm ci --omit=dev
 
+# O client do Prisma vem pronto do estagio de build: o CLI do Prisma e uma
+# dependencia de desenvolvimento e nao existe aqui para gerar de novo.
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/dist ./dist
 
 # As fotos enviadas ficam aqui. Monte um volume neste caminho para não perdê-las a cada deploy.

@@ -14,6 +14,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # A instancia gratuita tem 512 MB; sem esse teto o build do TypeScript
+      # pode ser encerrado por falta de memoria.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=460
       - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET

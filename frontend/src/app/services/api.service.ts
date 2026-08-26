@@ -1,14 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
-import { ApiResponse, Category, CategoryService, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, Review } from '../models';
+import { ApiResponse, Category, CategoryService, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, ProfessionalWork, Review } from '../models';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
-  private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = environment.apiUrl;
 
   getHome() {
     return this.http
@@ -160,6 +161,50 @@ export class ApiService {
   assetUrl(path: string | null | undefined) {
     if (!path) return '';
     return /^https?:\/\//i.test(path) ? path : `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  }
+
+  getPublicSettings() {
+    return this.http
+      .get<ApiResponse<{ systemName: string; selfRegistration: boolean; professionalSelfRegistration: boolean; showBlock: boolean }>>(`${this.baseUrl}/public-settings`)
+      .pipe(map((response) => response.data));
+  }
+
+  getOwnProfessional() {
+    const userId = this.auth.user()?.id ?? '';
+    return this.http
+      .get<ApiResponse<Professional>>(`${this.baseUrl}/me/professional?userId=${encodeURIComponent(userId)}`)
+      .pipe(map((response) => response.data));
+  }
+
+  updateOwnProfessional(payload: Record<string, unknown>) {
+    return this.http
+      .patch<ApiResponse<Professional>>(`${this.baseUrl}/me/professional`, { ...payload, userId: this.auth.user()?.id })
+      .pipe(map((response) => response.data));
+  }
+
+  uploadWorkPhotos(files: File[]) {
+    const body = new FormData();
+    files.forEach((file) => body.append('files', file));
+    return this.http.post<ApiResponse<string[]>>(`${this.baseUrl}/uploads/works`, body).pipe(map((response) => response.data));
+  }
+
+  getProfessionalWorks(professionalId: string) {
+    return this.http
+      .get<ApiResponse<ProfessionalWork[]>>(`${this.baseUrl}/professionals/${professionalId}/works`)
+      .pipe(map((response) => response.data));
+  }
+
+  addOwnProfessionalWorks(images: string[], title = '') {
+    return this.http
+      .post<ApiResponse<ProfessionalWork[]>>(`${this.baseUrl}/me/professional/works`, { userId: this.auth.user()?.id, images, title })
+      .pipe(map((response) => response.data));
+  }
+
+  removeOwnProfessionalWork(workId: string) {
+    const userId = this.auth.user()?.id ?? '';
+    return this.http
+      .delete<ApiResponse<ProfessionalWork[]>>(`${this.baseUrl}/me/professional/works/${workId}?userId=${encodeURIComponent(userId)}`)
+      .pipe(map((response) => response.data));
   }
 
   getAdminSection(section: 'reviews' | 'recommendations' | 'reports') {

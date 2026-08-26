@@ -5,6 +5,7 @@ import { DataStoreService } from '../data/data-store.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RegisterProfessionalDto } from './dto/register-professional.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
@@ -37,6 +38,25 @@ export class AuthService {
         email: user.email,
         emailVerificationRequired: true,
         requiresApproval: this.dataStoreService.requiresUserApproval(),
+      },
+    };
+  }
+
+  async registerProfessional(dto: RegisterProfessionalDto) {
+    const result = await this.dataStoreService.createProfessionalAccount(dto);
+    try {
+      await this.sendEmailCode(result.user.email);
+    } catch (error) {
+      // sem o código de confirmação a conta ficaria inacessível, então desfaz o cadastro
+      await this.dataStoreService.removeProfessionalAccount(result.user.id);
+      throw error;
+    }
+    return {
+      data: {
+        email: result.user.email,
+        emailVerificationRequired: true,
+        requiresApproval: false,
+        professionalId: result.professionalId,
       },
     };
   }

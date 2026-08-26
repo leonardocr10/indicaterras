@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, tap } from 'rxjs/operators';
 import { ApiResponse } from '../models';
+import { environment } from '../../environments/environment';
 
 export interface SessionUser {
   id: string;
@@ -9,7 +10,7 @@ export interface SessionUser {
   name: string;
   email: string;
   phone: string;
-  role: 'SUPER_ADMIN' | 'CONDO_ADMIN' | 'RESIDENT';
+  role: 'SUPER_ADMIN' | 'CONDO_ADMIN' | 'RESIDENT' | 'PROFESSIONAL';
 }
 
 interface AuthSession {
@@ -28,7 +29,7 @@ export interface RegistrationResult {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly storageKey = 'terras-alphas-session';
-  private readonly baseUrl = 'http://localhost:3000';
+  private readonly baseUrl = environment.apiUrl;
   private readonly sessionState = signal<AuthSession | null>(this.restore());
 
   readonly session = this.sessionState.asReadonly();
@@ -44,6 +45,20 @@ export class AuthService {
 
   register(payload: { name: string; email: string; phone: string; condominiumId: string; block?: string; unit?: string; password: string }) {
     return this.http.post<ApiResponse<RegistrationResult>>(`${this.baseUrl}/auth/register`, payload).pipe(map((response) => response.data));
+  }
+
+  registerProfessional(payload: {
+    name: string;
+    email: string;
+    phone: string;
+    categoryId: string;
+    city: string;
+    companyName?: string;
+    neighborhood?: string;
+    bio?: string;
+    password: string;
+  }) {
+    return this.http.post<ApiResponse<RegistrationResult>>(`${this.baseUrl}/auth/register-professional`, payload).pipe(map((response) => response.data));
   }
 
   verifyEmail(payload: { email: string; code: string }) {

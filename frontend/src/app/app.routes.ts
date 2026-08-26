@@ -15,10 +15,11 @@ import {
 } from './pages';
 import { AdminLoginPageComponent, AdminSectionPageComponent, ResidentProfilePageComponent } from './extra-pages';
 import { AdminLayoutComponent, MobileLayoutComponent } from './layouts';
-import { adminGuard, residentGuard } from './guards/auth.guard';
+import { adminGuard, professionalGuard, residentGuard } from './guards/auth.guard';
 import { AdminCategoryPageComponent } from './admin-category-page';
 import { AdminReviewDetailsPageComponent, AdminReviewsPageComponent } from './admin-reviews-page';
 import { CommentsPageComponent } from './comments-page';
+import { ProfessionalAccountPageComponent } from './professional-account-page';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -42,6 +43,11 @@ export const routes: Routes = [
       { path: 'minhas-indicacoes', component: IndicationsPageComponent },
       { path: 'perfil', component: ResidentProfilePageComponent },
     ],
+  },
+  {
+    path: 'profissional/perfil',
+    component: ProfessionalAccountPageComponent,
+    canActivate: [professionalGuard],
   },
   {
     path: 'admin',

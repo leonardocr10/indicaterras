@@ -9,6 +9,7 @@ import { DataStoreService } from '../data/data-store.service';
 const professionalUploadDirectory = join(process.cwd(), 'uploads', 'professionals');
 const condominiumUploadDirectory = join(process.cwd(), 'uploads', 'condominiums');
 const commentUploadDirectory = join(process.cwd(), 'uploads', 'comments');
+const workUploadDirectory = join(process.cwd(), 'uploads', 'works');
 mkdirSync(professionalUploadDirectory, { recursive: true });
 mkdirSync(condominiumUploadDirectory, { recursive: true });
 mkdirSync(commentUploadDirectory, { recursive: true });
@@ -108,6 +109,36 @@ export class ResourcesController {
     return { data: this.dataStoreService.replyToComment(id, userId, comment) };
   }
 
+  @Get('public-settings')
+  getPublicSettings() {
+    return { data: this.dataStoreService.getPublicSettings() };
+  }
+
+  @Get('me/professional')
+  getOwnProfessional(@Query('userId') userId: string) {
+    return { data: this.dataStoreService.getOwnProfessional(userId) };
+  }
+
+  @Patch('me/professional')
+  async updateOwnProfessional(@Body('userId') userId: string, @Body() payload: Record<string, unknown>) {
+    return { data: await this.dataStoreService.updateOwnProfessional(userId, payload) };
+  }
+
+  @Get('professionals/:id/works')
+  getProfessionalWorks(@Param('id') id: string) {
+    return { data: this.dataStoreService.getProfessionalWorks(id) };
+  }
+
+  @Post('me/professional/works')
+  addOwnProfessionalWorks(@Body('userId') userId: string, @Body('images') images: string[] = [], @Body('title') title = '') {
+    return { data: this.dataStoreService.addOwnProfessionalWorks(userId, images, title) };
+  }
+
+  @Delete('me/professional/works/:workId')
+  removeOwnProfessionalWork(@Param('workId') workId: string, @Query('userId') userId: string) {
+    return { data: this.dataStoreService.removeOwnProfessionalWork(userId, workId) };
+  }
+
   @Get('recommendations')
   getRecommendations(@Query('userId') userId?: string) {
     return { data: this.dataStoreService.getRecommendations(userId) };
@@ -203,6 +234,28 @@ export class ResourcesController {
   uploadCommentPhotos(@UploadedFiles() files: Array<{ filename: string }> = []) {
     if (!files.length) throw new BadRequestException('Selecione ao menos uma foto para enviar.');
     return { data: files.map((file) => `/uploads/comments/${file.filename}`) };
+  }
+
+  @Post('uploads/works')
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      storage: diskStorage({
+        destination: workUploadDirectory,
+        filename: (_request, file, callback) => {
+          const extension = extname(file.originalname).toLowerCase() || '.jpg';
+          callback(null, `work-${Date.now()}-${Math.round(Math.random() * 1_000_000)}${extension}`);
+        },
+      }),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_request, file, callback) => {
+        const accepted = ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype);
+        callback(accepted ? null : new BadRequestException('Envie imagens PNG, JPG ou WebP.'), accepted);
+      },
+    }),
+  )
+  uploadWorkPhotos(@UploadedFiles() files: Array<{ filename: string }> = []) {
+    if (!files.length) throw new BadRequestException('Selecione ao menos uma foto para enviar.');
+    return { data: files.map((file) => `/uploads/works/${file.filename}`) };
   }
 
   @Post('admin/uploads/professionals')

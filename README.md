@@ -3,46 +3,31 @@
 Aplicação web multi-condomínio com:
 
 - `frontend/`: Angular + SCSS + Router + Reactive Forms + PWA
-- `backend/`: NestJS + Swagger + JWT + Prisma + PostgreSQL
+- `backend/`: NestJS + Swagger + JWT + Prisma + Supabase
 
 ## Supabase e como rodar
 
-1. Execute [configurar-supabase.bat](C:/Users/geniv/OneDrive/Documentos/ChatGPT/indicaterras/configurar-supabase.bat).
+1. Execute `configurar-supabase.bat`.
 2. O script abre `backend/.env`. Cole a URI em **Supabase Dashboard > Project Settings > Database > Connect**. Use a senha do banco definida no Supabase e mantenha `sslmode=require` na URI.
 3. Confirme com `S`: o script executa o Prisma, cria as tabelas no schema `public` e insere os dados iniciais.
-4. Depois, execute [iniciar.bat](C:/Users/geniv/OneDrive/Documentos/ChatGPT/indicaterras/iniciar.bat). Ele abre API e frontend em duas janelas e acessa `http://localhost:4200`.
+4. Depois, execute `iniciar.bat`. Ele abre API e frontend em duas janelas e acessa `http://localhost:4200`.
 
-O arquivo `backend/.env` fica fora do Git para que a senha do Supabase nao seja enviada ao repositorio.
+O arquivo `backend/.env` fica fora do Git para que as chaves do Supabase não sejam enviadas ao repositório.
 
-### Execucao manual
+### Execução manual
 
-### Backend
-
-1. Copie `backend/.env.example` para `backend/.env`
-2. Instale dependências:
+#### Backend
 
 ```bash
 cd backend
 npm install
-```
-
-3. Gere o client Prisma:
-
-```bash
 npm run prisma:generate
-```
-
-4. Suba a API:
-
-```bash
 npm run start:dev
 ```
 
-Swagger:
+Swagger: `http://localhost:3000/docs`
 
-- `http://localhost:3000/docs`
-
-### Frontend
+#### Frontend
 
 ```bash
 cd frontend
@@ -50,9 +35,49 @@ npm install
 npm start
 ```
 
-App Angular:
+App Angular: `http://localhost:4200`
 
-- `http://localhost:4200`
+## Publicação
+
+O frontend e o backend são publicados separadamente: o Angular é estático e vive bem em CDN,
+enquanto a API precisa de um processo contínuo (ela mantém sessões e uploads).
+
+### Frontend na Vercel
+
+O `vercel.json` na raiz já configura tudo (build dentro de `frontend/`, pasta de saída e
+o redirecionamento das rotas do Angular para o `index.html`). Basta importar o repositório.
+
+Em **Settings > Environment Variables**, defina:
+
+| Variável  | Valor                                            |
+| --------- | ------------------------------------------------ |
+| `API_URL` | endereço público do backend, ex.: `https://indicaterras-api.onrender.com` |
+
+Sem essa variável o app chama a API na mesma origem do site e nada carrega. O endereço é
+gravado no bundle durante o build por `frontend/scripts/set-api-url.mjs`.
+
+### Backend no Render
+
+O `render.yaml` na raiz é um blueprint pronto: **New > Blueprint** e aponte para o repositório.
+Ele cria o serviço, gera os segredos de JWT e monta um disco para as fotos enviadas.
+
+Preencha no painel:
+
+| Variável                     | Valor                                                    |
+| ---------------------------- | -------------------------------------------------------- |
+| `SUPABASE_URL`               | URL do projeto Supabase                                   |
+| `SUPABASE_SECRET_KEY`        | chave secreta (somente no backend, nunca no frontend)     |
+| `SUPABASE_PUBLISHABLE_KEY`   | chave pública, usada no envio do código de confirmação    |
+| `CORS_ORIGIN`                | endereço do site na Vercel, ex.: `https://indicaterras.vercel.app` |
+
+`JWT_ACCESS_SECRET` e `JWT_REFRESH_SECRET` são gerados pelo próprio Render. Em produção a API
+recusa subir sem eles, para não usar os segredos de desenvolvimento.
+
+Há também um `backend/Dockerfile` caso prefira Railway, Fly.io ou qualquer host com Docker.
+
+> Não publique o backend como função serverless (Vercel Functions, Lambda). Ele mantém sessões,
+> avaliações e favoritos em memória e grava as fotos em disco — comportamentos que exigem um
+> processo contínuo.
 
 ## Credenciais demo
 
@@ -60,8 +85,12 @@ App Angular:
 - Admin: `admin@terrasalphas.com.br`
 - Senha: `123456`
 
+Troque essas senhas antes de qualquer uso real: elas estão no código, em `backend/src/data/demo-data.ts`.
+
 ## Observações
 
-- O backend inclui schema Prisma e seed inicial em `backend/prisma/`. O script de configuracao aplica esse schema ao banco Supabase.
-- Os endpoints atuais ainda usam dados de demonstracao em memoria para a primeira execucao visual. As tabelas passam a existir no Supabase, mas a troca integral dos endpoints para consultas Prisma e a proxima etapa de integracao.
+- O backend inclui schema Prisma e seed inicial em `backend/prisma/`. O script de configuração aplica esse schema ao banco Supabase.
+- Condomínios, categorias, serviços e profissionais são persistidos no Supabase. Usuários,
+  avaliações, indicações e favoritos ainda vivem em memória e voltam ao estado inicial quando a
+  API reinicia — a migração deles depende de mover a autenticação para o Supabase Auth.
 - A identidade visual do condomínio é aplicada no frontend via CSS variables dinâmicas.

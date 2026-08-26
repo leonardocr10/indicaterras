@@ -46,6 +46,9 @@ export class DataStoreService implements OnModuleInit {
   private readonly reviewAdminResponses = new Map<string, { response: string; updatedAt: string }>();
   private readonly reviewModerationHistory = new Map<string, Array<{ action: string; status: string; note: string; createdAt: string }>>();
   private readonly reviewImages = new Map<string, string[]>();
+  private readonly professionalByUserId = new Map<string, string>();
+  private readonly professionalCovers = new Map<string, string>();
+  private readonly professionalWorks = new Map<string, Array<{ id: string; image: string; title: string; createdAt: string }>>();
   private readonly reviewLikes = new Map<string, Set<string>>();
   private readonly reviewReplies = new Map<string, Array<{ id: string; userId: string; userName: string; comment: string; createdAt: string }>>();
   private readonly reports = [
@@ -56,6 +59,7 @@ export class DataStoreService implements OnModuleInit {
     systemName: 'Terras Alphas Indica', condominiumName: 'Terras Alphas', phone: '(34) 99999-0000', email: 'contato@terrasalphas.com.br',
     primaryColor: '#006538', secondaryColor: '#ffad00', selfRegistration: true, residentApproval: true, requireUserApproval: true, showBlock: true,
     allowRecommendations: true, recommendationApproval: true, allowReviews: true, requireComment: true,
+    professionalSelfRegistration: false,
   };
   private readonly users: Array<DemoUser & { passwordHash: string }> = [];
   private readonly favoriteProfessionalIds = new Map<string, Set<string>>([
@@ -165,6 +169,8 @@ export class DataStoreService implements OnModuleInit {
 
   private applyLocalEngagement() {
     for (const professional of this.professionals) {
+      const cover = this.professionalCovers.get(professional.id);
+      if (cover) professional.coverImage = cover;
       const localReviews = this.reviews.filter((review) => review.professionalId === professional.id);
       if (localReviews.length) {
         const remoteTotal = professional.rating * professional.reviewCount;
@@ -450,6 +456,140 @@ export class DataStoreService implements OnModuleInit {
 
   requiresUserApproval() {
     return Boolean(this.settings['requireUserApproval'] ?? this.settings['residentApproval']);
+  }
+
+  allowsProfessionalSignup() {
+    return Boolean(this.settings['professionalSelfRegistration']);
+  }
+
+  getPublicSettings() {
+    return {
+      systemName: String(this.settings['systemName'] ?? 'Terras Alphas Indica'),
+      selfRegistration: this.settings['selfRegistration'] !== false,
+      professionalSelfRegistration: this.allowsProfessionalSignup(),
+      showBlock: this.settings['showBlock'] !== false,
+    };
+  }
+
+  getProfessionalIdByUser(userId: string) {
+    return this.professionalByUserId.get(userId) ?? '';
+  }
+
+  async createProfessionalAccount(payload: {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    companyName?: string;
+    categoryId: string;
+    city: string;
+    neighborhood?: string;
+    bio?: string;
+    condominiumId?: string;
+  }) {
+    await this.usersReady;
+    if (!this.allowsProfessionalSignup()) throw new ForbiddenException('O cadastro de profissionais está desativado pelo condomínio.');
+    if (this.users.some((user) => user.email.toLowerCase() === payload.email.toLowerCase())) {
+      throw new ConflictException('Este e-mail já possui cadastro');
+    }
+    const category = this.categories.find((item) => item.id === payload.categoryId || item.slug === payload.categoryId);
+    if (!category) throw new ConflictException('Selecione uma categoria válida');
+
+    const professional = await this.createAdminRecord('professionals', {
+      name: payload.name,
+      companyName: payload.companyName ?? '',
+      phone: payload.phone,
+      whatsapp: payload.phone,
+      city: payload.city,
+      neighborhood: payload.neighborhood ?? '',
+      bio: payload.bio ?? '',
+      categoryIds: [category.id],
+      serviceIds: [],
+      condominiumId: payload.condominiumId || this.condominiums[0]?.id || '',
+      active: true,
+    });
+    const professionalId = String((professional as { id?: string })?.id ?? '');
+    if (!professionalId) throw new ConflictException('Não foi possível criar o perfil do profissional');
+
+    const newUser: DemoUser = {
+      id: `user-${Date.now()}-${this.users.length + 1}`,
+      condominiumId: payload.condominiumId || this.condominiums[0]?.id || '',
+      name: payload.name,
+      email: payload.email.toLowerCase().trim(),
+      phone: payload.phone,
+      password: payload.password,
+      role: 'PROFESSIONAL',
+      emailVerified: false,
+      approvalStatus: 'APPROVED',
+      active: true,
+    };
+    this.users.push({ ...newUser, passwordHash: await bcrypt.hash(payload.password, 10) });
+    this.professionalByUserId.set(newUser.id, professionalId);
+
+    const { password: _password, ...safeUser } = newUser;
+    return { user: safeUser, professionalId };
+  }
+
+  async removeProfessionalAccount(userId: string) {
+    const professionalId = this.professionalByUserId.get(userId);
+    this.professionalByUserId.delete(userId);
+    const index = this.users.findIndex((user) => user.id === userId);
+    if (index >= 0) this.users.splice(index, 1);
+    if (professionalId) await this.deleteAdminRecord('professionals', professionalId).catch(() => undefined);
+  }
+
+  getOwnProfessional(userId: string) {
+    const professionalId = this.professionalByUserId.get(userId);
+    if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
+    const professional = this.getProfessionalById(professionalId);
+    if (!professional) throw new NotFoundException('Perfil profissional em análise ou indisponível');
+    return professional;
+  }
+
+  async updateOwnProfessional(userId: string, payload: Record<string, unknown>) {
+    const professionalId = this.professionalByUserId.get(userId);
+    if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
+    const editable = ['name', 'companyName', 'phone', 'whatsapp', 'instagram', 'city', 'neighborhood', 'bio', 'avatar', 'coverImage', 'categoryIds', 'serviceIds'];
+    const allowed = Object.fromEntries(Object.entries(payload).filter(([key]) => editable.includes(key)));
+    if (typeof allowed['coverImage'] === 'string') {
+      const cover = String(allowed['coverImage']);
+      if (cover) this.professionalCovers.set(professionalId, cover);
+      else this.professionalCovers.delete(professionalId);
+      const current = this.getProfessionalById(professionalId);
+      if (current) current.coverImage = cover;
+    }
+    const updated = await this.updateAdminRecord('professionals', professionalId, allowed);
+    const refreshed = this.getProfessionalById(professionalId);
+    return refreshed ?? updated;
+  }
+
+  getProfessionalWorks(professionalId: string) {
+    return this.professionalWorks.get(professionalId) ?? [];
+  }
+
+  addOwnProfessionalWorks(userId: string, images: string[], title = '') {
+    const professionalId = this.professionalByUserId.get(userId);
+    if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
+    const clean = images.map((image) => String(image).trim()).filter(Boolean);
+    if (!clean.length) throw new ConflictException('Envie ao menos uma foto do trabalho');
+    const works = this.professionalWorks.get(professionalId) ?? [];
+    const created = clean.slice(0, 20).map((image, index) => ({
+      id: `work-${Date.now()}-${works.length + index + 1}`,
+      image,
+      title: String(title ?? '').trim(),
+      createdAt: new Date().toISOString(),
+    }));
+    this.professionalWorks.set(professionalId, [...created, ...works].slice(0, 60));
+    return this.getProfessionalWorks(professionalId);
+  }
+
+  removeOwnProfessionalWork(userId: string, workId: string) {
+    const professionalId = this.professionalByUserId.get(userId);
+    if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
+    const works = this.professionalWorks.get(professionalId) ?? [];
+    if (!works.some((work) => work.id === workId)) throw new NotFoundException('Trabalho não encontrado');
+    this.professionalWorks.set(professionalId, works.filter((work) => work.id !== workId));
+    return this.getProfessionalWorks(professionalId);
   }
 
   async verifyUserEmail(email: string) {

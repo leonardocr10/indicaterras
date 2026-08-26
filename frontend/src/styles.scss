@@ -628,3 +628,66 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .indicate-photo-button svg{width:18px;height:18px}
 .indicate-photo-button input{display:none}
 .indicate-photo-button.disabled{opacity:.5;cursor:not-allowed}
+
+/* Cadastro de profissional e área do prestador */
+.settings-hint{margin:9px 0 0;color:#67766e;font-size:11px;line-height:16px}
+.account-type-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;border:1px solid #e0e7e3;border-radius:12px;background:#f6f9f7}
+.account-type-switch button{min-height:38px;padding:8px 10px;border:0;border-radius:9px;color:#3b4a43;background:transparent;font-family:var(--font-family);font-size:13px;font-weight:600;cursor:pointer}
+.account-type-switch button.active{color:#fff;background:var(--primary)}
+
+/* Área do profissional */
+.provider-page{min-height:100vh;padding:0 0 40px;background:#f5f6f8}
+.provider-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 20px 18px;color:#fff;background:linear-gradient(140deg,#0a6a45,#04422f)}
+.provider-topbar small{display:block;color:#c9e6d8;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+.provider-topbar h1{margin:4px 0 0;font:700 22px var(--font-family);line-height:28px;letter-spacing:-.4px}
+.provider-topbar button{width:38px;height:38px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;color:#fff;background:rgba(255,255,255,.16);cursor:pointer}
+.provider-topbar button svg{width:19px;height:19px}
+.provider-loading{margin:20px;padding:24px;border-radius:16px;background:#fff;color:#5d6b64;font-size:13px;line-height:19px;text-align:center}
+.provider-summary{margin:-12px 16px 0;padding:16px;border-radius:18px;display:grid;grid-template-columns:78px minmax(0,1fr);align-items:center;gap:14px;background:#fff;box-shadow:0 10px 26px rgba(9,40,28,.08)}
+.provider-photo{position:relative;width:78px;height:78px;border-radius:50%;display:grid;place-items:center;overflow:visible;color:#0a6a45;background:#e3f1ea;font:700 22px var(--font-family)}
+.provider-photo img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.provider-photo label{position:absolute;right:-2px;bottom:-2px;width:28px;height:28px;border:2px solid #fff;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--primary);cursor:pointer}
+.provider-photo label svg{width:14px;height:14px}
+.provider-photo input{display:none}
+.provider-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.provider-metrics>div{display:grid;justify-items:center;gap:2px;text-align:center}
+.provider-metrics strong{color:#16281f;font-size:17px;line-height:22px}
+.provider-metrics small{color:#6b7280;font-size:10px;line-height:14px}
+.provider-metrics svg{width:15px;height:15px;color:var(--secondary)}
+.provider-form{margin:16px;padding:18px 16px 20px;border-radius:18px;background:#fff;box-shadow:0 10px 26px rgba(9,40,28,.06)}
+.provider-form h2{margin:6px 0 10px;font:700 15px var(--font-family);line-height:21px;color:#16281f}
+.provider-form h2:first-child{margin-top:0}
+.provider-hint{margin:-4px 0 10px;color:#67766e;font-size:11px;line-height:16px}
+.provider-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
+.provider-chips button{min-height:34px;padding:6px 12px;border:1px solid #cfded6;border-radius:999px;display:inline-flex;align-items:center;gap:6px;color:#33453c;background:#fff;font-family:var(--font-family);font-size:12px;font-weight:500;cursor:pointer}
+.provider-chips button.active{border-color:var(--primary);color:#fff;background:var(--primary)}
+.provider-chips button svg{width:13px;height:13px}
+.provider-form .full-width{margin-top:14px}
+@media(min-width:520px){.provider-summary,.provider-form{max-width:520px;margin-inline:auto}.provider-topbar{padding-inline:calc(50% - 244px)}}
+
+/* Capa, onboarding e portfólio do prestador */
+.provider-onboarding{margin:14px 16px -4px;padding:13px 15px;border:1px solid #f0dcae;border-radius:14px;display:flex;align-items:flex-start;gap:11px;background:#fff8e6}
+.provider-onboarding svg{width:19px;height:19px;flex:0 0 auto;color:#a9761a}
+.provider-onboarding strong{display:block;color:#7c5a12;font-size:13px;line-height:18px}
+.provider-onboarding p{margin:2px 0 0;color:#8a6c2c;font-size:11px;line-height:16px}
+.provider-cover{position:relative;height:132px;margin:14px 16px 0;border-radius:16px;display:flex;align-items:flex-end;justify-content:flex-end;padding:10px;background-color:#e6ebe8;background-size:cover;background-position:center}
+.provider-cover-button{min-height:32px;padding:7px 12px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;color:#0b4a33;background:rgba(255,255,255,.94);font-size:11px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(6,28,20,.16)}
+.provider-cover-button svg{width:14px;height:14px}
+.provider-cover-button input{display:none}
+.provider-works .provider-hint{margin-bottom:12px}
+.provider-work-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:12px}
+.provider-work-grid figure{position:relative;margin:0;aspect-ratio:1;border-radius:11px;overflow:hidden;background:#eef2ef}
+.provider-work-grid img{width:100%;height:100%;display:block;object-fit:cover}
+.provider-work-grid button{position:absolute;right:5px;top:5px;width:24px;height:24px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;color:#fff;background:rgba(12,27,21,.74);cursor:pointer}
+.provider-work-grid button svg{width:13px;height:13px}
+.provider-empty{margin:0 0 12px;color:#6b7280;font-size:12px;line-height:17px}
+.provider-work-button{min-height:46px;padding:10px 14px;border:1px dashed #b7ccc0;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:9px;color:var(--primary);background:#fbfdfc;font-size:13px;font-weight:600;cursor:pointer}
+.provider-work-button svg{width:17px;height:17px}
+.provider-work-button input{display:none}
+.provider-work-button.disabled{opacity:.55;cursor:progress}
+@media(min-width:520px){.provider-cover,.provider-onboarding{max-width:520px;margin-inline:auto}}
+
+.profile-works .profile-work-strip{display:flex;gap:9px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.profile-works .profile-work-strip::-webkit-scrollbar{display:none}
+.profile-works .profile-work-strip button{flex:0 0 auto;width:112px;height:88px;padding:0;border:0;border-radius:12px;overflow:hidden;background:#eef2ef;cursor:pointer}
+.profile-works .profile-work-strip img{width:100%;height:100%;display:block;object-fit:cover}

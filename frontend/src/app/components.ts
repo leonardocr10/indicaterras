@@ -89,20 +89,37 @@ export class RecommendationBadgeComponent {
 export class CategoryCardComponent {
   @Input({ required: true }) category!: Category;
 
-  get iconUrl(): string {
-    const iconBySlug: Record<string, string> = {
-      eletricista: '/assets/categories/electrician.png',
-      encanador: '/assets/categories/handyman.png',
-      pedreiro: '/assets/categories/plumber.png',
-      pintor: '/assets/categories/painter.png',
-      diarista: '/assets/categories/cleaner.png',
-      'ar-condicionado': '/assets/categories/air-conditioner.png',
-      jardineiro: '/assets/categories/gardening-flower.png',
-      montador: '/assets/categories/gardener.png',
-      mais: '/assets/categories/more.png',
-    };
+  private static readonly iconBySlug: Record<string, string> = {
+    eletricista: '/assets/categories/electrician.png',
+    encanador: '/assets/categories/handyman.png',
+    pedreiro: '/assets/categories/plumber.png',
+    pintor: '/assets/categories/painter.png',
+    diarista: '/assets/categories/cleaner.png',
+    'ar-condicionado': '/assets/categories/air-conditioner.png',
+    jardineiro: '/assets/categories/gardening-flower.png',
+    montador: '/assets/categories/furniture-assembly.svg',
+    'montador-de-moveis': '/assets/categories/furniture-assembly.svg',
+    chaveiro: '/assets/categories/locksmith.svg',
+    informatica: '/assets/categories/computer.svg',
+    mecanico: '/assets/categories/mechanic.svg',
+    'marido-de-aluguel': '/assets/categories/handyman-tools.svg',
+    piscineiro: '/assets/categories/pool.svg',
+    dedetizacao: '/assets/categories/pest-control.svg',
+    'energia-solar': '/assets/categories/solar-energy.svg',
+    'cameras-seguranca': '/assets/categories/security-camera.svg',
+    seguranca: '/assets/categories/security-camera.svg',
+    outros: '/assets/categories/more.png',
+    mais: '/assets/categories/more.png',
+  };
 
-    return iconBySlug[this.category.slug] ?? iconBySlug['mais'];
+  get iconUrl(): string {
+    const mapped = CategoryCardComponent.iconBySlug[this.category.slug];
+    if (mapped) return mapped;
+    // categories created later fall back to the icon chosen in the admin
+    const icon = (this.category.icon ?? '').trim();
+    if (icon.startsWith('data:image/') || icon.startsWith('http') || icon.startsWith('/')) return icon;
+    if (icon && icon !== 'grid') return `/assets/taxonomy-icons/${icon === 'sparkles' ? 'broom' : icon}.svg`;
+    return CategoryCardComponent.iconBySlug['mais'];
   }
 }
 

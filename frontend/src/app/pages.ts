@@ -25,7 +25,7 @@ import {
   LucideHouse, LucideHandshake, LucideX,
   LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideMessageSquare,
 } from '@lucide/angular';
-import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, Review } from './models';
+import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { SearchableSelectComponent } from './searchable-select';
 import { PhoneMaskDirective } from './phone-mask.directive';
@@ -77,6 +77,12 @@ export class LoginPageComponent {
     this.showPassword.update((value) => !value);
   }
 
+  private homeForRole(role: string) {
+    if (role === 'RESIDENT') return '/app/home';
+    if (role === 'PROFESSIONAL') return '/profissional/perfil';
+    return '/admin/dashboard';
+  }
+
   submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -87,7 +93,7 @@ export class LoginPageComponent {
     this.feedback.set('Entrando...');
     this.hasError.set(false);
     this.auth.login(this.form.getRawValue()).subscribe({
-      next: (session) => void this.router.navigateByUrl(session.user.role === 'RESIDENT' ? '/app/home' : '/admin/dashboard'),
+      next: (session) => void this.router.navigateByUrl(this.homeForRole(session.user.role)),
       error: (error: { error?: { message?: string | string[] } }) => {
         const message = error.error?.message;
         this.feedback.set(Array.isArray(message) ? message.join(', ') : message ?? 'Não foi possível entrar. Tente novamente.');
@@ -106,19 +112,37 @@ export class LoginPageComponent {
       <div class="auth-card wide">
         <a routerLink="/" class="back-link">←</a>
         <h1>Criar conta</h1>
-        <p>Preencha seus dados para criar sua conta.</p>
+        <p>{{ isProfessional() ? 'Cadastre seu perfil profissional para aparecer no aplicativo.' : 'Preencha seus dados para criar sua conta.' }}</p>
+        <div *ngIf="professionalSignupEnabled()" class="account-type-switch" role="radiogroup" aria-label="Tipo de conta">
+          <button type="button" role="radio" [attr.aria-checked]="!isProfessional()" [class.active]="!isProfessional()" (click)="setAccountType('resident')">Sou morador</button>
+          <button type="button" role="radio" [attr.aria-checked]="isProfessional()" [class.active]="isProfessional()" (click)="setAccountType('professional')">Sou profissional</button>
+        </div>
         <form [formGroup]="form" (ngSubmit)="submit()">
           <input placeholder="Nome completo" formControlName="name" />
           <input type="email" placeholder="E-mail" formControlName="email" />
           <input type="tel" inputmode="tel" maxlength="15" placeholder="Telefone (WhatsApp)" formControlName="phone" appPhoneMask />
-          <input placeholder="CPF (opcional)" formControlName="cpf" />
-          <app-searchable-select formControlName="condominiumId" [items]="condominiums()" valueKey="id" labelKey="name" placeholder="Selecione o condomínio" searchPlaceholder="Pesquisar condomínio..." />
-          <div class="grid-2">
-            <input placeholder="Bloco" formControlName="block" />
-            <input placeholder="Unidade" formControlName="unit" />
-          </div>
+
+          <ng-container *ngIf="!isProfessional()">
+            <input placeholder="CPF (opcional)" formControlName="cpf" />
+            <app-searchable-select formControlName="condominiumId" [items]="condominiums()" valueKey="id" labelKey="name" placeholder="Selecione o condomínio" searchPlaceholder="Pesquisar condomínio..." />
+            <div class="grid-2">
+              <input placeholder="Bloco" formControlName="block" />
+              <input placeholder="Unidade" formControlName="unit" />
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="isProfessional()">
+            <input placeholder="Empresa (opcional)" formControlName="companyName" />
+            <app-searchable-select formControlName="categoryId" [items]="activeCategories()" valueKey="id" labelKey="name" placeholder="Selecione sua categoria" searchPlaceholder="Pesquisar categoria..." />
+            <div class="grid-2">
+              <input placeholder="Cidade" formControlName="city" />
+              <input placeholder="Bairro (opcional)" formControlName="neighborhood" />
+            </div>
+            <textarea placeholder="Conte sobre o seu trabalho (opcional)" formControlName="bio" maxlength="600"></textarea>
+          </ng-container>
+
           <input type="password" placeholder="Senha" formControlName="password" />
-          <button class="primary-button" type="submit">Criar conta</button>
+          <button class="primary-button" type="submit">{{ isProfessional() ? 'Criar conta de profissional' : 'Criar conta' }}</button>
           <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
         </form>
       </div>
@@ -132,21 +156,59 @@ export class RegisterPageComponent implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly condominiums = signal<Condominium[]>([]);
+  protected readonly categories = signal<Category[]>([]);
+  protected readonly activeCategories = computed(() => this.categories().filter((category) => category.active));
+  protected readonly professionalSignupEnabled = signal(false);
+  protected readonly isProfessional = signal(false);
   protected readonly feedback = signal('');
   protected readonly hasError = signal(false);
   protected readonly form = this.fb.nonNullable.group({
-    name: ['Leonardo', Validators.required],
-    email: ['leonardo@terrasalphas.com.br', [Validators.required, Validators.email]],
-    phone: ['(34) 99999-2222', Validators.required],
+    name: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    phone: ['', Validators.required],
     cpf: [''],
-    condominiumId: ['condo-1', Validators.required],
-    block: ['A'],
-    unit: ['101'],
-    password: ['123456', [Validators.required, Validators.minLength(6)]],
+    condominiumId: ['', Validators.required],
+    block: [''],
+    unit: [''],
+    companyName: [''],
+    categoryId: [''],
+    city: [''],
+    neighborhood: [''],
+    bio: [''],
+    password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   ngOnInit() {
-    this.api.getCondominiums().subscribe((condominiums) => this.condominiums.set(condominiums));
+    this.api.getCondominiums().subscribe((condominiums) => {
+      this.condominiums.set(condominiums);
+      if (!this.isProfessional() && !this.form.controls.condominiumId.value) {
+        this.form.controls.condominiumId.setValue(condominiums[0]?.id ?? '');
+      }
+    });
+    this.api.getCategories().subscribe((categories) => this.categories.set(categories));
+    this.api.getPublicSettings().subscribe({
+      next: (settings) => this.professionalSignupEnabled.set(settings.professionalSelfRegistration),
+      error: () => this.professionalSignupEnabled.set(false),
+    });
+  }
+
+  setAccountType(type: 'resident' | 'professional') {
+    const professional = type === 'professional';
+    this.isProfessional.set(professional);
+    this.feedback.set('');
+    this.hasError.set(false);
+    const { condominiumId, categoryId, city } = this.form.controls;
+    if (professional) {
+      condominiumId.clearValidators();
+      categoryId.setValidators(Validators.required);
+      city.setValidators(Validators.required);
+    } else {
+      condominiumId.setValidators(Validators.required);
+      if (!condominiumId.value) condominiumId.setValue(this.condominiums()[0]?.id ?? '');
+      categoryId.clearValidators();
+      city.clearValidators();
+    }
+    [condominiumId, categoryId, city].forEach((control) => control.updateValueAndValidity());
   }
 
   submit() {
@@ -156,8 +218,29 @@ export class RegisterPageComponent implements OnInit {
       this.hasError.set(true);
       return;
     }
-    const { cpf: _cpf, ...payload } = this.form.getRawValue();
-    this.auth.register(payload).subscribe({
+    const values = this.form.getRawValue();
+    const request = this.isProfessional()
+      ? this.auth.registerProfessional({
+          name: values.name,
+          email: values.email,
+          phone: values.phone,
+          categoryId: values.categoryId,
+          city: values.city,
+          companyName: values.companyName,
+          neighborhood: values.neighborhood,
+          bio: values.bio,
+          password: values.password,
+        })
+      : this.auth.register({
+          name: values.name,
+          email: values.email,
+          phone: values.phone,
+          condominiumId: values.condominiumId,
+          block: values.block,
+          unit: values.unit,
+          password: values.password,
+        });
+    request.subscribe({
       next: (result) => void this.router.navigate(['/verificar-email'], { queryParams: { email: result.email } }),
       error: (error: { error?: { message?: string | string[] } }) => {
         const message = error.error?.message;
@@ -211,7 +294,10 @@ export class VerifyEmailPageComponent {
     this.auth.verifyEmail({ email: this.email(), code: this.form.controls.code.value.trim() }).subscribe({
       next: (result) => {
         this.loading.set(false);
-        if (result.accessGranted) void this.router.navigateByUrl('/app/home');
+        if (result.accessGranted) {
+          const role = result.session?.user.role ?? 'RESIDENT';
+          void this.router.navigateByUrl(role === 'PROFESSIONAL' ? '/profissional/perfil' : role === 'RESIDENT' ? '/app/home' : '/admin/dashboard');
+        }
         else {
           this.hasError.set(false);
           this.feedback.set('E-mail confirmado. Seu cadastro agora aguarda aprovação da administração.');
@@ -570,6 +656,14 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
           </ul>
           <button *ngIf="professional.services.length > serviceLimit" class="section-link" type="button" (click)="showAllServices.set(!showAllServices())">{{ showAllServices() ? 'Ver menos serviços' : 'Ver todos os serviços' }}</button>
         </section>
+        <section class="detail-section profile-works" *ngIf="works().length">
+          <h2>Trabalhos publicados</h2>
+          <div class="profile-work-strip">
+            <button *ngFor="let work of works()" type="button" (click)="workLightbox.set(assetUrl(work.image))" [attr.aria-label]="work.title || 'Ampliar foto do trabalho'">
+              <img [src]="assetUrl(work.image)" [alt]="work.title || 'Trabalho publicado pelo profissional'" />
+            </button>
+          </div>
+        </section>
         <section class="detail-section profile-comments">
           <header><h2>Comentários ({{ commentCount() }})</h2><a [routerLink]="['/app/profissional', professional.id, 'comentarios']">Ver todos</a></header>
           <div *ngIf="visiblePhotos().length; else noCommentPhotos" class="profile-comment-thumbs">
@@ -581,6 +675,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
           <ng-template #noCommentPhotos><p class="profile-comments-empty">{{ commentCount() ? 'Os comentários deste profissional ainda não têm fotos.' : 'Este profissional ainda não recebeu comentários.' }}</p></ng-template>
         </section>
       </div>
+      <button *ngIf="workLightbox()" class="comment-lightbox" type="button" (click)="workLightbox.set('')" aria-label="Fechar foto ampliada"><img [src]="workLightbox()" alt="Foto do trabalho ampliada" /></button>
       <div class="profile-cta-bar">
         <a [href]="'https://wa.me/' + professional.whatsapp" class="primary-button full-width profile-whatsapp"><svg lucideMessageCircle />Chamar no WhatsApp</a>
       </div>
@@ -601,6 +696,8 @@ export class ProfessionalProfilePageComponent implements OnInit {
   );
   protected readonly favorite = signal(false);
   protected readonly comments = signal<ProfessionalComment[]>([]);
+  protected readonly works = signal<ProfessionalWork[]>([]);
+  protected readonly workLightbox = signal('');
   protected readonly showAllServices = signal(false);
   protected readonly serviceLimit = 6;
   protected readonly thumbLimit = 4;
@@ -617,6 +714,10 @@ export class ProfessionalProfilePageComponent implements OnInit {
     const services = this.professional()?.services ?? [];
     return this.showAllServices() ? services : services.slice(0, this.serviceLimit);
   });
+
+  protected assetUrl(path: string) {
+    return this.api.assetUrl(path);
+  }
 
   protected avatarUrl() {
     return this.api.assetUrl(this.professional()?.avatar) || '/assets/placeholders/default-avatar.svg';
@@ -636,6 +737,10 @@ export class ProfessionalProfilePageComponent implements OnInit {
     this.api.getFavorites().subscribe({
       next: (favorites) => this.favorite.set(favorites.some((item) => item.id === id)),
       error: () => this.favorite.set(false),
+    });
+    this.api.getProfessionalWorks(id).subscribe({
+      next: (works) => this.works.set(works),
+      error: () => this.works.set([]),
     });
   }
 

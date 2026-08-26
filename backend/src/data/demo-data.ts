@@ -1,4 +1,4 @@
-export type AppRole = 'SUPER_ADMIN' | 'CONDO_ADMIN' | 'RESIDENT';
+export type AppRole = 'SUPER_ADMIN' | 'CONDO_ADMIN' | 'RESIDENT' | 'PROFESSIONAL';
 
 export interface DemoCondominium {
   id: string;

@@ -89,6 +89,13 @@ export interface ProfessionalComment extends Review {
   replies: CommentReply[];
 }
 
+export interface ProfessionalWork {
+  id: string;
+  image: string;
+  title: string;
+  createdAt: string;
+}
+
 export interface HomePayload {
   condominium: Condominium;
   categories: Category[];

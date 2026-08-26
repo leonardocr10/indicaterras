@@ -4,9 +4,23 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
+function assertProductionSecrets() {
+  if (process.env.NODE_ENV !== 'production') return;
+  const missing = ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'].filter((name) => !process.env[name]);
+  if (missing.length) {
+    // sem segredos próprios qualquer pessoa com o código consegue forjar um token
+    throw new Error(`Defina ${missing.join(' e ')} nas variáveis de ambiente antes de subir em produção.`);
+  }
+}
+
 async function bootstrap() {
+  assertProductionSecrets();
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
+  const allowedOrigins = (process.env.CORS_ORIGIN ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.enableCors({ origin: allowedOrigins.length ? allowedOrigins : true });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

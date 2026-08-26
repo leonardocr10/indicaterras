@@ -11,7 +11,16 @@ export const residentGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   if (!auth.isAuthenticated()) return router.createUrlTree(['/login']);
-  return auth.user()?.role === 'RESIDENT' ? true : router.createUrlTree(['/admin/dashboard']);
+  const role = auth.user()?.role;
+  if (role === 'RESIDENT') return true;
+  return router.createUrlTree([role === 'PROFESSIONAL' ? '/profissional/perfil' : '/admin/dashboard']);
+};
+
+export const professionalGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (!auth.isAuthenticated()) return router.createUrlTree(['/login']);
+  return auth.user()?.role === 'PROFESSIONAL' ? true : router.createUrlTree(['/app/home']);
 };
 
 export const adminGuard: CanActivateFn = () => {

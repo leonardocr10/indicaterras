@@ -241,10 +241,21 @@ export class RegisterPageComponent implements OnInit {
           password: values.password,
         });
     request.subscribe({
-      next: (result) =>
+      next: (result) => {
+        if (result.session) {
+          const role = result.session.user.role;
+          void this.router.navigateByUrl(role === 'PROFESSIONAL' ? '/profissional/perfil' : role === 'RESIDENT' ? '/app/home' : '/admin/dashboard');
+          return;
+        }
+        if (!result.emailVerificationRequired) {
+          this.feedback.set('Cadastro criado e aguardando aprovação da administração.');
+          this.hasError.set(false);
+          return;
+        }
         void this.router.navigate(['/verificar-email'], {
           queryParams: { email: result.email, aviso: result.emailCodeSent === false ? result.emailMessage || 'pendente' : null },
-        }),
+        });
+      },
       error: (error: { error?: { message?: string | string[] } }) => {
         const message = error.error?.message;
         this.feedback.set(Array.isArray(message) ? message.join(', ') : message ?? 'Não foi possível criar sua conta.');

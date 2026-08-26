@@ -32,6 +32,19 @@ export class AuthService {
       block: registerDto.block,
       unit: registerDto.unit,
     });
+    if (!this.dataStoreService.requiresEmailVerification()) {
+      const canAccess = !this.dataStoreService.requiresUserApproval() || user.approvalStatus === 'APPROVED';
+      return {
+        data: {
+          email: user.email,
+          emailVerificationRequired: false,
+          requiresApproval: !canAccess,
+          emailCodeSent: false,
+          emailMessage: '',
+          session: canAccess ? this.buildTokens(user).data : null,
+        },
+      };
+    }
     let emailCodeSent = true;
     let emailMessage = '';
     try {
@@ -49,12 +62,26 @@ export class AuthService {
         requiresApproval: this.dataStoreService.requiresUserApproval(),
         emailCodeSent,
         emailMessage,
+        session: null,
       },
     };
   }
 
   async registerProfessional(dto: RegisterProfessionalDto) {
     const result = await this.dataStoreService.createProfessionalAccount(dto);
+    if (!this.dataStoreService.requiresEmailVerification()) {
+      return {
+        data: {
+          email: result.user.email,
+          emailVerificationRequired: false,
+          requiresApproval: false,
+          professionalId: result.professionalId,
+          emailCodeSent: false,
+          emailMessage: '',
+          session: this.buildTokens(result.user).data,
+        },
+      };
+    }
     let emailCodeSent = true;
     let emailMessage = '';
     try {
@@ -76,6 +103,7 @@ export class AuthService {
         professionalId: result.professionalId,
         emailCodeSent,
         emailMessage,
+        session: null,
       },
     };
   }

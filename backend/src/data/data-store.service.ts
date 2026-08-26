@@ -59,7 +59,7 @@ export class DataStoreService implements OnModuleInit {
     systemName: 'Terras Alphas Indica', condominiumName: 'Terras Alphas', phone: '(34) 99999-0000', email: 'contato@terrasalphas.com.br',
     primaryColor: '#006538', secondaryColor: '#ffad00', selfRegistration: true, residentApproval: true, requireUserApproval: true, showBlock: true,
     allowRecommendations: true, recommendationApproval: true, allowReviews: true, requireComment: true,
-    professionalSelfRegistration: false,
+    professionalSelfRegistration: false, requireEmailVerification: false,
   };
   private readonly users: Array<DemoUser & { passwordHash: string }> = [];
   private readonly favoriteProfessionalIds = new Map<string, Set<string>>([
@@ -421,7 +421,7 @@ export class DataStoreService implements OnModuleInit {
           role: 'RESIDENT',
           block: payload.block || null,
           unit: payload.unit || null,
-          emailVerified: false,
+          emailVerified: !this.requiresEmailVerification(),
           approvalStatus: requireApproval ? 'PENDING' : 'APPROVED',
           approvedAt: requireApproval ? null : new Date(),
           active: true,
@@ -441,7 +441,7 @@ export class DataStoreService implements OnModuleInit {
       phone: payload.phone,
       password: payload.password,
       role: 'RESIDENT',
-      emailVerified: false,
+      emailVerified: !this.requiresEmailVerification(),
       approvalStatus: requireApproval ? 'PENDING' : 'APPROVED',
       active: true,
       block: payload.block,
@@ -456,6 +456,10 @@ export class DataStoreService implements OnModuleInit {
 
   requiresUserApproval() {
     return Boolean(this.settings['requireUserApproval'] ?? this.settings['residentApproval']);
+  }
+
+  requiresEmailVerification() {
+    return Boolean(this.settings['requireEmailVerification']);
   }
 
   allowsProfessionalSignup() {
@@ -519,7 +523,7 @@ export class DataStoreService implements OnModuleInit {
       phone: payload.phone,
       password: payload.password,
       role: 'PROFESSIONAL',
-      emailVerified: false,
+      emailVerified: !this.requiresEmailVerification(),
       approvalStatus: 'APPROVED',
       active: true,
     };
@@ -622,7 +626,7 @@ export class DataStoreService implements OnModuleInit {
 
   private assertUserAccess(user: Pick<DemoUser, 'active' | 'emailVerified' | 'approvalStatus'>) {
     if (!user.active) throw new ForbiddenException('Esta conta está inativa. Procure a administração.');
-    if (!user.emailVerified) throw new ForbiddenException('Confirme o código enviado ao seu e-mail antes de entrar.');
+    if (this.requiresEmailVerification() && !user.emailVerified) throw new ForbiddenException('Confirme o código enviado ao seu e-mail antes de entrar.');
     if (this.requiresUserApproval() && user.approvalStatus !== 'APPROVED') {
       throw new ForbiddenException(user.approvalStatus === 'REJECTED' ? 'O acesso desta conta foi recusado pela administração.' : 'Cadastro confirmado e aguardando aprovação da administração.');
     }

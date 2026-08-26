@@ -720,8 +720,19 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .home-verified strong{display:block;color:#123c2c;font-size:13px;line-height:18px}
 .home-verified small{display:block;margin-top:2px;color:#5d6f66;font-size:11px;line-height:15px}
 .home-verified>svg{width:17px;height:17px;flex:0 0 auto;color:#7d8d85}
-.recommended-strip{display:flex;gap:12px;overflow-x:auto;padding:2px 1px 6px;scrollbar-width:none}
+.recommended-strip{display:flex;gap:11px;overflow-x:auto;padding:2px 1px 6px;scrollbar-width:none}
 .recommended-strip::-webkit-scrollbar{display:none}
-.recommended-strip professional-card{flex:0 0 min(268px,82%);display:block}
-.recommended-strip .professional-card{height:100%;margin-top:0}
+.recommended-strip professional-card{flex:0 0 min(206px,70%);display:block}
+/* o card compacto e feito para ocupar a linha inteira; no carrossel ele vira vertical */
+.recommended-strip .professional-card{display:flex;flex-direction:column;align-items:flex-start;gap:7px;height:100%;min-height:0;margin:0;padding:14px 13px 13px;border-radius:16px}
+.recommended-strip .professional-card .avatar{width:54px;height:54px;font-size:17px}
+.recommended-strip .professional-card .card-main{width:100%;min-width:0}
+.recommended-strip .professional-card .card-top h3{overflow:visible;white-space:normal;text-overflow:clip;font-size:15px;line-height:20px}
+.recommended-strip .professional-card .card-top p{font-size:12px;line-height:17px}
+.recommended-strip .professional-card .rating-line{margin-top:6px}
+.recommended-strip .professional-card .recommendation-line{position:static;right:auto;top:auto;width:auto;margin:6px 0 0;white-space:normal;font-size:11px;line-height:15px}
+.recommended-strip .professional-card .public-comments{margin-top:4px;white-space:normal;line-height:15px}
+.recommended-strip .professional-card .professional-card-side{width:100%;height:auto;margin-top:auto;padding-top:11px;flex-direction:row;align-items:center;justify-content:space-between;gap:8px}
+.recommended-strip .professional-card .professional-card-icon-actions{gap:6px}
+.recommended-strip .professional-card .card-profile-button{min-height:32px;padding:6px 11px}
 .professional-card .card-phone{color:#0f6b45}

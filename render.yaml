@@ -28,8 +28,11 @@ services:
       # Ex.: https://indicaterras.vercel.app
       - key: CORS_ORIGIN
         sync: false
-    disk:
-      # As fotos dos comentários são gravadas em disco; sem este volume elas somem a cada deploy.
-      name: uploads
-      mountPath: /opt/render/project/src/backend/uploads
-      sizeGB: 1
+    # Disco persistente para as fotos enviadas (comentários, trabalhos, perfis).
+    # O plano free do Render NÃO aceita disco: o bloco abaixo só funciona em um
+    # plano pago (troque plan: free por starter e remova o comentário).
+    # Enquanto estiver no free, as fotos se perdem a cada novo deploy.
+    # disk:
+    #   name: uploads
+    #   mountPath: /opt/render/project/src/backend/uploads
+    #   sizeGB: 1

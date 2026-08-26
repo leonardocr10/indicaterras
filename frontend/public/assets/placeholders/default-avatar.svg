@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Foto de perfil padrão</title>
+  <desc id="desc">Silhueta neutra em tons de verde da identidade Terras Alphas.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eff8f2"/><stop offset="1" stop-color="#d6eadc"/></linearGradient>
+    <linearGradient id="person" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0b7650"/><stop offset="1" stop-color="#034932"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <circle cx="256" cy="190" r="92" fill="url(#person)"/>
+  <path d="M86 462c12-112 77-172 170-172s158 60 170 172" fill="url(#person)"/>
+  <circle cx="418" cy="94" r="45" fill="#d6ad4a" opacity=".18"/>
+  <path d="M400 104c29-10 42-31 43-63-29 9-44 29-43 63Zm0 0c-28-6-50-21-65-46 29-2 51 13 65 46Z" fill="#b78a25" opacity=".7"/>
+</svg>

@@ -1,0 +1,8 @@
+# Local credentials and generated artifacts
+backend/.env
+backend/uploads/
+backend/coverage/
+frontend/.angular/
+frontend/dist/
+backend/dist/
+**/node_modules/

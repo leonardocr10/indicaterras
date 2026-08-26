@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  CONDO_ADMIN
+  RESIDENT
+}
+
+enum UserApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RecommendationStatus {
+  ACTIVE
+  REMOVED
+}
+
+model Condominium {
+  id              String               @id @default(cuid())
+  name            String
+  slug            String               @unique
+  logo            String?
+  coverImage      String?
+  primaryColor    String               @default("#0F5A3C")
+  secondaryColor  String               @default("#F4C542")
+  address         String
+  city            String
+  state           String
+  phone           String
+  email           String
+  active          Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  users           User[]
+  recommendations Recommendation[]
+  reviews         Review[]
+  favorites       Favorite[]
+  reports         Report[]
+  settings        CondominiumSettings?
+}
+
+model User {
+  id              String             @id @default(cuid())
+  condominiumId   String?
+  name            String
+  email           String             @unique
+  phone           String?
+  passwordHash    String
+  role            Role               @default(RESIDENT)
+  emailVerified   Boolean            @default(false)
+  approvalStatus  UserApprovalStatus @default(PENDING)
+  active          Boolean            @default(true)
+  emailVerifiedAt DateTime?
+  approvedAt      DateTime?
+  block           String?
+  unit            String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  condominium     Condominium?       @relation(fields: [condominiumId], references: [id])
+  recommendations Recommendation[]
+  reviews         Review[]
+  favorites       Favorite[]
+  reports         Report[]
+  refreshTokens   RefreshToken[]
+}
+
+model Category {
+  id                     String                 @id @default(cuid())
+  name                   String                 @unique
+  slug                   String                 @unique
+  icon                   String?
+  description            String?
+  displayOrder           Int                    @default(0)
+  active                 Boolean                @default(true)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  professionalCategories ProfessionalCategory[]
+  services               CategoryService[]
+}
+
+model CategoryService {
+  id                   String                 @id @default(cuid())
+  categoryId           String
+  name                 String
+  slug                 String
+  icon                 String?
+  displayOrder         Int                    @default(0)
+  active               Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  category             Category               @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  aliases              CategoryServiceAlias[]
+  professionalServices ProfessionalService[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId, active, displayOrder])
+  @@map("category_services")
+}
+
+model CategoryServiceAlias {
+  id                String          @id @default(cuid())
+  categoryServiceId String
+  alias             String
+  normalizedAlias   String
+  categoryService   CategoryService @relation(fields: [categoryServiceId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryServiceId, normalizedAlias])
+  @@index([normalizedAlias])
+  @@map("category_service_aliases")
+}
+
+model Professional {
+  id                     String                 @id @default(cuid())
+  name                   String
+  companyName            String?
+  bio                    String?
+  phone                  String
+  whatsapp               String?
+  instagram              String?
+  city                   String
+  neighborhood           String
+  avatar                 String?
+  coverImage             String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  professionalCategories ProfessionalCategory[]
+  professionalServices   ProfessionalService[]
+  recommendations        Recommendation[]
+  reviews                Review[]
+  favorites              Favorite[]
+  reports                Report[]
+  images                 ProfessionalImage[]
+}
+
+model ProfessionalService {
+  id                String          @id @default(cuid())
+  professionalId    String
+  categoryServiceId String
+  createdAt         DateTime        @default(now())
+  professional      Professional    @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  categoryService   CategoryService @relation(fields: [categoryServiceId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, categoryServiceId])
+  @@index([categoryServiceId])
+  @@map("professional_services")
+}
+
+model ProfessionalCategory {
+  professionalId String
+  categoryId     String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  category       Category     @relation(fields: [categoryId], references: [id])
+
+  @@id([professionalId, categoryId])
+}
+
+model Recommendation {
+  id             String               @id @default(cuid())
+  condominiumId  String
+  userId         String
+  professionalId String
+  comment        String?
+  serviceDate    DateTime?
+  status         RecommendationStatus @default(ACTIVE)
+  recommended    Boolean
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  condominium    Condominium          @relation(fields: [condominiumId], references: [id])
+  user           User                 @relation(fields: [userId], references: [id])
+  professional   Professional         @relation(fields: [professionalId], references: [id])
+
+  @@unique([userId, professionalId])
+}
+
+model Review {
+  id             String       @id @default(cuid())
+  condominiumId  String
+  userId         String
+  professionalId String
+  rating         Int
+  comment        String
+  serviceDate    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  condominium    Condominium  @relation(fields: [condominiumId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+  professional   Professional @relation(fields: [professionalId], references: [id])
+}
+
+model Favorite {
+  id             String       @id @default(cuid())
+  condominiumId  String
+  userId         String
+  professionalId String
+  createdAt      DateTime     @default(now())
+  condominium    Condominium  @relation(fields: [condominiumId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+  professional   Professional @relation(fields: [professionalId], references: [id])
+
+  @@unique([userId, professionalId])
+}
+
+model Report {
+  id             String       @id @default(cuid())
+  condominiumId  String
+  userId         String
+  professionalId String
+  reason         String
+  details        String?
+  createdAt      DateTime     @default(now())
+  condominium    Condominium  @relation(fields: [condominiumId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+  professional   Professional @relation(fields: [professionalId], references: [id])
+}
+
+model ProfessionalImage {
+  id             String       @id @default(cuid())
+  professionalId String
+  url            String
+  createdAt      DateTime     @default(now())
+  professional   Professional @relation(fields: [professionalId], references: [id])
+}
+
+model CondominiumSettings {
+  id                  String      @id @default(cuid())
+  condominiumId       String      @unique
+  welcomeMessage      String?
+  supportWhatsapp     String?
+  enableReports       Boolean     @default(true)
+  enableFavorites     Boolean     @default(true)
+  requireUserApproval Boolean     @default(true)
+  condominium         Condominium @relation(fields: [condominiumId], references: [id])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}

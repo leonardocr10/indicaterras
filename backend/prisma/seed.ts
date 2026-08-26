@@ -1,0 +1,190 @@
+import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { demoCategoryServices } from '../src/data/demo-data';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  const passwordHash = await bcrypt.hash('123456', 10);
+
+  const condominium = await prisma.condominium.upsert({
+    where: { slug: 'terras-alphas' },
+    update: {},
+    create: {
+      name: 'Terras Alphas',
+      slug: 'terras-alphas',
+      city: 'Uberlandia',
+      state: 'MG',
+      address: 'Av. das Palmeiras, 1000',
+      phone: '(34) 99999-0000',
+      email: 'contato@terrasalphas.com.br',
+      logo: '/uploads/condominiums/terras-alphas-logo.svg',
+      coverImage: '/uploads/condominiums/terras-alphas-cover.jpg',
+      primaryColor: '#0F5A3C',
+      secondaryColor: '#F4C542',
+      settings: {
+        create: {
+          welcomeMessage: 'Uma plataforma exclusiva do seu condominio.',
+          supportWhatsapp: '5534999990000',
+          requireUserApproval: true,
+        },
+      },
+    },
+  });
+
+  const resident = await prisma.user.upsert({
+    where: { email: 'leonardo@terrasalphas.com.br' },
+    update: {},
+    create: {
+      condominiumId: condominium.id,
+      name: 'Leonardo',
+      email: 'leonardo@terrasalphas.com.br',
+      passwordHash,
+      role: 'RESIDENT',
+      phone: '(34) 99999-2222',
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
+      approvalStatus: 'APPROVED',
+      approvedAt: new Date(),
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'admin@terrasalphas.com.br' },
+    update: {},
+    create: {
+      condominiumId: condominium.id,
+      name: 'Administrador',
+      email: 'admin@terrasalphas.com.br',
+      passwordHash,
+      role: 'CONDO_ADMIN',
+      phone: '(34) 99999-1111',
+      emailVerified: true,
+      emailVerifiedAt: new Date(),
+      approvalStatus: 'APPROVED',
+      approvedAt: new Date(),
+    },
+  });
+
+  const categories = await Promise.all(
+    [
+      'Eletricista',
+      'Encanador',
+      'Pedreiro',
+      'Pintor',
+      'Diarista',
+      'Ar-condicionado',
+      'Jardineiro',
+      'Montador',
+    ].map((name, index) =>
+      prisma.category.upsert({
+        where: { slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') },
+        update: { displayOrder: index + 1, active: true },
+        create: {
+          name,
+          slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          icon: 'tool',
+          displayOrder: index + 1,
+        },
+      }),
+    ),
+  );
+
+  const servicesByCategory = new Map<string, Array<{ id: string; name: string }>>();
+  for (const service of demoCategoryServices) {
+    const category = categories.find((item) => item.name === ({
+      'cat-1': 'Eletricista', 'cat-2': 'Encanador', 'cat-3': 'Pedreiro', 'cat-4': 'Pintor',
+      'cat-5': 'Diarista', 'cat-6': 'Ar-condicionado', 'cat-7': 'Jardineiro', 'cat-8': 'Montador',
+    } as Record<string, string>)[service.categoryId]);
+    if (!category) continue;
+    const saved = await prisma.categoryService.upsert({
+      where: { categoryId_slug: { categoryId: category.id, slug: service.slug } },
+      update: { name: service.name, icon: service.icon, displayOrder: service.displayOrder, active: true },
+      create: { categoryId: category.id, name: service.name, slug: service.slug, icon: service.icon, displayOrder: service.displayOrder },
+    });
+    await prisma.categoryServiceAlias.deleteMany({ where: { categoryServiceId: saved.id } });
+    if (service.aliases.length) {
+      await prisma.categoryServiceAlias.createMany({
+        data: service.aliases.map((alias) => ({
+          categoryServiceId: saved.id,
+          alias,
+          normalizedAlias: alias.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(),
+        })),
+        skipDuplicates: true,
+      });
+    }
+    const group = servicesByCategory.get(category.name) ?? [];
+    group.push({ id: saved.id, name: saved.name });
+    servicesByCategory.set(category.name, group);
+  }
+
+  const professionalSeeds = [
+    ['Joao Carlos', 'Eletricista'],
+    ['Carlos Henrique', 'Eletricista'],
+    ['Marcos Eletricista', 'Eletricista'],
+    ['Luciana', 'Diarista'],
+    ['Jardins & Cia', 'Jardineiro'],
+    ['Marido de Aluguel Max', 'Montador'],
+  ] as const;
+
+  for (const [name, categoryName] of professionalSeeds) {
+    const category = categories.find((item) => item.name === categoryName);
+    if (!category) continue;
+
+    const professional = await prisma.professional.create({
+      data: {
+        name,
+        phone: '(34) 99999-3333',
+        whatsapp: '5534999993333',
+        city: 'Uberlandia',
+        neighborhood: 'Gavea',
+        bio: `${name} atende com qualidade, seguranca e pontualidade.`,
+        companyName: name,
+      },
+    });
+
+    await prisma.professionalCategory.create({
+      data: {
+        professionalId: professional.id,
+        categoryId: category.id,
+      },
+    });
+
+    const linkedServices = servicesByCategory.get(categoryName)?.slice(0, 4) ?? [];
+    if (linkedServices.length) {
+      await prisma.professionalService.createMany({
+        data: linkedServices.map((service) => ({ professionalId: professional.id, categoryServiceId: service.id })),
+        skipDuplicates: true,
+      });
+    }
+
+    await prisma.recommendation.create({
+      data: {
+        condominiumId: condominium.id,
+        userId: resident.id,
+        professionalId: professional.id,
+        comment: 'Profissional muito recomendado pelos moradores.',
+        recommended: true,
+      },
+    });
+
+    await prisma.review.create({
+      data: {
+        condominiumId: condominium.id,
+        userId: resident.id,
+        professionalId: professional.id,
+        rating: 5,
+        comment: 'Excelente atendimento e execucao do servico.',
+      },
+    });
+  }
+}
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

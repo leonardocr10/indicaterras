@@ -241,7 +241,10 @@ export class RegisterPageComponent implements OnInit {
           password: values.password,
         });
     request.subscribe({
-      next: (result) => void this.router.navigate(['/verificar-email'], { queryParams: { email: result.email } }),
+      next: (result) =>
+        void this.router.navigate(['/verificar-email'], {
+          queryParams: { email: result.email, aviso: result.emailCodeSent === false ? result.emailMessage || 'pendente' : null },
+        }),
       error: (error: { error?: { message?: string | string[] } }) => {
         const message = error.error?.message;
         this.feedback.set(Array.isArray(message) ? message.join(', ') : message ?? 'Não foi possível criar sua conta.');
@@ -261,7 +264,12 @@ export class RegisterPageComponent implements OnInit {
         <img class="auth-logo" src="/assets/logo-terras-original.png" alt="Terras Alphas Indica" />
         <span class="verification-icon"><svg lucideMail /></span>
         <h1>Confirme seu e-mail</h1>
-        <p>Enviamos um código para <strong>{{ email() }}</strong>. Digite-o abaixo para validar seu cadastro.</p>
+        <p *ngIf="!pendingCode()">Enviamos um código para <strong>{{ email() }}</strong>. Digite-o abaixo para validar seu cadastro.</p>
+        <div *ngIf="pendingCode()" class="verification-warning">
+          <strong>Sua conta foi criada, mas o código ainda não saiu.</strong>
+          <p>{{ pendingCode() }}</p>
+          <p>Assim que receber, digite o código abaixo. Seus dados já estão salvos.</p>
+        </div>
         <form [formGroup]="form" (ngSubmit)="submit()">
           <label>Código de confirmação<input inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="000000" formControlName="code" /></label>
           <button class="primary-button" type="submit" [disabled]="loading()">{{ loading() ? 'Validando...' : 'Confirmar código' }}</button>
@@ -279,10 +287,17 @@ export class VerifyEmailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   protected readonly email = signal(this.route.snapshot.queryParamMap.get('email') ?? '');
+  protected readonly pendingCode = signal(this.warningFromQuery());
   protected readonly feedback = signal('');
   protected readonly hasError = signal(false);
   protected readonly loading = signal(false);
   protected readonly form = this.fb.nonNullable.group({ code: ['', [Validators.required, Validators.minLength(6)]] });
+
+  private warningFromQuery() {
+    const warning = this.route.snapshot.queryParamMap.get('aviso');
+    if (!warning) return '';
+    return warning === 'pendente' ? 'Não foi possível enviar o código agora. Use "Reenviar código" em alguns minutos.' : warning;
+  }
 
   submit() {
     if (this.form.invalid || !this.email()) {
@@ -316,8 +331,13 @@ export class VerifyEmailPageComponent {
     if (!this.email()) return;
     this.loading.set(true);
     this.auth.resendCode(this.email()).subscribe({
-      next: () => { this.loading.set(false); this.hasError.set(false); this.feedback.set('Um novo código foi enviado ao seu e-mail.'); },
-      error: () => { this.loading.set(false); this.hasError.set(true); this.feedback.set('Não foi possível reenviar o código agora.'); },
+      next: () => { this.loading.set(false); this.hasError.set(false); this.pendingCode.set(''); this.feedback.set('Um novo código foi enviado ao seu e-mail.'); },
+      error: (error: { error?: { message?: string | string[] } }) => {
+        this.loading.set(false);
+        this.hasError.set(true);
+        const message = error.error?.message;
+        this.feedback.set(Array.isArray(message) ? message.join(', ') : message ?? 'Não foi possível reenviar o código agora.');
+      },
     });
   }
 }

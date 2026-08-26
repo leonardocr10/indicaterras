@@ -23,6 +23,8 @@ export interface RegistrationResult {
   email: string;
   emailVerificationRequired: boolean;
   requiresApproval: boolean;
+  emailCodeSent?: boolean;
+  emailMessage?: string;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -79,6 +79,17 @@ Há também um `backend/Dockerfile` caso prefira Railway, Fly.io ou qualquer hos
 > avaliações e favoritos em memória e grava as fotos em disco — comportamentos que exigem um
 > processo contínuo.
 
+## Envio do código de confirmação
+
+O cadastro (morador e profissional) confirma o e-mail por código enviado pelo Supabase Auth.
+O serviço de e-mail embutido do Supabase é limitado a poucos envios por hora e devolve
+`over_email_send_rate_limit` quando o limite estoura — nesse caso a conta é criada mesmo assim
+e a pessoa pode pedir o código de novo em "Reenviar código".
+
+Para uso real, configure um SMTP próprio em **Supabase Dashboard > Authentication > Emails >
+SMTP Settings** (Resend, Brevo, SendGrid, Amazon SES). Depois disso, o limite passa a ser o do
+provedor e pode ser ajustado em **Authentication > Rate Limits**.
+
 ## Credenciais demo
 
 - Morador: `leonardo@terrasalphas.com.br`

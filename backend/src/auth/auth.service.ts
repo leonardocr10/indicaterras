@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { DataStoreService } from '../data/data-store.service';
@@ -32,24 +32,41 @@ export class AuthService {
       block: registerDto.block,
       unit: registerDto.unit,
     });
-    await this.sendEmailCode(user.email);
+    let emailCodeSent = true;
+    let emailMessage = '';
+    try {
+      await this.sendEmailCode(user.email);
+    } catch (error) {
+      // a conta já existe; abortar aqui deixaria o morador sem caminho para reenviar o código
+      if (!this.isTransientEmailError(error)) throw error;
+      emailCodeSent = false;
+      emailMessage = error instanceof HttpException ? String(error.getResponse()) : '';
+    }
     return {
       data: {
         email: user.email,
         emailVerificationRequired: true,
         requiresApproval: this.dataStoreService.requiresUserApproval(),
+        emailCodeSent,
+        emailMessage,
       },
     };
   }
 
   async registerProfessional(dto: RegisterProfessionalDto) {
     const result = await this.dataStoreService.createProfessionalAccount(dto);
+    let emailCodeSent = true;
+    let emailMessage = '';
     try {
       await this.sendEmailCode(result.user.email);
     } catch (error) {
-      // sem o código de confirmação a conta ficaria inacessível, então desfaz o cadastro
-      await this.dataStoreService.removeProfessionalAccount(result.user.id);
-      throw error;
+      // limite de envio ou instabilidade: mantém a conta para o profissional pedir o código de novo
+      if (!this.isTransientEmailError(error)) {
+        await this.dataStoreService.removeProfessionalAccount(result.user.id);
+        throw error;
+      }
+      emailCodeSent = false;
+      emailMessage = error instanceof HttpException ? String(error.getResponse()) : '';
     }
     return {
       data: {
@@ -57,6 +74,8 @@ export class AuthService {
         emailVerificationRequired: true,
         requiresApproval: false,
         professionalId: result.professionalId,
+        emailCodeSent,
+        emailMessage,
       },
     };
   }
@@ -104,10 +123,26 @@ export class AuthService {
       headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, create_user: true }),
     });
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new ServiceUnavailableException(`Não foi possível enviar o código de confirmação. ${detail}`);
+    if (!response.ok) throw this.emailDeliveryError(response.status, await response.text());
+  }
+
+  private emailDeliveryError(status: number, detail: string) {
+    const code = /"error_code"\s*:\s*"([^"]+)"/.exec(detail)?.[1] ?? '';
+    if (status === 429 || code === 'over_email_send_rate_limit') {
+      return new HttpException(
+        'O provedor de e-mail atingiu o limite de envios. Aguarde alguns minutos e use "Reenviar código".',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
+    if (code === 'email_address_invalid' || status === 400) {
+      return new BadRequestException('E-mail inválido. Confira o endereço digitado.');
+    }
+    return new ServiceUnavailableException('Não foi possível enviar o código de confirmação agora. Tente novamente em instantes.');
+  }
+
+  private isTransientEmailError(error: unknown) {
+    const status = error instanceof HttpException ? error.getStatus() : 0;
+    return status === HttpStatus.TOO_MANY_REQUESTS || status >= 500;
   }
 
   private async verifySupabaseCode(email: string, code: string) {

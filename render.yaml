@@ -8,7 +8,9 @@ services:
     plan: free
     region: oregon
     rootDir: backend
-    buildCommand: npm ci && npx prisma generate && npm run build
+    # --include=dev e obrigatorio: NODE_ENV=production faz o npm pular as
+    # dependencias de desenvolvimento, e o build precisa do CLI do Nest e do Prisma.
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
     startCommand: npm run start:prod
     healthCheckPath: /public-settings
     envVars:

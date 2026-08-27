@@ -21,7 +21,8 @@ const CHAVE_DISPENSADO = 'alphas-indica-instalacao-dispensada';
         <strong>Instalar o Alphas Indica</strong>
         <p *ngIf="modo() === 'android'">Adicione na tela de início e abra como aplicativo, sem passar pelo navegador.</p>
         <p *ngIf="modo() === 'ios-safari'">Toque em <svg lucideShare /> Compartilhar e escolha <b>Adicionar à Tela de Início</b>.</p>
-        <p *ngIf="modo() === 'ios-outro'">Abra este site no <b>Safari</b> para instalar na tela de início do iPhone.</p>
+        <p *ngIf="modo() === 'ios-chrome'">Toque em <b>⋯</b> no canto do Chrome e escolha <b>Adicionar à Tela de Início</b>.</p>
+        <p *ngIf="modo() === 'ios-outro'">Abra o menu do navegador e escolha <b>Adicionar à Tela de Início</b>.</p>
       </div>
       <button *ngIf="modo() === 'android'" class="install-acao" type="button" (click)="instalar()"><svg lucideDownload />Instalar</button>
       <button class="install-fechar" type="button" aria-label="Agora não" (click)="dispensar()"><svg lucideX /></button>
@@ -30,7 +31,7 @@ const CHAVE_DISPENSADO = 'alphas-indica-instalacao-dispensada';
 })
 export class InstallPromptComponent implements OnInit {
   protected readonly visivel = signal(false);
-  protected readonly modo = signal<'android' | 'ios-safari' | 'ios-outro'>('android');
+  protected readonly modo = signal<'android' | 'ios-safari' | 'ios-chrome' | 'ios-outro'>('android');
   protected readonly comNavegacao = signal(false);
   private evento: BeforeInstallPromptEvent | null = null;
 
@@ -39,7 +40,7 @@ export class InstallPromptComponent implements OnInit {
     if (!this.ehIos()) return;
     // No iPhone e no iPad o navegador nunca dispara o evento de instalacao,
     // entao o convite precisa aparecer sozinho e so explicar o caminho.
-    this.modo.set(this.ehSafari() ? 'ios-safari' : 'ios-outro');
+    this.modo.set(this.navegadorIos());
     setTimeout(() => this.mostrar(), 2000);
   }
 
@@ -85,9 +86,16 @@ export class InstallPromptComponent implements OnInit {
     return /Macintosh/i.test(agente) && navigator.maxTouchPoints > 1;
   }
 
-  private ehSafari() {
+  /**
+   * Desde o iOS 16.4 os outros navegadores também instalam na tela de início,
+   * cada um pelo seu próprio menu. Dizer "abra no Safari" mandaria o usuário
+   * para um caminho mais longo sem necessidade.
+   */
+  private navegadorIos(): 'ios-safari' | 'ios-chrome' | 'ios-outro' {
     const agente = navigator.userAgent;
-    return !/crios|fxios|edgios|opios/i.test(agente);
+    if (/crios/i.test(agente)) return 'ios-chrome';
+    if (/fxios|edgios|opios/i.test(agente)) return 'ios-outro';
+    return 'ios-safari';
   }
 
   private jaInstalado() {

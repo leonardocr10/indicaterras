@@ -735,3 +735,18 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .recommended-section .recommended-strip .professional-card.compact-card .professional-card-icon-actions{justify-content:flex-start;gap:6px}
 .recommended-section .recommended-strip .professional-card.compact-card .card-profile-button{min-height:32px;padding:6px 11px;white-space:nowrap}
 .professional-card .card-phone{color:#0f6b45}
+
+/* Convite para instalar o app */
+.install-banner{z-index:60;position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(calc(100% - 24px),406px);padding:12px 13px;border:1px solid #e2ece6;border-radius:16px;display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;align-items:center;gap:11px;background:#fff;box-shadow:0 14px 34px rgba(8,38,26,.18);animation:install-sobe .28s ease-out}
+.install-banner>img{width:44px;height:44px;border-radius:11px;border:1px solid #eef2f0}
+.install-texto{min-width:0}
+.install-texto strong{display:block;color:#123c2c;font-size:13px;line-height:18px}
+.install-texto p{margin:2px 0 0;color:#5d6f66;font-size:11px;line-height:15px}
+.install-texto p svg{width:12px;height:12px;vertical-align:-2px}
+.install-texto b{color:#123c2c}
+.install-acao{min-height:36px;padding:8px 13px;border:0;border-radius:10px;display:inline-flex;align-items:center;gap:7px;color:#fff;background:var(--primary);font-family:var(--font-family);font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}
+.install-acao svg{width:15px;height:15px}
+.install-fechar{width:28px;height:28px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;color:#7d8d85;background:transparent;cursor:pointer}
+.install-fechar svg{width:15px;height:15px}
+@keyframes install-sobe{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+@media(display-mode:standalone){.install-banner{display:none}}

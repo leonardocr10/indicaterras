@@ -258,107 +258,13 @@ export class RegisterPageComponent implements OnInit {
           void this.router.navigateByUrl(role === 'PROFESSIONAL' ? '/profissional/perfil' : role === 'RESIDENT' ? '/app/home' : '/admin/dashboard');
           return;
         }
-        if (!result.emailVerificationRequired) {
-          this.feedback.set('Cadastro criado e aguardando aprovação da administração.');
-          this.hasError.set(false);
-          return;
-        }
-        void this.router.navigate(['/verificar-email'], {
-          queryParams: { email: result.email, aviso: result.emailCodeSent === false ? result.emailMessage || 'pendente' : null },
-        });
+        this.feedback.set('Cadastro criado e aguardando aprovação da administração.');
+        this.hasError.set(false);
       },
       error: (error: { error?: { message?: string | string[] } }) => {
         const message = error.error?.message;
         this.feedback.set(Array.isArray(message) ? message.join(', ') : message ?? 'Não foi possível criar sua conta.');
         this.hasError.set(true);
-      },
-    });
-  }
-}
-
-@Component({
-  selector: 'verify-email-page',
-  standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideMail],
-  template: `
-    <section class="auth-page verification-page">
-      <div class="auth-card verification-card">
-        <img class="auth-logo" src="/assets/logo-terras-original.png" alt="Terras Alphas Indica" />
-        <span class="verification-icon"><svg lucideMail /></span>
-        <h1>Confirme seu e-mail</h1>
-        <p *ngIf="!pendingCode()">Enviamos um código para <strong>{{ email() }}</strong>. Digite-o abaixo para validar seu cadastro.</p>
-        <div *ngIf="pendingCode()" class="verification-warning">
-          <strong>Sua conta foi criada, mas o código ainda não saiu.</strong>
-          <p>{{ pendingCode() }}</p>
-          <p>Assim que receber, digite o código abaixo. Seus dados já estão salvos.</p>
-        </div>
-        <form [formGroup]="form" (ngSubmit)="submit()">
-          <label>Código de confirmação<input inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="000000" formControlName="code" /></label>
-          <button class="primary-button" type="submit" [disabled]="loading()">{{ loading() ? 'Validando...' : 'Confirmar código' }}</button>
-        </form>
-        <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
-        <button class="text-button" type="button" [disabled]="loading()" (click)="resend()">Reenviar código</button>
-        <a routerLink="/login" class="secondary-button">Voltar ao login</a>
-      </div>
-    </section>
-  `,
-})
-export class VerifyEmailPageComponent {
-  private readonly fb = inject(FormBuilder);
-  private readonly auth = inject(AuthService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  protected readonly email = signal(this.route.snapshot.queryParamMap.get('email') ?? '');
-  protected readonly pendingCode = signal(this.warningFromQuery());
-  protected readonly feedback = signal('');
-  protected readonly hasError = signal(false);
-  protected readonly loading = signal(false);
-  protected readonly form = this.fb.nonNullable.group({ code: ['', [Validators.required, Validators.minLength(6)]] });
-
-  private warningFromQuery() {
-    const warning = this.route.snapshot.queryParamMap.get('aviso');
-    if (!warning) return '';
-    return warning === 'pendente' ? 'Não foi possível enviar o código agora. Use "Reenviar código" em alguns minutos.' : warning;
-  }
-
-  submit() {
-    if (this.form.invalid || !this.email()) {
-      this.hasError.set(true);
-      this.feedback.set('Informe o código enviado ao e-mail do cadastro.');
-      return;
-    }
-    this.loading.set(true);
-    this.auth.verifyEmail({ email: this.email(), code: this.form.controls.code.value.trim() }).subscribe({
-      next: (result) => {
-        this.loading.set(false);
-        if (result.accessGranted) {
-          const role = result.session?.user.role ?? 'RESIDENT';
-          void this.router.navigateByUrl(role === 'PROFESSIONAL' ? '/profissional/perfil' : role === 'RESIDENT' ? '/app/home' : '/admin/dashboard');
-        }
-        else {
-          this.hasError.set(false);
-          this.feedback.set('E-mail confirmado. Seu cadastro agora aguarda aprovação da administração.');
-        }
-      },
-      error: (error: { error?: { message?: string | string[] } }) => {
-        this.loading.set(false);
-        const message = error.error?.message;
-        this.hasError.set(true);
-        this.feedback.set(Array.isArray(message) ? message.join(', ') : message ?? 'Código inválido ou expirado.');
-      },
-    });
-  }
-
-  resend() {
-    if (!this.email()) return;
-    this.loading.set(true);
-    this.auth.resendCode(this.email()).subscribe({
-      next: () => { this.loading.set(false); this.hasError.set(false); this.pendingCode.set(''); this.feedback.set('Um novo código foi enviado ao seu e-mail.'); },
-      error: (error: { error?: { message?: string | string[] } }) => {
-        this.loading.set(false);
-        this.hasError.set(true);
-        const message = error.error?.message;
-        this.feedback.set(Array.isArray(message) ? message.join(', ') : message ?? 'Não foi possível reenviar o código agora.');
       },
     });
   }

@@ -21,10 +21,7 @@ interface AuthSession {
 
 export interface RegistrationResult {
   email: string;
-  emailVerificationRequired: boolean;
   requiresApproval: boolean;
-  emailCodeSent?: boolean;
-  emailMessage?: string;
   session?: AuthSession | null;
 }
 
@@ -68,17 +65,6 @@ export class AuthService {
       map((response) => response.data),
       tap((result) => { if (result.session) this.persist(result.session); }),
     );
-  }
-
-  verifyEmail(payload: { email: string; code: string }) {
-    return this.http.post<ApiResponse<{ verified: boolean; accessGranted: boolean; requiresApproval: boolean; session: AuthSession | null }>>(`${this.baseUrl}/auth/verify-email`, payload).pipe(
-      map((response) => response.data),
-      tap((result) => { if (result.session) this.persist(result.session); }),
-    );
-  }
-
-  resendCode(email: string) {
-    return this.http.post<ApiResponse<{ sent: boolean; email: string }>>(`${this.baseUrl}/auth/resend-code`, { email }).pipe(map((response) => response.data));
   }
 
   logout() {

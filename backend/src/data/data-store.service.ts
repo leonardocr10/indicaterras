@@ -49,7 +49,7 @@ export class DataStoreService implements OnModuleInit {
     systemName: 'Terras Alphas Indica', condominiumName: 'Terras Alphas', phone: '(34) 99999-0000', email: 'contato@terrasalphas.com.br',
     primaryColor: '#006538', secondaryColor: '#ffad00', selfRegistration: true, residentApproval: true, requireUserApproval: true, showBlock: true,
     allowRecommendations: true, recommendationApproval: true, allowReviews: true, requireComment: true,
-    professionalSelfRegistration: false, requireEmailVerification: false,
+    professionalSelfRegistration: false,
   };
   private readonly users: Array<DemoUser & { passwordHash: string }> = [];
   private readonly favoriteProfessionalIds = new Map<string, Set<string>>([
@@ -309,7 +309,7 @@ export class DataStoreService implements OnModuleInit {
           role: 'RESIDENT',
           block: payload.block || null,
           unit: payload.unit || null,
-          emailVerified: !this.requiresEmailVerification(),
+          emailVerified: true,
           approvalStatus: requireApproval ? 'PENDING' : 'APPROVED',
           approvedAt: requireApproval ? null : new Date(),
           active: true,
@@ -329,7 +329,7 @@ export class DataStoreService implements OnModuleInit {
       phone: payload.phone,
       password: payload.password,
       role: 'RESIDENT',
-      emailVerified: !this.requiresEmailVerification(),
+      emailVerified: true,
       approvalStatus: requireApproval ? 'PENDING' : 'APPROVED',
       active: true,
       block: payload.block,
@@ -344,10 +344,6 @@ export class DataStoreService implements OnModuleInit {
 
   requiresUserApproval() {
     return Boolean(this.settings['requireUserApproval'] ?? this.settings['residentApproval']);
-  }
-
-  requiresEmailVerification() {
-    return Boolean(this.settings['requireEmailVerification']);
   }
 
   allowsProfessionalSignup() {
@@ -411,7 +407,7 @@ export class DataStoreService implements OnModuleInit {
       phone: payload.phone,
       password: payload.password,
       role: 'PROFESSIONAL',
-      emailVerified: !this.requiresEmailVerification(),
+      emailVerified: true,
       approvalStatus: 'APPROVED',
       active: true,
     };
@@ -484,24 +480,6 @@ export class DataStoreService implements OnModuleInit {
     return this.getProfessionalWorks(professionalId);
   }
 
-  async verifyUserEmail(email: string) {
-    const normalizedEmail = email.toLowerCase().trim();
-    if (this.databaseAvailable) {
-      await this.prisma.user.update({
-        where: { email: normalizedEmail },
-        data: { emailVerified: true, emailVerifiedAt: new Date() },
-      });
-      await this.loadDatabaseData();
-    } else {
-      const user = this.users.find((entry) => entry.email.toLowerCase() === normalizedEmail);
-      if (!user) throw new NotFoundException('Usuário não encontrado');
-      user.emailVerified = true;
-    }
-    const user = this.users.find((entry) => entry.email.toLowerCase() === normalizedEmail);
-    if (!user) throw new NotFoundException('Usuário não encontrado');
-    return this.safeUser(user);
-  }
-
   findUserByEmail(email: string) {
     const user = this.users.find((entry) => entry.email.toLowerCase() === email.toLowerCase().trim());
     return user ? this.safeUser(user) : undefined;
@@ -514,7 +492,6 @@ export class DataStoreService implements OnModuleInit {
 
   private assertUserAccess(user: Pick<DemoUser, 'active' | 'emailVerified' | 'approvalStatus'>) {
     if (!user.active) throw new ForbiddenException('Esta conta está inativa. Procure a administração.');
-    if (this.requiresEmailVerification() && !user.emailVerified) throw new ForbiddenException('Confirme o código enviado ao seu e-mail antes de entrar.');
     if (this.requiresUserApproval() && user.approvalStatus !== 'APPROVED') {
       throw new ForbiddenException(user.approvalStatus === 'REJECTED' ? 'O acesso desta conta foi recusado pela administração.' : 'Cadastro confirmado e aguardando aprovação da administração.');
     }

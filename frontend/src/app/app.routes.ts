@@ -10,7 +10,6 @@ import {
   ProfessionalProfilePageComponent,
   ProfessionalsPageComponent,
   RegisterPageComponent,
-  VerifyEmailPageComponent,
   ReviewsPageComponent,
 } from './pages';
 import { AdminLoginPageComponent, AdminSectionPageComponent, ResidentProfilePageComponent } from './extra-pages';
@@ -26,7 +25,6 @@ import { AdminReportDetailsPageComponent } from './admin-report-details-page';
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
   { path: 'cadastro', component: RegisterPageComponent },
-  { path: 'verificar-email', component: VerifyEmailPageComponent },
   { path: 'admin/login', component: AdminLoginPageComponent },
   {
     path: 'app',

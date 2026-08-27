@@ -862,3 +862,8 @@ label>span{display:block}
    Usa margem no bloco de cima para nao dobrar o espaco quando o selo
    de recomendacoes aparece entre os dois. */
 .profile-meta{margin-bottom:17px}
+
+/* Os atalhos de ordenacao na busca: o selo de filtros ativos passa do topo
+   do botao e a barra tem rolagem horizontal, o que corta o que sobra.
+   O respiro no topo resolve o corte e afasta os icones do cabecalho. */
+.professionals-content .filter-row{padding-top:9px}

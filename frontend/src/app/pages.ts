@@ -1591,7 +1591,7 @@ export class AdminDashboardPageComponent implements OnInit {
 }
 
 type AdminResource = 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories';
-type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'password' | 'textarea' | 'checkbox'; select?: 'category' | 'condominium' | 'options'; options?: Array<{ value: string; label: string }> };
+type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'password' | 'textarea' | 'checkbox'; select?: 'category' | 'condominium' | 'options'; options?: Array<{ value: string; label: string }>; hideForRoles?: string[] };
 
 @Component({
   selector: 'admin-crud-page',
@@ -1623,7 +1623,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
           <form class="admin-editor admin-crud-modal" [formGroup]="form" (click)="$event.stopPropagation()" (ngSubmit)="save()">
             <header class="admin-modal-header"><div><h2>{{ editingId() ? 'Editar cadastro' : 'Novo cadastro' }}</h2><p>{{ editingId() ? 'Atualize os dados abaixo.' : 'Preencha os dados para criar um registro.' }}</p></div><button type="button" aria-label="Fechar" (click)="closeEditor()"><svg lucideX /></button></header>
             <div class="admin-modal-fields">
-            <label *ngFor="let field of config.fields">{{ field.label }}
+            <label *ngFor="let field of visibleFields()">{{ field.label }}
               <textarea *ngIf="field.type === 'textarea'" [formControlName]="field.key"></textarea>
               <app-searchable-select *ngIf="field.select === 'category'" [formControlName]="field.key" [items]="categories()" valueKey="id" labelKey="name" emptyLabel="Selecione" searchPlaceholder="Pesquisar categoria..." />
               <app-searchable-select *ngIf="field.select === 'condominium'" [formControlName]="field.key" [items]="condominiums()" valueKey="id" labelKey="name" emptyLabel="Selecione" searchPlaceholder="Pesquisar condomínio..." />
@@ -1690,8 +1690,9 @@ export class AdminCrudPageComponent implements OnInit {
     residents: { title: 'Moradores', fields: [{ key: 'name', label: 'Nome' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'condominiumId', label: 'Condomínio', select: 'condominium' }, { key: 'password', label: 'Senha', type: 'password' }], columns: ['Nome', 'E-mail', 'Telefone', 'Perfil'], columnKeys: ['name', 'email', 'phone', 'role'] },
     users: { title: 'Usuários do sistema', fields: [
       { key: 'name', label: 'Nome completo' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone', type: 'tel' },
-      { key: 'condominiumId', label: 'Condomínio', select: 'condominium' }, { key: 'block', label: 'Bloco' }, { key: 'unit', label: 'Unidade' },
-      { key: 'role', label: 'Perfil de acesso', select: 'options', options: [{ value: 'RESIDENT', label: 'Morador' }, { value: 'CONDO_ADMIN', label: 'Administrador do condomínio' }, { value: 'SUPER_ADMIN', label: 'Super administrador' }] },
+      { key: 'condominiumId', label: 'Condomínio', select: 'condominium' },
+      { key: 'block', label: 'Bloco', hideForRoles: ['PROFESSIONAL', 'SUPER_ADMIN'] }, { key: 'unit', label: 'Unidade', hideForRoles: ['PROFESSIONAL', 'SUPER_ADMIN'] },
+      { key: 'role', label: 'Perfil de acesso', select: 'options', options: [{ value: 'RESIDENT', label: 'Morador' }, { value: 'PROFESSIONAL', label: 'Profissional' }, { value: 'CONDO_ADMIN', label: 'Administrador do condomínio' }, { value: 'SUPER_ADMIN', label: 'Super administrador' }] },
       { key: 'approvalStatus', label: 'Aprovação', select: 'options', options: [{ value: 'PENDING', label: 'Pendente' }, { value: 'APPROVED', label: 'Aprovado' }, { value: 'REJECTED', label: 'Recusado' }] },
       { key: 'emailVerified', label: 'E-mail verificado', type: 'checkbox' }, { key: 'active', label: 'Usuário ativo', type: 'checkbox' },
       { key: 'password', label: 'Senha (deixe em branco para manter)', type: 'password' },
@@ -1731,6 +1732,11 @@ export class AdminCrudPageComponent implements OnInit {
       this.newRecord(false);
       this.load();
     });
+  }
+
+  visibleFields(): AdminField[] {
+    const role = String(this.form.controls.role.value ?? '');
+    return this.config.fields.filter((field) => !field.hideForRoles?.includes(role));
   }
 
   value(record: Record<string, unknown>, key: string) {
@@ -1804,7 +1810,7 @@ export class AdminCrudPageComponent implements OnInit {
       this.hasError.set(true);
       return;
     }
-    const payload: Record<string, unknown> = Object.fromEntries(this.config.fields.map((field) => [field.key, rawRecord[field.key]]));
+    const payload: Record<string, unknown> = Object.fromEntries(this.visibleFields().map((field) => [field.key, rawRecord[field.key]]));
     if (this.resource() === 'professionals') payload['avatar'] = raw.avatar;
     if (this.resource() === 'condominiums') payload['coverImage'] = raw.coverImage;
     if (this.resource() === 'professionals') { payload['categoryIds'] = this.selectedCategoryIds(); payload['serviceIds'] = this.selectedServiceIds(); }

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -25,12 +25,29 @@ enum RecommendationStatus {
   REMOVED
 }
 
+enum ReportStatus {
+  PENDENTE
+  EM_ANALISE
+  URGENTE
+  RESOLVIDA
+  IGNORADA
+}
+
+enum ProfessionalActionType {
+  WARN
+  HIDE
+  SUSPEND_7
+  SUSPEND_30
+  BLOCK
+  RESTORE
+}
+
 model Condominium {
   id              String               @id @default(cuid())
   name            String
   slug            String               @unique
-  logo            String?
-  coverImage      String?
+  logo            String?              @db.Text
+  coverImage      String?              @db.Text
   primaryColor    String               @default("#0F5A3C")
   secondaryColor  String               @default("#F4C542")
   address         String
@@ -67,19 +84,40 @@ model User {
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   condominium     Condominium?       @relation(fields: [condominiumId], references: [id])
+  professional    Professional?
   recommendations Recommendation[]
   reviews         Review[]
+  reviewLikes     ReviewLike[]
+  reviewReplies   ReviewReply[]
   favorites       Favorite[]
   reports         Report[]
+  reportHistory   ReportHistory[]
   refreshTokens   RefreshToken[]
+  passwordResets  PasswordReset[]
+
+  @@index([role, approvalStatus])
+}
+
+/// Pedido de redefinição de senha enviado por e-mail.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_resets")
 }
 
 model Category {
   id                     String                 @id @default(cuid())
   name                   String                 @unique
   slug                   String                 @unique
-  icon                   String?
-  description            String?
+  icon                   String?                @db.Text
+  description            String?                @db.Text
   displayOrder           Int                    @default(0)
   active                 Boolean                @default(true)
   createdAt              DateTime               @default(now())
@@ -93,7 +131,7 @@ model CategoryService {
   categoryId           String
   name                 String
   slug                 String
-  icon                 String?
+  icon                 String?                @db.Text
   displayOrder         Int                    @default(0)
   active               Boolean                @default(true)
   createdAt            DateTime               @default(now())
@@ -121,18 +159,22 @@ model CategoryServiceAlias {
 
 model Professional {
   id                     String                 @id @default(cuid())
+  userId                 String?                @unique
   name                   String
   companyName            String?
-  bio                    String?
+  bio                    String?                @db.Text
   phone                  String
   whatsapp               String?
   instagram              String?
   city                   String
   neighborhood           String
-  avatar                 String?
-  coverImage             String?
+  avatar                 String?                @db.Text
+  coverImage             String?                @db.Text
+  active                 Boolean                @default(true)
+  featured               Boolean                @default(false)
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
+  user                   User?                  @relation(fields: [userId], references: [id])
   professionalCategories ProfessionalCategory[]
   professionalServices   ProfessionalService[]
   recommendations        Recommendation[]
@@ -140,6 +182,9 @@ model Professional {
   favorites              Favorite[]
   reports                Report[]
   images                 ProfessionalImage[]
+  actions                ProfessionalAction[]
+
+  @@index([active, city])
 }
 
 model ProfessionalService {
@@ -158,8 +203,8 @@ model ProfessionalService {
 model ProfessionalCategory {
   professionalId String
   categoryId     String
-  professional   Professional @relation(fields: [professionalId], references: [id])
-  category       Category     @relation(fields: [categoryId], references: [id])
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  category       Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([professionalId, categoryId])
 }
@@ -169,32 +214,76 @@ model Recommendation {
   condominiumId  String
   userId         String
   professionalId String
-  comment        String?
+  comment        String?              @db.Text
   serviceDate    DateTime?
+  rating         Int                  @default(0)
   status         RecommendationStatus @default(ACTIVE)
   recommended    Boolean
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   condominium    Condominium          @relation(fields: [condominiumId], references: [id])
   user           User                 @relation(fields: [userId], references: [id])
-  professional   Professional         @relation(fields: [professionalId], references: [id])
+  professional   Professional         @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 
   @@unique([userId, professionalId])
+  @@index([professionalId, status])
 }
 
 model Review {
-  id             String       @id @default(cuid())
+  id             String        @id @default(cuid())
   condominiumId  String
   userId         String
   professionalId String
   rating         Int
-  comment        String
+  comment        String        @db.Text
   serviceDate    DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  condominium    Condominium  @relation(fields: [condominiumId], references: [id])
-  user           User         @relation(fields: [userId], references: [id])
-  professional   Professional @relation(fields: [professionalId], references: [id])
+  hidden         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  condominium    Condominium   @relation(fields: [condominiumId], references: [id])
+  user           User          @relation(fields: [userId], references: [id])
+  professional   Professional  @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  images         ReviewImage[]
+  likes          ReviewLike[]
+  replies        ReviewReply[]
+
+  @@index([professionalId, hidden])
+}
+
+/// Fotos que o morador anexa ao comentário.
+model ReviewImage {
+  id        String   @id @default(cuid())
+  reviewId  String
+  url       String   @db.Text
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@map("review_images")
+}
+
+model ReviewLike {
+  reviewId  String
+  userId    String
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([reviewId, userId])
+  @@map("review_likes")
+}
+
+model ReviewReply {
+  id        String   @id @default(cuid())
+  reviewId  String
+  userId    String
+  comment   String   @db.Text
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+  @@map("review_replies")
 }
 
 model Favorite {
@@ -204,42 +293,125 @@ model Favorite {
   professionalId String
   createdAt      DateTime     @default(now())
   condominium    Condominium  @relation(fields: [condominiumId], references: [id])
-  user           User         @relation(fields: [userId], references: [id])
-  professional   Professional @relation(fields: [professionalId], references: [id])
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 
   @@unique([userId, professionalId])
 }
 
 model Report {
-  id             String       @id @default(cuid())
+  id             String               @id @default(cuid())
   condominiumId  String
   userId         String
   professionalId String
   reason         String
-  details        String?
-  createdAt      DateTime     @default(now())
-  condominium    Condominium  @relation(fields: [condominiumId], references: [id])
-  user           User         @relation(fields: [userId], references: [id])
-  professional   Professional @relation(fields: [professionalId], references: [id])
+  details        String?              @db.Text
+  status         ReportStatus         @default(PENDENTE)
+  channel        String               @default("App do morador")
+  adminNote      String?              @db.Text
+  notifyParties  Boolean              @default(true)
+  reviewedAt     DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  condominium    Condominium          @relation(fields: [condominiumId], references: [id])
+  user           User                 @relation(fields: [userId], references: [id])
+  professional   Professional         @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  images         ReportImage[]
+  history        ReportHistory[]
+  actions        ProfessionalAction[]
+
+  @@index([status, createdAt])
 }
 
+/// Evidências anexadas pelo morador na denúncia.
+model ReportImage {
+  id        String   @id @default(cuid())
+  reportId  String
+  url       String   @db.Text
+  createdAt DateTime @default(now())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@map("report_images")
+}
+
+/// Linha do tempo da denúncia: recebimento, mudanças de status, parecer e ações.
+model ReportHistory {
+  id        String   @id @default(cuid())
+  reportId  String
+  userId    String?
+  kind      String
+  label     String
+  detail    String?  @db.Text
+  createdAt DateTime @default(now())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([reportId, createdAt])
+  @@map("report_history")
+}
+
+/// Punições aplicadas ao prestador a partir de uma denúncia.
+model ProfessionalAction {
+  id             String                 @id @default(cuid())
+  professionalId String
+  reportId       String?
+  action         ProfessionalActionType
+  label          String
+  reason         String?                @db.Text
+  startsAt       DateTime               @default(now())
+  endsAt         DateTime?
+  active         Boolean                @default(true)
+  createdAt      DateTime               @default(now())
+  professional   Professional           @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  report         Report?                @relation(fields: [reportId], references: [id])
+
+  @@index([professionalId, active])
+  @@map("professional_actions")
+}
+
+/// Foto de capa e trabalhos publicados pelo prestador.
 model ProfessionalImage {
   id             String       @id @default(cuid())
   professionalId String
-  url            String
+  url            String       @db.Text
+  title          String?
+  isCover        Boolean      @default(false)
+  displayOrder   Int          @default(0)
   createdAt      DateTime     @default(now())
-  professional   Professional @relation(fields: [professionalId], references: [id])
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([professionalId, isCover, displayOrder])
+  @@map("professional_images")
 }
 
 model CondominiumSettings {
-  id                  String      @id @default(cuid())
-  condominiumId       String      @unique
-  welcomeMessage      String?
-  supportWhatsapp     String?
-  enableReports       Boolean     @default(true)
-  enableFavorites     Boolean     @default(true)
-  requireUserApproval Boolean     @default(true)
-  condominium         Condominium @relation(fields: [condominiumId], references: [id])
+  id                           String      @id @default(cuid())
+  condominiumId                String      @unique
+  systemName                   String      @default("Terras Alphas Indica")
+  condominiumName              String      @default("Terras Alphas")
+  phone                        String?
+  email                        String?
+  primaryColor                 String      @default("#006538")
+  secondaryColor               String      @default("#ffad00")
+  welcomeMessage               String?     @db.Text
+  supportWhatsapp              String?
+  selfRegistration             Boolean     @default(true)
+  requireUserApproval          Boolean     @default(true)
+  requireEmailVerification     Boolean     @default(false)
+  professionalSelfRegistration Boolean     @default(false)
+  showBlock                    Boolean     @default(true)
+  allowRecommendations         Boolean     @default(true)
+  recommendationApproval       Boolean     @default(true)
+  allowReviews                 Boolean     @default(true)
+  requireComment               Boolean     @default(true)
+  enableReports                Boolean     @default(true)
+  enableFavorites              Boolean     @default(true)
+  updatedAt                    DateTime    @updatedAt
+  condominium                  Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+
+  @@map("condominium_settings")
 }
 
 model RefreshToken {
@@ -248,5 +420,8 @@ model RefreshToken {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }

@@ -45,13 +45,11 @@ export class ResourcesController {
 
   @Get('categories')
   async getCategories() {
-    await this.dataStoreService.syncPublicData();
     return { data: this.dataStoreService.getCategories() };
   }
 
   @Get('categories/:id/services')
   async getCategoryServices(@Param('id') id: string, @Query('includeInactive') includeInactive?: string) {
-    await this.dataStoreService.syncPublicData();
     return { data: this.dataStoreService.getCategoryServices(id, includeInactive === 'true') };
   }
 
@@ -77,13 +75,11 @@ export class ResourcesController {
 
   @Get('professionals')
   async getProfessionals(@Query('category') category?: string, @Query('service') service?: string, @Query('search') search?: string) {
-    await this.dataStoreService.syncPublicData();
     return { data: this.dataStoreService.getProfessionals(category, service, search) };
   }
 
   @Get('professionals/:id/services')
   async getProfessionalServices(@Param('id') id: string) {
-    await this.dataStoreService.syncPublicData();
     return { data: this.dataStoreService.getProfessionalServices(id) };
   }
 
@@ -94,7 +90,6 @@ export class ResourcesController {
 
   @Get('professionals/:id')
   async getProfessionalById(@Param('id') id: string) {
-    await this.dataStoreService.syncPublicData();
     return { data: this.dataStoreService.getProfessionalById(id) };
   }
 
@@ -178,13 +173,11 @@ export class ResourcesController {
 
   @Get('dashboard')
   async getDashboard() {
-    await this.dataStoreService.syncPublicData();
     return { data: this.dataStoreService.getDashboard() };
   }
 
   @Get('dashboard/home')
   async getHomePayload() {
-    await this.dataStoreService.syncPublicData();
     return { data: this.dataStoreService.getHomePayload() };
   }
 
@@ -253,7 +246,6 @@ export class ResourcesController {
 
   @Get('admin/:resource')
   async getAdminRecords(@Param('resource') resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories') {
-    await this.dataStoreService.syncPublicData();
     return { data: await this.dataStoreService.getAdminRecords(resource) };
   }
 
@@ -294,13 +286,11 @@ export class ResourcesController {
 
   @Get('admin-reports')
   async getComplaints() {
-    await this.dataStoreService.syncPublicData();
     return { data: this.dataStoreService.getComplaints() };
   }
 
   @Get('admin-reports/:id')
   async getComplaintDetails(@Param('id') id: string) {
-    await this.dataStoreService.syncPublicData();
     return { data: this.dataStoreService.getComplaintDetails(id) };
   }
 

@@ -19,21 +19,6 @@ import {
 import { PrismaService } from './prisma.service';
 import { SERVICE_ALIASES } from './service-aliases';
 import { ACTION_LABELS, Complaint, ComplaintAction, ComplaintEvent, ComplaintStatus, ProfessionalAction, demoComplaints } from './complaints';
-import { SupabaseRestService } from './supabase-rest.service';
-
-type SupabaseProfessional = {
-  id: string; name: string; company_name: string | null; phone: string; whatsapp: string | null; instagram: string | null;
-  photo_url: string | null; description: string | null; city: string | null; neighborhood: string | null; active: boolean;
-};
-type SupabaseCategory = { id: string; condominium_id: string; name: string; slug: string; icon: string | null; display_order: number; active: boolean };
-type SupabaseCategoryService = { id: string; category_id: string; name: string; slug: string; icon: string | null; display_order: number; active: boolean };
-type SupabaseProfessionalCategory = { professional_id: string; category_id: string };
-type SupabaseProfessionalService = { id: string; professional_id: string; name: string | null; category_service_id: string | null };
-type SupabaseProfessionalStats = { professional_id: string; total_recommendations: number; total_reviews: number; average_rating: number | string | null };
-type SupabaseCondominium = {
-  id: string; name: string; slug: string; logo_url: string | null; cover_url: string | null; primary_color: string | null;
-  secondary_color: string | null; address: string | null; city: string | null; state: string | null; phone: string | null; email: string | null; active: boolean;
-};
 
 @Injectable()
 export class DataStoreService implements OnModuleInit {
@@ -72,122 +57,20 @@ export class DataStoreService implements OnModuleInit {
   ]);
   private readonly usersReady: Promise<void>;
   private databaseAvailable = false;
-  private supabaseAvailable = false;
-  private syncPromise?: Promise<void>;
 
-  constructor(private readonly prisma: PrismaService, private readonly supabase: SupabaseRestService) {
+  constructor(private readonly prisma: PrismaService) {
     this.usersReady = this.initializeUsers();
   }
 
   async onModuleInit() {
     await this.usersReady;
-    if (this.supabase.configured) {
-      try {
-        await this.loadSupabaseData();
-        this.supabaseAvailable = true;
-        this.logger.log(`${this.professionals.length} profissionais carregados do Supabase.`);
-        return;
-      } catch (error) {
-        this.logger.error(`Falha ao carregar o Supabase: ${error instanceof Error ? error.message : ''}`);
-      }
-    }
     try {
       await this.loadDatabaseData();
       this.databaseAvailable = true;
-      this.logger.log('Dados administrativos carregados do PostgreSQL/Supabase.');
+      this.logger.log('Dados administrativos carregados do banco de dados.');
     } catch (error) {
       this.databaseAvailable = false;
-      this.logger.warn(`PostgreSQL indisponível; usando dados locais temporários. ${error instanceof Error ? error.message : ''}`);
-    }
-  }
-
-  async syncPublicData(): Promise<void> {
-    if (!this.supabase.configured) return;
-    if (!this.syncPromise) {
-      this.syncPromise = this.loadSupabaseData()
-        .then(() => { this.supabaseAvailable = true; })
-        .finally(() => { this.syncPromise = undefined; });
-    }
-    return this.syncPromise;
-  }
-
-  private async loadSupabaseData(): Promise<void> {
-    const [condominiums, categories, categoryServices, professionals, professionalCategories, professionalServices, stats] = await Promise.all([
-      this.supabase.select<SupabaseCondominium>('condominiums', 'select=*&order=name.asc'),
-      this.supabase.select<SupabaseCategory>('categories', 'select=*&order=display_order.asc,name.asc'),
-      this.supabase.select<SupabaseCategoryService>('category_services', 'select=*&order=display_order.asc,name.asc'),
-      this.supabase.select<SupabaseProfessional>('professionals', 'select=*&order=name.asc'),
-      this.supabase.select<SupabaseProfessionalCategory>('professional_categories', 'select=professional_id,category_id'),
-      this.supabase.select<SupabaseProfessionalService>('professional_services', 'select=id,professional_id,name,category_service_id'),
-      this.supabase.select<SupabaseProfessionalStats>('professional_stats', 'select=professional_id,total_recommendations,total_reviews,average_rating'),
-    ]);
-
-    const orderedCondominiums = [...condominiums].sort((left, right) => Number(right.slug === 'terras-alphas') - Number(left.slug === 'terras-alphas'));
-    const currentCondominiumId = orderedCondominiums[0]?.id ?? '';
-    this.condominiums.splice(0, this.condominiums.length, ...orderedCondominiums.map((item) => ({
-      id: item.id, name: item.name, slug: item.slug, logo: item.logo_url ?? '', coverImage: item.cover_url ?? '',
-      primaryColor: item.primary_color ?? '#0F5A3C', secondaryColor: item.secondary_color ?? '#F4C542', address: item.address ?? '',
-      city: item.city ?? '', state: item.state ?? '', phone: item.phone ?? '', email: item.email ?? '', active: item.active,
-    })));
-
-    const mappedServices = categoryServices.map((service) => ({
-      id: service.id, categoryId: service.category_id, name: service.name, slug: service.slug, icon: service.icon ?? 'wrench',
-      displayOrder: service.display_order, active: service.active, aliases: SERVICE_ALIASES[service.slug] ?? [],
-    } satisfies DemoCategoryService));
-    const allMappedCategories = categories.map((item) => ({
-      id: item.id, name: item.name, slug: item.slug, icon: item.icon ?? 'grid', displayOrder: item.display_order,
-      active: item.active, services: mappedServices.filter((service) => service.categoryId === item.id),
-    } satisfies DemoCategory));
-    const currentCategoryIds = new Set(categories.filter((item) => !currentCondominiumId || item.condominium_id === currentCondominiumId).map((item) => item.id));
-    this.categories.splice(0, this.categories.length, ...allMappedCategories.filter((item) => currentCategoryIds.has(item.id)));
-    this.categoryServices.splice(0, this.categoryServices.length, ...mappedServices);
-
-    const statsByProfessional = new Map(stats.map((item) => [item.professional_id, item]));
-    const serviceById = new Map(mappedServices.map((item) => [item.id, item]));
-    const defaultCondominiumId = this.condominiums[0]?.id ?? '';
-    this.professionals.splice(0, this.professionals.length, ...professionals.filter((item) => item.active !== false).map((item) => {
-      const categoryIds = professionalCategories.filter((relation) => relation.professional_id === item.id).map((relation) => relation.category_id);
-      const linkedCategories = allMappedCategories.filter((category) => categoryIds.includes(category.id));
-      const fallbackCategoryId = linkedCategories[0]?.id ?? '';
-      const serviceDetails = professionalServices.filter((relation) => relation.professional_id === item.id).map((relation, index) => {
-        const registered = relation.category_service_id ? serviceById.get(relation.category_service_id) : undefined;
-        if (registered) return registered;
-        const name = relation.name?.trim() || 'Serviço não informado';
-        return { id: relation.id, categoryId: fallbackCategoryId, name, slug: this.toSlug(name), icon: 'wrench', displayOrder: index + 1, active: true, aliases: [] } satisfies DemoCategoryService;
-      });
-      const professionalStats = statsByProfessional.get(item.id);
-      const recommendationCount = Number(professionalStats?.total_recommendations ?? 0);
-      return {
-        id: item.id, name: item.name, companyName: item.company_name ?? '', categoryId: fallbackCategoryId,
-        category: linkedCategories[0]?.name ?? 'Sem categoria', categoryIds, categories: linkedCategories,
-        serviceIds: serviceDetails.map((service) => service.id), serviceDetails, services: serviceDetails.map((service) => service.name),
-        rating: Number(professionalStats?.average_rating ?? 0), reviewCount: Number(professionalStats?.total_reviews ?? 0), recommendationCount,
-        city: item.city ?? '', neighborhood: item.neighborhood ?? '', condominiumId: defaultCondominiumId, bio: item.description ?? '',
-        whatsapp: (item.whatsapp ?? item.phone ?? '').replace(/\D/g, ''), phone: item.phone ?? '', instagram: item.instagram ?? '',
-        avatar: item.photo_url ?? '', coverImage: '', featured: recommendationCount > 0,
-      } satisfies DemoProfessional;
-    }));
-
-    // reviews and recommendations created in this session are not in the remote stats view yet
-    this.applyLocalEngagement();
-  }
-
-  private applyLocalEngagement() {
-    for (const professional of this.professionals) {
-      const cover = this.professionalCovers.get(professional.id);
-      if (cover) professional.coverImage = cover;
-      const localReviews = this.reviews.filter((review) => review.professionalId === professional.id);
-      if (localReviews.length) {
-        const remoteTotal = professional.rating * professional.reviewCount;
-        const localTotal = localReviews.reduce((total, review) => total + review.rating, 0);
-        professional.reviewCount += localReviews.length;
-        professional.rating = Number(((remoteTotal + localTotal) / professional.reviewCount).toFixed(1));
-      }
-      const localRecommendations = this.recommendations.filter(
-        (recommendation) => recommendation.professionalId === professional.id && recommendation.recommended && recommendation.status === 'ACTIVE',
-      );
-      professional.recommendationCount += localRecommendations.length;
-      professional.featured = professional.recommendationCount > 0;
+      this.logger.warn(`Banco de dados indisponível; usando dados locais temporários. ${error instanceof Error ? error.message : ''}`);
     }
   }
 
@@ -796,9 +679,6 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async createAdminRecord(resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', payload: Record<string, unknown>) {
-    if (this.supabaseAvailable && resource === 'professionals') return this.createSupabaseProfessional(payload);
-    if (this.supabaseAvailable && resource === 'condominiums') return this.createSupabaseCondominium(payload);
-    if (this.supabaseAvailable && resource === 'categories') return this.createSupabaseCategory(payload);
     if (this.databaseAvailable) return this.createDatabaseRecord(resource, payload);
     const id = `${resource.slice(0, 3)}-${Date.now()}`;
     if (resource === 'categories') {
@@ -857,9 +737,6 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async updateAdminRecord(resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', id: string, payload: Record<string, unknown>) {
-    if (this.supabaseAvailable && resource === 'professionals') return this.updateSupabaseProfessional(id, payload);
-    if (this.supabaseAvailable && resource === 'condominiums') return this.updateSupabaseCondominium(id, payload);
-    if (this.supabaseAvailable && resource === 'categories') return this.updateSupabaseCategory(id, payload);
     if (this.databaseAvailable) return this.updateDatabaseRecord(resource, id, payload);
     const records = resource === 'condominiums' ? this.condominiums : resource === 'professionals' ? this.professionals : resource === 'categories' ? this.categories : this.users;
     const record = records.find((item) => item.id === id);
@@ -879,191 +756,12 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async deleteAdminRecord(resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', id: string) {
-    if (this.supabaseAvailable && resource === 'professionals') return this.deleteSupabaseProfessional(id);
-    if (this.supabaseAvailable && resource === 'condominiums') return this.deleteSupabaseCondominium(id);
-    if (this.supabaseAvailable && resource === 'categories') return this.deleteSupabaseCategory(id);
     if (this.databaseAvailable) return this.deleteDatabaseRecord(resource, id);
     const records = resource === 'condominiums' ? this.condominiums : resource === 'professionals' ? this.professionals : resource === 'categories' ? this.categories : this.users;
     const index = records.findIndex((item) => item.id === id);
     if (index < 0) throw new NotFoundException('Cadastro não encontrado');
     records.splice(index, 1);
     return { id };
-  }
-
-  private supabaseProfessionalPayload(payload: Record<string, unknown>, partial = false) {
-    const values: Record<string, unknown> = {};
-    const assign = (column: string, key: string, transform: (value: unknown) => unknown = (value) => value) => {
-      if (!partial || payload[key] !== undefined) values[column] = transform(payload[key]);
-    };
-    assign('name', 'name', (value) => String(value ?? 'Novo profissional').trim());
-    assign('company_name', 'companyName', (value) => String(value ?? '').trim() || null);
-    assign('phone', 'phone', (value) => String(value ?? '').trim());
-    assign('whatsapp', 'whatsapp', (value) => String(value ?? payload.phone ?? '').replace(/\D/g, '') || null);
-    assign('instagram', 'instagram', (value) => String(value ?? '').trim() || null);
-    assign('photo_url', 'avatar', (value) => String(value ?? '').trim() || null);
-    assign('description', 'bio', (value) => String(value ?? '').trim() || null);
-    assign('city', 'city', (value) => String(value ?? '').trim() || null);
-    assign('neighborhood', 'neighborhood', (value) => String(value ?? '').trim() || null);
-    if (!partial) {
-      values['active'] = payload.active !== false;
-      values['verified'] = Boolean(payload.verified);
-    } else {
-      if (payload.active !== undefined) values['active'] = Boolean(payload.active);
-      if (payload.verified !== undefined) values['verified'] = Boolean(payload.verified);
-    }
-    return values;
-  }
-
-  private supabaseCondominiumPayload(payload: Record<string, unknown>, partial = false) {
-    const values: Record<string, unknown> = {};
-    const assign = (column: string, key: string, transform: (value: unknown) => unknown = (value) => value) => {
-      if (!partial || payload[key] !== undefined) values[column] = transform(payload[key]);
-    };
-    assign('name', 'name', (value) => String(value ?? 'Novo condomínio').trim());
-    assign('slug', 'slug', (value) => this.toSlug(String(value || payload.name || 'novo-condominio')));
-    assign('logo_url', 'logo', (value) => String(value ?? '').trim() || null);
-    assign('cover_url', 'coverImage', (value) => String(value ?? '').trim() || null);
-    assign('address', 'address', (value) => String(value ?? '').trim() || null);
-    assign('city', 'city', (value) => String(value ?? '').trim() || null);
-    assign('state', 'state', (value) => String(value ?? 'MG').trim() || null);
-    assign('phone', 'phone', (value) => String(value ?? '').trim() || null);
-    assign('email', 'email', (value) => String(value ?? '').trim() || null);
-    if (!partial || payload.active !== undefined) values['active'] = payload.active !== false;
-    if (!partial) {
-      values['primary_color'] = String(payload.primaryColor || '#0F5A3C');
-      values['secondary_color'] = String(payload.secondaryColor || '#F4C542');
-    }
-    return values;
-  }
-
-  private supabaseCategoryPayload(payload: Record<string, unknown>, partial = false) {
-    const values: Record<string, unknown> = {};
-    const assign = (column: string, key: string, transform: (value: unknown) => unknown = (value) => value) => {
-      if (!partial || payload[key] !== undefined) values[column] = transform(payload[key]);
-    };
-    assign('name', 'name', (value) => String(value ?? 'Nova categoria').trim());
-    assign('slug', 'slug', (value) => this.toSlug(String(value || payload.name || 'nova-categoria')));
-    assign('icon', 'icon', (value) => String(value ?? 'grid').trim() || 'grid');
-    assign('display_order', 'displayOrder', (value) => Number(value ?? this.categories.length + 1));
-    if (!partial || payload.active !== undefined) values['active'] = payload.active !== false;
-    if (!partial) values['condominium_id'] = String(payload.condominiumId || this.condominiums[0]?.id || '');
-    return values;
-  }
-
-  private async createSupabaseCategory(payload: Record<string, unknown>) {
-    const record = await this.supabase.insert<SupabaseCategory>('categories', this.supabaseCategoryPayload(payload));
-    await this.syncPublicData();
-    return this.categories.find((item) => item.id === record.id);
-  }
-
-  private async updateSupabaseCategory(id: string, payload: Record<string, unknown>) {
-    if (!this.categories.some((item) => item.id === id)) throw new NotFoundException('Categoria nao encontrada');
-    await this.supabase.update<SupabaseCategory>('categories', id, this.supabaseCategoryPayload(payload, true));
-    await this.syncPublicData();
-    return this.categories.find((item) => item.id === id);
-  }
-
-  private async deleteSupabaseCategory(id: string) {
-    if (!this.categories.some((item) => item.id === id)) throw new NotFoundException('Categoria nao encontrada');
-    await this.supabase.delete('categories', id);
-    await this.syncPublicData();
-    return { id };
-  }
-
-  private supabaseCategoryServicePayload(categoryId: string, payload: Record<string, unknown>, partial = false) {
-    const values: Record<string, unknown> = {};
-    const assign = (column: string, key: string, transform: (value: unknown) => unknown = (value) => value) => {
-      if (!partial || payload[key] !== undefined) values[column] = transform(payload[key]);
-    };
-    assign('name', 'name', (value) => String(value ?? '').trim());
-    assign('slug', 'slug', (value) => this.toSlug(String(value || payload.name || 'servico')));
-    assign('icon', 'icon', (value) => String(value ?? 'wrench').trim() || 'wrench');
-    assign('display_order', 'displayOrder', (value) => Number(value ?? this.getCategoryServices(categoryId, true).length + 1));
-    if (!partial || payload.active !== undefined) values['active'] = payload.active !== false;
-    if (!partial) values['category_id'] = categoryId;
-    return values;
-  }
-
-  private async createSupabaseCondominium(payload: Record<string, unknown>) {
-    const record = await this.supabase.insert<SupabaseCondominium>('condominiums', this.supabaseCondominiumPayload(payload));
-    await this.syncPublicData();
-    return this.condominiums.find((item) => item.id === record.id);
-  }
-
-  private async updateSupabaseCondominium(id: string, payload: Record<string, unknown>) {
-    if (!this.condominiums.some((item) => item.id === id)) throw new NotFoundException('Cadastro não encontrado');
-    await this.supabase.update<SupabaseCondominium>('condominiums', id, this.supabaseCondominiumPayload(payload, true));
-    await this.syncPublicData();
-    return this.condominiums.find((item) => item.id === id);
-  }
-
-  private async deleteSupabaseCondominium(id: string) {
-    if (!this.condominiums.some((item) => item.id === id)) throw new NotFoundException('Cadastro não encontrado');
-    await this.supabase.delete('condominiums', id);
-    await this.syncPublicData();
-    return { id };
-  }
-
-  private async createSupabaseProfessional(payload: Record<string, unknown>) {
-    const record = await this.supabase.insert<SupabaseProfessional>('professionals', this.supabaseProfessionalPayload(payload));
-    try {
-      await this.replaceSupabaseProfessionalTaxonomy(record.id, payload);
-    } catch (error) {
-      await this.supabase.delete('professionals', record.id).catch(() => undefined);
-      throw error;
-    }
-    await this.syncPublicData();
-    return this.getProfessionalById(record.id);
-  }
-
-  private async profissionalExiste(id: string) {
-    if (this.getProfessionalById(id)) return true;
-    const registros = await this.supabase
-      .select<SupabaseProfessional>('professionals', `select=id&id=eq.${encodeURIComponent(id)}`)
-      .catch(() => []);
-    return registros.length > 0;
-  }
-
-  private async updateSupabaseProfessional(id: string, payload: Record<string, unknown>) {
-    if (!(await this.profissionalExiste(id))) throw new NotFoundException('Cadastro não encontrado');
-    const values = this.supabaseProfessionalPayload(payload, true);
-    if (Object.keys(values).length) await this.supabase.update<SupabaseProfessional>('professionals', id, values);
-    if (payload.categoryIds !== undefined || payload.categoryId !== undefined || payload.serviceIds !== undefined) {
-      await this.replaceSupabaseProfessionalTaxonomy(id, payload);
-    }
-    await this.syncPublicData();
-    return this.getProfessionalById(id);
-  }
-
-  private async deleteSupabaseProfessional(id: string) {
-    if (!(await this.profissionalExiste(id))) throw new NotFoundException('Cadastro não encontrado');
-    await Promise.all([
-      this.supabase.deleteWhere('professional_services', `professional_id=eq.${encodeURIComponent(id)}`),
-      this.supabase.deleteWhere('professional_categories', `professional_id=eq.${encodeURIComponent(id)}`),
-    ]);
-    await this.supabase.delete('professionals', id);
-    await this.syncPublicData();
-    return { id };
-  }
-
-  private async replaceSupabaseProfessionalTaxonomy(professionalId: string, payload: Record<string, unknown>) {
-    const current = this.getProfessionalById(professionalId);
-    const requestedCategoryIds = this.stringArray(payload.categoryIds, payload.categoryId ?? current?.categoryIds ?? []);
-    const categoryIds = requestedCategoryIds.filter((categoryId) => this.categories.some((category) => category.id === categoryId));
-    if (requestedCategoryIds.length && !categoryIds.length) throw new ConflictException('Selecione ao menos uma categoria válida');
-    const serviceIds = this.stringArray(payload.serviceIds, current?.serviceIds ?? []);
-    await Promise.all([
-      this.supabase.deleteWhere('professional_categories', `professional_id=eq.${encodeURIComponent(professionalId)}`),
-      this.supabase.deleteWhere('professional_services', `professional_id=eq.${encodeURIComponent(professionalId)}`),
-    ]);
-    for (const categoryId of categoryIds) {
-      await this.supabase.insert('professional_categories', { professional_id: professionalId, category_id: categoryId });
-    }
-    for (const serviceId of serviceIds) {
-      const service = this.categoryServices.find((item) => item.id === serviceId);
-      if (!service || (categoryIds.length && !categoryIds.includes(service.categoryId))) continue;
-      await this.supabase.insert('professional_services', { professional_id: professionalId, category_service_id: service.id, name: service.name });
-    }
   }
 
   private async createDatabaseRecord(resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', payload: Record<string, unknown>) {
@@ -1384,11 +1082,6 @@ export class DataStoreService implements OnModuleInit {
     if (!category) throw new NotFoundException('Categoria não encontrada');
     const name = String(payload.name ?? '').trim();
     if (!name) throw new ConflictException('Informe o nome do serviço');
-    if (this.supabaseAvailable) {
-      const record = await this.supabase.insert<SupabaseCategoryService>('category_services', this.supabaseCategoryServicePayload(category.id, { ...payload, name }));
-      await this.syncPublicData();
-      return this.categoryServices.find((service) => service.id === record.id);
-    }
     if (this.databaseAvailable) {
       const aliases = this.stringArray(payload.aliases);
       const record = await this.prisma.categoryService.create({
@@ -1413,11 +1106,6 @@ export class DataStoreService implements OnModuleInit {
   async updateCategoryService(id: string, payload: Record<string, unknown>) {
     const service = this.categoryServices.find((item) => item.id === id);
     if (!service) throw new NotFoundException('Serviço não encontrado');
-    if (this.supabaseAvailable) {
-      await this.supabase.update<SupabaseCategoryService>('category_services', id, this.supabaseCategoryServicePayload(service.categoryId, payload, true));
-      await this.syncPublicData();
-      return this.categoryServices.find((item) => item.id === id);
-    }
     if (this.databaseAvailable) {
       const aliases = payload.aliases === undefined ? undefined : this.stringArray(payload.aliases);
       await this.prisma.$transaction(async (transaction) => {
@@ -1444,12 +1132,6 @@ export class DataStoreService implements OnModuleInit {
 
   async deleteCategoryService(id: string) {
     if (!this.categoryServices.some((service) => service.id === id)) throw new NotFoundException('Serviço não encontrado');
-    if (this.supabaseAvailable) {
-      await this.supabase.deleteWhere('professional_services', 'category_service_id=eq.' + encodeURIComponent(id));
-      await this.supabase.delete('category_services', id);
-      await this.syncPublicData();
-      return { id };
-    }
     if (this.databaseAvailable) {
       await this.prisma.categoryService.delete({ where: { id } });
       await this.loadDatabaseData();
@@ -1748,21 +1430,6 @@ export class DataStoreService implements OnModuleInit {
     const user = this.findUserById(payload.userId);
     if (!user) throw new UnauthorizedException('Sessão inválida');
     let professional = payload.professionalId ? this.getProfessionalById(payload.professionalId) : undefined;
-    if (!professional && this.supabaseAvailable) {
-      // without this the professional would only exist in memory and disappear on the next sync
-      professional = await this.createSupabaseProfessional({
-        name: payload.name,
-        companyName: payload.company ?? '',
-        phone: payload.phone,
-        whatsapp: payload.phone,
-        city: payload.city,
-        neighborhood: payload.neighborhood,
-        bio: payload.company ? `Profissional da empresa ${payload.company}.` : 'Profissional indicado por moradores.',
-        categoryIds: payload.categoryIds?.length ? payload.categoryIds : [this.categories.find((item) => item.name === payload.category)?.id ?? this.categories[0]?.id].filter(Boolean),
-        serviceIds: payload.serviceIds ?? [],
-      });
-      if (!professional) throw new ConflictException('Não foi possível cadastrar o profissional indicado');
-    }
     if (!professional) {
       const categoryIds = payload.categoryIds?.length ? payload.categoryIds : [this.categories.find((item) => item.name === payload.category)?.id ?? this.categories[0].id];
       const categories = this.categories.filter((item) => categoryIds.includes(item.id));

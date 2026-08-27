@@ -1,23 +1,33 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { mkdirSync } from 'fs';
 import { DataStoreService } from '../data/data-store.service';
+import { FileStorageService } from '../data/file-storage.service';
+import type { ArquivoEnviado } from '../data/file-storage.service';
 
-const professionalUploadDirectory = join(process.cwd(), 'uploads', 'professionals');
-const condominiumUploadDirectory = join(process.cwd(), 'uploads', 'condominiums');
-const commentUploadDirectory = join(process.cwd(), 'uploads', 'comments');
-const workUploadDirectory = join(process.cwd(), 'uploads', 'works');
-mkdirSync(professionalUploadDirectory, { recursive: true });
-mkdirSync(condominiumUploadDirectory, { recursive: true });
-mkdirSync(commentUploadDirectory, { recursive: true });
+const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
+
+// Os arquivos ficam em memoria e vao para o Supabase Storage; no disco local
+// eles se perderiam a cada deploy da hospedagem.
+const opcoesDeUpload = (maximoMb: number) => ({
+  limits: { fileSize: maximoMb * 1024 * 1024 },
+  fileFilter: (
+    _request: unknown,
+    file: { mimetype: string },
+    callback: (erro: Error | null, aceito: boolean) => void,
+  ) => {
+    const aceito = TIPOS_ACEITOS.includes(file.mimetype);
+    callback(aceito ? null : new BadRequestException('Envie imagens PNG, JPG ou WebP.'), aceito);
+  },
+});
 
 @ApiTags('resources')
 @Controller()
 export class ResourcesController {
-  constructor(private readonly dataStoreService: DataStoreService) {}
+  constructor(
+    private readonly dataStoreService: DataStoreService,
+    private readonly fileStorageService: FileStorageService,
+  ) {}
 
   @Get('condominiums')
   getCondominiums() {
@@ -215,91 +225,31 @@ export class ResourcesController {
   }
 
   @Post('uploads/comments')
-  @UseInterceptors(
-    FilesInterceptor('files', 10, {
-      storage: diskStorage({
-        destination: commentUploadDirectory,
-        filename: (_request, file, callback) => {
-          const extension = extname(file.originalname).toLowerCase() || '.jpg';
-          callback(null, `comment-${Date.now()}-${Math.round(Math.random() * 1_000_000)}${extension}`);
-        },
-      }),
-      limits: { fileSize: 10 * 1024 * 1024 },
-      fileFilter: (_request, file, callback) => {
-        const accepted = ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype);
-        callback(accepted ? null : new BadRequestException('Envie imagens PNG, JPG ou WebP.'), accepted);
-      },
-    }),
-  )
-  uploadCommentPhotos(@UploadedFiles() files: Array<{ filename: string }> = []) {
+  @UseInterceptors(FilesInterceptor('files', 10, opcoesDeUpload(10)))
+  async uploadCommentPhotos(@UploadedFiles() files: ArquivoEnviado[] = []) {
     if (!files.length) throw new BadRequestException('Selecione ao menos uma foto para enviar.');
-    return { data: files.map((file) => `/uploads/comments/${file.filename}`) };
+    return { data: await this.fileStorageService.salvarVarios('comments', files) };
   }
 
   @Post('uploads/works')
-  @UseInterceptors(
-    FilesInterceptor('files', 10, {
-      storage: diskStorage({
-        destination: workUploadDirectory,
-        filename: (_request, file, callback) => {
-          const extension = extname(file.originalname).toLowerCase() || '.jpg';
-          callback(null, `work-${Date.now()}-${Math.round(Math.random() * 1_000_000)}${extension}`);
-        },
-      }),
-      limits: { fileSize: 10 * 1024 * 1024 },
-      fileFilter: (_request, file, callback) => {
-        const accepted = ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype);
-        callback(accepted ? null : new BadRequestException('Envie imagens PNG, JPG ou WebP.'), accepted);
-      },
-    }),
-  )
-  uploadWorkPhotos(@UploadedFiles() files: Array<{ filename: string }> = []) {
+  @UseInterceptors(FilesInterceptor('files', 10, opcoesDeUpload(10)))
+  async uploadWorkPhotos(@UploadedFiles() files: ArquivoEnviado[] = []) {
     if (!files.length) throw new BadRequestException('Selecione ao menos uma foto para enviar.');
-    return { data: files.map((file) => `/uploads/works/${file.filename}`) };
+    return { data: await this.fileStorageService.salvarVarios('works', files) };
   }
 
   @Post('admin/uploads/professionals')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: professionalUploadDirectory,
-        filename: (_request, file, callback) => {
-          const extension = extname(file.originalname).toLowerCase() || '.jpg';
-          callback(null, `professional-${Date.now()}-${Math.round(Math.random() * 1_000_000)}${extension}`);
-        },
-      }),
-      limits: { fileSize: 5 * 1024 * 1024 },
-      fileFilter: (_request, file, callback) => {
-        const accepted = ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype);
-        callback(accepted ? null : new BadRequestException('Envie uma imagem PNG, JPG ou WebP.'), accepted);
-      },
-    }),
-  )
-  uploadProfessionalPhoto(@UploadedFile() file?: { filename: string }) {
+  @UseInterceptors(FileInterceptor('file', opcoesDeUpload(5)))
+  async uploadProfessionalPhoto(@UploadedFile() file?: ArquivoEnviado) {
     if (!file) throw new BadRequestException('Selecione uma foto para enviar.');
-    return { data: { url: `/uploads/professionals/${file.filename}` } };
+    return { data: { url: await this.fileStorageService.salvar('professionals', file) } };
   }
 
   @Post('admin/uploads/condominiums')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: condominiumUploadDirectory,
-        filename: (_request, file, callback) => {
-          const extension = extname(file.originalname).toLowerCase() || '.jpg';
-          callback(null, `condominium-${Date.now()}-${Math.round(Math.random() * 1_000_000)}${extension}`);
-        },
-      }),
-      limits: { fileSize: 5 * 1024 * 1024 },
-      fileFilter: (_request, file, callback) => {
-        const accepted = ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype);
-        callback(accepted ? null : new BadRequestException('Envie uma imagem PNG, JPG ou WebP.'), accepted);
-      },
-    }),
-  )
-  uploadCondominiumPhoto(@UploadedFile() file?: { filename: string }) {
+  @UseInterceptors(FileInterceptor('file', opcoesDeUpload(5)))
+  async uploadCondominiumPhoto(@UploadedFile() file?: ArquivoEnviado) {
     if (!file) throw new BadRequestException('Selecione uma foto para enviar.');
-    return { data: { url: `/uploads/condominiums/${file.filename}` } };
+    return { data: { url: await this.fileStorageService.salvar('condominiums', file) } };
   }
 
   @Get('admin/:resource')

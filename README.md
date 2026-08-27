@@ -75,6 +75,11 @@ recusa subir sem eles, para não usar os segredos de desenvolvimento.
 
 Há também um `backend/Dockerfile` caso prefira Railway, Fly.io ou qualquer host com Docker.
 
+As fotos enviadas (perfis, capas, comentários e trabalhos) vão para o **Supabase Storage**,
+no bucket `uploads`, criado automaticamente no primeiro envio. Sem o Supabase configurado,
+elas caem no disco local, em `backend/uploads/` — bom para desenvolvimento, mas some a cada
+deploy na hospedagem.
+
 > Não publique o backend como função serverless (Vercel Functions, Lambda). Ele mantém sessões,
 > avaliações e favoritos em memória e grava as fotos em disco — comportamentos que exigem um
 > processo contínuo.

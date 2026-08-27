@@ -750,3 +750,8 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .install-fechar svg{width:15px;height:15px}
 @keyframes install-sobe{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
 @media(display-mode:standalone){.install-banner{display:none}}
+
+/* Marcador de campo obrigatorio sempre colado ao texto do rotulo */
+label i{white-space:nowrap}
+label>span{display:block}
+.category-field>span,.service-modal label>span{color:inherit;font-size:inherit;font-weight:inherit}

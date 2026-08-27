@@ -93,10 +93,10 @@ type IconTarget = 'category' | 'service';
           <article class="category-admin-panel category-data-panel">
             <h2><span>1.</span> Dados da categoria</h2>
             <div class="category-form-grid">
-              <label class="category-field">Nome da categoria <i>*</i>
+              <label class="category-field"><span>Nome da categoria <i>*</i></span>
                 <input [(ngModel)]="draft.name" (ngModelChange)="updateName($event)" placeholder="Ex.: Eletricista" />
               </label>
-              <label class="category-field">Slug <i>*</i>
+              <label class="category-field"><span>Slug <i>*</i></span>
                 <input [(ngModel)]="draft.slug" placeholder="eletricista" />
                 <small>Usado na URL e buscas internas. Ex.: eletricista</small>
               </label>
@@ -106,11 +106,11 @@ type IconTarget = 'category' | 'service';
                 <div><span class="taxonomy-icon large"><img *ngIf="iconImage(draft.icon) as iconUrl; else categoryGlyph" [src]="iconUrl" alt="Ícone da categoria" /><ng-template #categoryGlyph>{{ iconGlyph(draft.icon) }}</ng-template></span><button type="button" (click)="openIconPicker('category')"><svg lucideUpload /> Alterar ícone</button></div>
                 <small>Ícone que representa a categoria no app</small>
               </div>
-              <label class="category-field compact">Ordem de exibição <i>*</i>
+              <label class="category-field compact"><span>Ordem de exibição <i>*</i></span>
                 <input type="number" min="1" [(ngModel)]="draft.displayOrder" />
                 <small>Define a posição da categoria na listagem</small>
               </label>
-              <label class="category-field compact">Status <i>*</i>
+              <label class="category-field compact"><span>Status <i>*</i></span>
                 <app-searchable-select [(ngModel)]="draft.active" [items]="activeOptions" valueKey="value" labelKey="label" searchPlaceholder="Pesquisar status..." />
                 <small>Categoria visível para moradores</small>
               </label>
@@ -156,8 +156,8 @@ type IconTarget = 'category' | 'service';
     <div *ngIf="serviceEditorOpen()" class="admin-modal-backdrop" (click)="closeServiceEditor()">
       <form class="admin-modal category-service-modal" (click)="$event.stopPropagation()" (ngSubmit)="saveService()">
         <header><div><h2>{{ serviceDraft.id ? 'Editar serviço' : 'Adicionar serviço' }}</h2><p>Vincule um serviço e suas palavras-chave à categoria.</p></div><button type="button" (click)="closeServiceEditor()"><svg lucideX /></button></header>
-        <label>Nome do serviço <i>*</i><input name="serviceName" required [(ngModel)]="serviceDraft.name" (ngModelChange)="updateServiceName($event)" placeholder="Ex.: Tomada" /></label>
-        <label>Slug <i>*</i><input name="serviceSlug" required [(ngModel)]="serviceDraft.slug" placeholder="tomada" /></label>
+        <label><span>Nome do serviço <i>*</i></span><input name="serviceName" required [(ngModel)]="serviceDraft.name" (ngModelChange)="updateServiceName($event)" placeholder="Ex.: Tomada" /></label>
+        <label><span>Slug <i>*</i></span><input name="serviceSlug" required [(ngModel)]="serviceDraft.slug" placeholder="tomada" /></label>
         <div class="service-icon-selection"><b>Ícone do serviço <i>*</i></b><div><span class="taxonomy-icon large"><img *ngIf="iconImage(serviceDraft.icon) as iconUrl; else modalServiceGlyph" [src]="iconUrl" alt="Ícone escolhido" /><ng-template #modalServiceGlyph>{{ iconGlyph(serviceDraft.icon) }}</ng-template></span><button type="button" class="secondary-button" (click)="openIconPicker('service')"><svg lucideUpload /> Escolher ou enviar ícone</button></div></div>
         <label>Sinônimos / palavras-chave<textarea name="serviceAliases" [(ngModel)]="serviceAliasesText" placeholder="tomadas, plug, ponto elétrico"></textarea><small>Separe os termos por vírgulas.</small></label>
         <div class="service-modal-grid"><label>Ordem<input name="serviceOrder" type="number" min="1" [(ngModel)]="serviceDraft.displayOrder" /></label><label>Status<app-searchable-select name="serviceActive" [(ngModel)]="serviceDraft.active" [items]="activeOptions" valueKey="value" labelKey="label" searchPlaceholder="Pesquisar status..." /></label></div>

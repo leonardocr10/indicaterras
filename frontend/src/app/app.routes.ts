@@ -20,6 +20,8 @@ import { AdminCategoryPageComponent } from './admin-category-page';
 import { AdminReviewDetailsPageComponent, AdminReviewsPageComponent } from './admin-reviews-page';
 import { CommentsPageComponent } from './comments-page';
 import { ProfessionalAccountPageComponent } from './professional-account-page';
+import { AdminReportsPageComponent } from './admin-reports-page';
+import { AdminReportDetailsPageComponent } from './admin-report-details-page';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -66,7 +68,8 @@ export const routes: Routes = [
       { path: 'avaliacoes', component: AdminReviewsPageComponent },
       { path: 'avaliacoes/:id', component: AdminReviewDetailsPageComponent },
       { path: 'indicacoes', component: AdminSectionPageComponent, data: { section: 'recommendations' } },
-      { path: 'denuncias', component: AdminSectionPageComponent, data: { section: 'reports' } },
+      { path: 'denuncias', component: AdminReportsPageComponent },
+      { path: 'denuncias/:id', component: AdminReportDetailsPageComponent },
       { path: 'configuracoes', component: AdminSectionPageComponent, data: { section: 'settings' } },
       { path: 'relatorios', component: AdminSectionPageComponent, data: { section: 'reports-dashboard' } },
     ],

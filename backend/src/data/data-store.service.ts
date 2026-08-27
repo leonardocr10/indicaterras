@@ -18,6 +18,7 @@ import {
 } from './demo-data';
 import { PrismaService } from './prisma.service';
 import { SERVICE_ALIASES } from './service-aliases';
+import { ACTION_LABELS, Complaint, ComplaintAction, ComplaintEvent, ComplaintStatus, ProfessionalAction, demoComplaints } from './complaints';
 import { SupabaseRestService } from './supabase-rest.service';
 
 type SupabaseProfessional = {
@@ -49,6 +50,9 @@ export class DataStoreService implements OnModuleInit {
   private readonly reviewImages = new Map<string, string[]>();
   private readonly professionalByUserId = new Map<string, string>();
   private readonly professionalCovers = new Map<string, string>();
+  private readonly complaints: Complaint[] = [];
+  private readonly professionalActions: ProfessionalAction[] = [];
+  private complaintsVinculadas = false;
   private readonly professionalWorks = new Map<string, Array<{ id: string; image: string; title: string; createdAt: string }>>();
   private readonly reviewLikes = new Map<string, Set<string>>();
   private readonly reviewReplies = new Map<string, Array<{ id: string; userId: string; userName: string; comment: string; createdAt: string }>>();
@@ -1012,8 +1016,16 @@ export class DataStoreService implements OnModuleInit {
     return this.getProfessionalById(record.id);
   }
 
+  private async profissionalExiste(id: string) {
+    if (this.getProfessionalById(id)) return true;
+    const registros = await this.supabase
+      .select<SupabaseProfessional>('professionals', `select=id&id=eq.${encodeURIComponent(id)}`)
+      .catch(() => []);
+    return registros.length > 0;
+  }
+
   private async updateSupabaseProfessional(id: string, payload: Record<string, unknown>) {
-    if (!this.getProfessionalById(id)) throw new NotFoundException('Cadastro não encontrado');
+    if (!(await this.profissionalExiste(id))) throw new NotFoundException('Cadastro não encontrado');
     const values = this.supabaseProfessionalPayload(payload, true);
     if (Object.keys(values).length) await this.supabase.update<SupabaseProfessional>('professionals', id, values);
     if (payload.categoryIds !== undefined || payload.categoryId !== undefined || payload.serviceIds !== undefined) {
@@ -1024,7 +1036,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   private async deleteSupabaseProfessional(id: string) {
-    if (!this.getProfessionalById(id)) throw new NotFoundException('Cadastro não encontrado');
+    if (!(await this.profissionalExiste(id))) throw new NotFoundException('Cadastro não encontrado');
     await Promise.all([
       this.supabase.deleteWhere('professional_services', `professional_id=eq.${encodeURIComponent(id)}`),
       this.supabase.deleteWhere('professional_categories', `professional_id=eq.${encodeURIComponent(id)}`),
@@ -1466,6 +1478,181 @@ export class DataStoreService implements OnModuleInit {
       await this.loadDatabaseData();
     } else this.updateMemoryProfessionalTaxonomy(professional, { categoryIds: professional.categoryIds, serviceIds: validIds });
     return this.getProfessionalServices(id);
+  }
+
+
+  // ---------- Denúncias ----------
+
+  /** As denúncias de demonstração são amarradas a profissionais reais depois do primeiro sync. */
+  private prepararDenuncias() {
+    if (!this.professionals.length) return;
+    if (!this.complaints.length) {
+      demoComplaints.forEach((base, indice) => {
+        const profissional = this.professionals[indice % this.professionals.length];
+        this.complaints.push({
+          ...base,
+          professionalId: profissional.id,
+          professionalName: profissional.name,
+          history: [
+            { id: `${base.id}-h1`, at: base.createdAt, label: 'Denúncia recebida', kind: 'received' },
+            ...(base.status === 'Em análise' || base.status === 'Resolvida'
+              ? [{ id: `${base.id}-h2`, at: base.createdAt, label: `Status alterado para ${base.status}`, kind: 'status' as const }]
+              : []),
+          ],
+        });
+      });
+      this.complaintsVinculadas = true;
+      return;
+    }
+    if (this.complaintsVinculadas) return;
+    for (const [indice, denuncia] of this.complaints.entries()) {
+      const profissional = this.getProfessionalById(denuncia.professionalId) ?? this.professionals[indice % this.professionals.length];
+      denuncia.professionalId = profissional.id;
+      denuncia.professionalName = profissional.name;
+    }
+    this.complaintsVinculadas = true;
+  }
+
+  private registrarEvento(denuncia: Complaint, label: string, kind: ComplaintEvent['kind'], detail?: string) {
+    denuncia.history.unshift({
+      id: `${denuncia.id}-${Date.now()}`,
+      at: new Date().toISOString(),
+      label,
+      detail,
+      kind,
+    });
+  }
+
+  private resumoDoProfissional(professionalId: string) {
+    const profissional = this.getProfessionalById(professionalId);
+    const acoes = this.professionalActions.filter((a) => a.professionalId === professionalId);
+    const ultima = acoes[0];
+    const suspensaoAtiva = ultima?.until && Date.parse(ultima.until) > Date.now() ? ultima : undefined;
+    let status = 'Ativo no condomínio';
+    if (acoes.some((a) => a.action === 'block')) status = 'Bloqueado permanentemente';
+    else if (suspensaoAtiva) status = `Suspenso até ${new Date(suspensaoAtiva.until as string).toLocaleDateString('pt-BR')}`;
+    else if (ultima?.action === 'hide') status = 'Oculto do app';
+    else if (ultima?.action === 'warn') status = 'Advertido';
+    return {
+      id: professionalId,
+      name: profissional?.name ?? 'Profissional indisponível',
+      category: profissional?.category ?? 'Sem categoria',
+      avatar: profissional?.avatar ?? '',
+      rating: profissional?.rating ?? 0,
+      reviewCount: profissional?.reviewCount ?? 0,
+      complaintCount: this.complaints.filter((c) => c.professionalId === professionalId).length,
+      phone: profissional?.phone ?? '',
+      whatsapp: profissional?.whatsapp ?? '',
+      status,
+      actions: acoes,
+    };
+  }
+
+  private linhaDaDenuncia(denuncia: Complaint) {
+    const criada = new Date(denuncia.createdAt);
+    return {
+      id: denuncia.id,
+      resident: denuncia.residentName,
+      residentInitials: this.initials(denuncia.residentName),
+      residentPlace: [denuncia.residentBlock, denuncia.residentUnit].filter(Boolean).join(' - '),
+      professionalId: denuncia.professionalId,
+      professional: denuncia.professionalName,
+      professionalCategory: this.getProfessionalById(denuncia.professionalId)?.category ?? 'Sem categoria',
+      reason: denuncia.reason,
+      description: denuncia.description,
+      date: criada.toLocaleDateString('pt-BR'),
+      time: criada.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      status: denuncia.status,
+      channel: denuncia.channel,
+    };
+  }
+
+  getComplaints() {
+    this.prepararDenuncias();
+    return this.complaints
+      .slice()
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+      .map((denuncia) => this.linhaDaDenuncia(denuncia));
+  }
+
+  getComplaintDetails(id: string) {
+    this.prepararDenuncias();
+    const denuncia = this.complaints.find((c) => c.id === id);
+    if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
+    const jaVisualizou = denuncia.history.some((h) => h.kind === 'view');
+    if (!jaVisualizou) this.registrarEvento(denuncia, 'Administrador visualizou os anexos', 'view');
+    return {
+      ...this.linhaDaDenuncia(denuncia),
+      createdAt: denuncia.createdAt,
+      images: denuncia.images,
+      history: denuncia.history,
+      adminNote: denuncia.adminNote,
+      notifyParties: denuncia.notifyParties,
+      professionalSummary: this.resumoDoProfissional(denuncia.professionalId),
+    };
+  }
+
+  updateComplaintStatus(id: string, status: ComplaintStatus) {
+    this.prepararDenuncias();
+    const denuncia = this.complaints.find((c) => c.id === id);
+    if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
+    const permitidos: ComplaintStatus[] = ['Pendente', 'Em análise', 'Urgente', 'Resolvida', 'Ignorada'];
+    if (!permitidos.includes(status)) throw new ConflictException('Status inválido para a denúncia');
+    denuncia.status = status;
+    this.registrarEvento(denuncia, `Status alterado para ${status}`, 'status');
+    return this.getComplaintDetails(id);
+  }
+
+  saveComplaintNote(id: string, note: string, notify: boolean) {
+    this.prepararDenuncias();
+    const denuncia = this.complaints.find((c) => c.id === id);
+    if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
+    denuncia.adminNote = String(note ?? '').trim();
+    denuncia.notifyParties = Boolean(notify);
+    this.registrarEvento(
+      denuncia,
+      'Parecer administrativo registrado',
+      'note',
+      notify ? 'Morador e prestador serão notificados.' : undefined,
+    );
+    return this.getComplaintDetails(id);
+  }
+
+  async applyComplaintAction(id: string, action: ComplaintAction) {
+    this.prepararDenuncias();
+    const denuncia = this.complaints.find((c) => c.id === id);
+    if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
+    if (!ACTION_LABELS[action]) throw new ConflictException('Ação inválida');
+
+    if (action === 'restore') {
+      // limpa as punicoes e devolve o profissional para as listagens
+      for (let i = this.professionalActions.length - 1; i >= 0; i--) {
+        if (this.professionalActions[i].professionalId === denuncia.professionalId) this.professionalActions.splice(i, 1);
+      }
+      await this.updateAdminRecord('professionals', denuncia.professionalId, { active: true });
+      this.registrarEvento(denuncia, ACTION_LABELS.restore, 'action');
+      return this.getComplaintDetails(id);
+    }
+
+    const dias = action === 'suspend7' ? 7 : action === 'suspend30' ? 30 : 0;
+    const registro: ProfessionalAction = {
+      id: `acao-${Date.now()}`,
+      complaintId: denuncia.id,
+      professionalId: denuncia.professionalId,
+      action,
+      label: ACTION_LABELS[action],
+      until: dias ? new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString() : null,
+      createdAt: new Date().toISOString(),
+    };
+    this.professionalActions.unshift(registro);
+
+    // esconder, suspender ou bloquear tira o profissional das listagens do app
+    if (action !== 'warn') {
+      await this.updateAdminRecord('professionals', denuncia.professionalId, { active: false }).catch(() => undefined);
+    }
+
+    this.registrarEvento(denuncia, registro.label, 'action');
+    return this.getComplaintDetails(id);
   }
 
   getProfessionalById(id: string): DemoProfessional | undefined {

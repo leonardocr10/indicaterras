@@ -4,6 +4,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { DataStoreService } from '../data/data-store.service';
 import { FileStorageService } from '../data/file-storage.service';
 import type { ArquivoEnviado } from '../data/file-storage.service';
+import type { ComplaintAction, ComplaintStatus } from '../data/complaints';
 
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -291,6 +292,33 @@ export class ResourcesController {
   @Patch('admin-reviews/:id/response')
   saveAdminReviewResponse(@Param('id') id: string, @Body('response') response: string) {
     return { data: this.dataStoreService.saveAdminReviewResponse(id, response ?? '') };
+  }
+
+  @Get('admin-reports')
+  async getComplaints() {
+    await this.dataStoreService.syncPublicData();
+    return { data: this.dataStoreService.getComplaints() };
+  }
+
+  @Get('admin-reports/:id')
+  async getComplaintDetails(@Param('id') id: string) {
+    await this.dataStoreService.syncPublicData();
+    return { data: this.dataStoreService.getComplaintDetails(id) };
+  }
+
+  @Patch('admin-reports/:id/status')
+  updateComplaintStatus(@Param('id') id: string, @Body('status') status: ComplaintStatus) {
+    return { data: this.dataStoreService.updateComplaintStatus(id, status) };
+  }
+
+  @Patch('admin-reports/:id/note')
+  saveComplaintNote(@Param('id') id: string, @Body('note') note: string, @Body('notify') notify = true) {
+    return { data: this.dataStoreService.saveComplaintNote(id, note, notify) };
+  }
+
+  @Post('admin-reports/:id/actions')
+  async applyComplaintAction(@Param('id') id: string, @Body('action') action: ComplaintAction) {
+    return { data: await this.dataStoreService.applyComplaintAction(id, action) };
   }
 
   @Get('admin-settings')

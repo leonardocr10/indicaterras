@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
-import { ApiResponse, Category, CategoryService, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, ProfessionalWork, Review } from '../models';
+import { ApiResponse, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, ProfessionalWork, Review } from '../models';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
@@ -205,6 +205,26 @@ export class ApiService {
     return this.http
       .delete<ApiResponse<ProfessionalWork[]>>(`${this.baseUrl}/me/professional/works/${workId}?userId=${encodeURIComponent(userId)}`)
       .pipe(map((response) => response.data));
+  }
+
+  getComplaints() {
+    return this.http.get<ApiResponse<ComplaintRow[]>>(`${this.baseUrl}/admin-reports`).pipe(map((response) => response.data));
+  }
+
+  getComplaintDetails(id: string) {
+    return this.http.get<ApiResponse<ComplaintDetails>>(`${this.baseUrl}/admin-reports/${id}`).pipe(map((response) => response.data));
+  }
+
+  updateComplaintStatus(id: string, status: string) {
+    return this.http.patch<ApiResponse<ComplaintDetails>>(`${this.baseUrl}/admin-reports/${id}/status`, { status }).pipe(map((response) => response.data));
+  }
+
+  saveComplaintNote(id: string, note: string, notify: boolean) {
+    return this.http.patch<ApiResponse<ComplaintDetails>>(`${this.baseUrl}/admin-reports/${id}/note`, { note, notify }).pipe(map((response) => response.data));
+  }
+
+  applyComplaintAction(id: string, action: string) {
+    return this.http.post<ApiResponse<ComplaintDetails>>(`${this.baseUrl}/admin-reports/${id}/actions`, { action }).pipe(map((response) => response.data));
   }
 
   getAdminSection(section: 'reviews' | 'recommendations' | 'reports') {

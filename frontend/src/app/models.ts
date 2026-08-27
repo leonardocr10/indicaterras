@@ -89,6 +89,51 @@ export interface ProfessionalComment extends Review {
   replies: CommentReply[];
 }
 
+export interface ComplaintRow {
+  id: string;
+  resident: string;
+  residentInitials: string;
+  residentPlace: string;
+  professionalId: string;
+  professional: string;
+  professionalCategory: string;
+  reason: string;
+  description: string;
+  date: string;
+  time: string;
+  status: string;
+  channel: string;
+}
+
+export interface ComplaintEvent {
+  id: string;
+  at: string;
+  label: string;
+  detail?: string;
+  kind: 'received' | 'status' | 'view' | 'action' | 'note';
+}
+
+export interface ComplaintDetails extends ComplaintRow {
+  createdAt: string;
+  images: string[];
+  history: ComplaintEvent[];
+  adminNote: string;
+  notifyParties: boolean;
+  professionalSummary: {
+    id: string;
+    name: string;
+    category: string;
+    avatar: string;
+    rating: number;
+    reviewCount: number;
+    complaintCount: number;
+    phone: string;
+    whatsapp: string;
+    status: string;
+    actions: Array<{ id: string; label: string; createdAt: string; until: string | null }>;
+  };
+}
+
 export interface ProfessionalWork {
   id: string;
   image: string;

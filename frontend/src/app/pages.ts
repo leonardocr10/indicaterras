@@ -678,7 +678,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'professional-profile-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideArrowLeft, LucideShare2, LucideHeart, LucideMessageCircle, LucidePhone, LucideUsersRound, LucideCheckCircle2],
+  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideArrowLeft, LucideShare2, LucideHeart, LucideMessageCircle, LucidePhone, LucideStar, LucideUsersRound, LucideCheckCircle2],
   template: `
     <section class="mobile-page profile-page" *ngIf="professional() as professional">
       <header class="profile-topbar">
@@ -710,6 +710,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
         <div class="quick-actions">
           <a [href]="whatsappLink(professional)" target="_blank" rel="noopener"><b><svg lucideMessageCircle /></b>WhatsApp</a>
           <a [href]="phoneLink(professional)"><b><svg lucidePhone /></b>Ligar</a>
+          <a [routerLink]="['/app/profissional', professional.id, 'comentarios']" [queryParams]="{ avaliar: 1 }"><b><svg lucideStar /></b>Avaliar</a>
           <button type="button" (click)="shareProfessional(professional)"><b><svg lucideShare2 /></b>Compartilhar</button>
         </div>
         <section class="detail-section" *ngIf="professional.bio">
@@ -740,6 +741,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
             </a>
           </div>
           <ng-template #noCommentPhotos><p class="profile-comments-empty">{{ commentCount() ? 'Os comentários deste profissional ainda não têm fotos.' : 'Este profissional ainda não recebeu comentários.' }}</p></ng-template>
+          <a class="profile-rate-button" [routerLink]="['/app/profissional', professional.id, 'comentarios']" [queryParams]="{ avaliar: 1 }"><svg lucideStar />{{ commentCount() ? 'Avaliar este profissional' : 'Seja o primeiro a avaliar' }}</a>
         </section>
       </div>
       <button *ngIf="workLightbox()" class="comment-lightbox" type="button" (click)="workLightbox.set('')" aria-label="Fechar foto ampliada"><img [src]="workLightbox()" alt="Foto do trabalho ampliada" /></button>

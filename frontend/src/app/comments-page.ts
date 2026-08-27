@@ -107,6 +107,14 @@ export class CommentsPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.professionalId.set(this.route.snapshot.paramMap.get('id') ?? '');
+    // quem chega pelo botao "Avaliar" ja encontra o campo pronto para escrever
+    if (this.route.snapshot.queryParamMap.get('avaliar')) {
+      setTimeout(() => {
+        const campo = this.composer()?.nativeElement;
+        campo?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        campo?.focus();
+      }, 250);
+    }
     this.api.getProfessional(this.professionalId()).subscribe((professional) => this.professional.set(professional));
     this.loadComments();
   }

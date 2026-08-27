@@ -852,3 +852,7 @@ label>span{display:block}
 @media(max-width:1180px){.report-detail-grid{grid-template-columns:1fr}.report-facts{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:780px){.report-people{grid-template-columns:1fr}.report-facts{grid-template-columns:repeat(2,minmax(0,1fr))}.report-detail-actions{width:100%}.report-actions{flex-wrap:wrap}}
 .report-action.restore{border:1px solid #b9d6c7;color:#0a6b45;background:#eaf5ef}
+
+/* Botao de avaliar no perfil do profissional */
+.profile-rate-button{margin-top:12px;min-height:44px;padding:11px 16px;border:1px solid #b9d6c7;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:9px;color:var(--primary);background:#f4faf6;font-size:14px;font-weight:600;text-decoration:none}
+.profile-rate-button svg{width:17px;height:17px}

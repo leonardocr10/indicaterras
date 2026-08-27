@@ -737,7 +737,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .professional-card .card-phone{color:#0f6b45}
 
 /* Convite para instalar o app */
-.install-banner{z-index:60;position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(calc(100% - 24px),406px);padding:12px 13px;border:1px solid #e2ece6;border-radius:16px;display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;align-items:center;gap:11px;background:#fff;box-shadow:0 14px 34px rgba(8,38,26,.18);animation:install-sobe .28s ease-out}
+.install-banner{z-index:60;position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(calc(100% - 24px),406px);padding:12px 13px;border:1px solid #e2ece6;border-radius:16px;display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;align-items:center;gap:11px;background:#fff;box-shadow:0 14px 34px rgba(8,38,26,.18);animation:install-sobe .28s ease-out}
 .install-banner>img{width:44px;height:44px;border-radius:11px;border:1px solid #eef2f0}
 .install-texto{min-width:0}
 .install-texto strong{display:block;color:#123c2c;font-size:13px;line-height:18px}
@@ -856,3 +856,9 @@ label>span{display:block}
 /* Botao de avaliar no perfil do profissional */
 .profile-rate-button{margin-top:12px;min-height:44px;padding:11px 16px;border:1px solid #b9d6c7;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:9px;color:var(--primary);background:#f4faf6;font-size:14px;font-weight:600;text-decoration:none}
 .profile-rate-button svg{width:17px;height:17px}
+.install-banner.acima-da-navegacao{bottom:calc(96px + env(safe-area-inset-bottom))}
+
+/* Respiro entre a linha de avaliacoes e os botoes de contato.
+   Usa margem no bloco de cima para nao dobrar o espaco quando o selo
+   de recomendacoes aparece entre os dois. */
+.profile-meta{margin-bottom:17px}

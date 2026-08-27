@@ -15,30 +15,32 @@ const CHAVE_DISPENSADO = 'alphas-indica-instalacao-dispensada';
   standalone: true,
   imports: [CommonModule, LucideDownload, LucideShare, LucideX],
   template: `
-    <aside *ngIf="visivel()" class="install-banner" role="dialog" aria-label="Instalar aplicativo">
+    <aside *ngIf="visivel()" class="install-banner" [class.acima-da-navegacao]="comNavegacao()" role="dialog" aria-label="Instalar aplicativo">
       <img src="icons/icon-96x96.png" alt="" />
       <div class="install-texto">
         <strong>Instalar o Alphas Indica</strong>
-        <p *ngIf="!ehIos()">Adicione na tela de início e abra como aplicativo, sem passar pelo navegador.</p>
-        <p *ngIf="ehIos()">Toque em <svg lucideShare /> Compartilhar e escolha <b>Adicionar à Tela de Início</b>.</p>
+        <p *ngIf="modo() === 'android'">Adicione na tela de início e abra como aplicativo, sem passar pelo navegador.</p>
+        <p *ngIf="modo() === 'ios-safari'">Toque em <svg lucideShare /> Compartilhar e escolha <b>Adicionar à Tela de Início</b>.</p>
+        <p *ngIf="modo() === 'ios-outro'">Abra este site no <b>Safari</b> para instalar na tela de início do iPhone.</p>
       </div>
-      <button *ngIf="!ehIos()" class="install-acao" type="button" (click)="instalar()"><svg lucideDownload />Instalar</button>
+      <button *ngIf="modo() === 'android'" class="install-acao" type="button" (click)="instalar()"><svg lucideDownload />Instalar</button>
       <button class="install-fechar" type="button" aria-label="Agora não" (click)="dispensar()"><svg lucideX /></button>
     </aside>
   `,
 })
 export class InstallPromptComponent implements OnInit {
   protected readonly visivel = signal(false);
-  protected readonly ehIos = signal(false);
+  protected readonly modo = signal<'android' | 'ios-safari' | 'ios-outro'>('android');
+  protected readonly comNavegacao = signal(false);
   private evento: BeforeInstallPromptEvent | null = null;
 
   ngOnInit() {
     if (this.jaInstalado() || this.foiDispensado()) return;
-    const agente = navigator.userAgent;
-    const ios = /iphone|ipad|ipod/i.test(agente) && !/crios|fxios/i.test(agente);
-    this.ehIos.set(ios);
-    // No iPhone o navegador não oferece o evento de instalação: resta explicar o caminho.
-    if (ios) setTimeout(() => this.visivel.set(true), 2500);
+    if (!this.ehIos()) return;
+    // No iPhone e no iPad o navegador nunca dispara o evento de instalacao,
+    // entao o convite precisa aparecer sozinho e so explicar o caminho.
+    this.modo.set(this.ehSafari() ? 'ios-safari' : 'ios-outro');
+    setTimeout(() => this.mostrar(), 2000);
   }
 
   @HostListener('window:beforeinstallprompt', ['$event'])
@@ -46,7 +48,8 @@ export class InstallPromptComponent implements OnInit {
     evento.preventDefault();
     if (this.jaInstalado() || this.foiDispensado()) return;
     this.evento = evento as BeforeInstallPromptEvent;
-    this.visivel.set(true);
+    this.modo.set('android');
+    this.mostrar();
   }
 
   @HostListener('window:appinstalled')
@@ -67,6 +70,24 @@ export class InstallPromptComponent implements OnInit {
   protected dispensar() {
     this.visivel.set(false);
     this.marcarDispensado();
+  }
+
+  private mostrar() {
+    // fora das telas logadas nao existe barra inferior, entao o banner desce
+    this.comNavegacao.set(Boolean(document.querySelector('.bottom-nav')));
+    this.visivel.set(true);
+  }
+
+  /** iPadOS se identifica como Macintosh; o toque na tela é o que o entrega. */
+  private ehIos() {
+    const agente = navigator.userAgent;
+    if (/iphone|ipad|ipod/i.test(agente)) return true;
+    return /Macintosh/i.test(agente) && navigator.maxTouchPoints > 1;
+  }
+
+  private ehSafari() {
+    const agente = navigator.userAgent;
+    return !/crios|fxios|edgios|opios/i.test(agente);
   }
 
   private jaInstalado() {

@@ -1,17 +1,15 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AdminSidebarComponent, BottomNavigationComponent } from './components';
-import { InstallPromptComponent } from './install-prompt';
 
 @Component({
   selector: 'mobile-layout',
   standalone: true,
-  imports: [RouterOutlet, BottomNavigationComponent, InstallPromptComponent],
+  imports: [RouterOutlet, BottomNavigationComponent],
   template: `
     <div class="mobile-layout">
       <router-outlet />
       <bottom-navigation />
-      <install-prompt />
     </div>
   `,
 })

@@ -101,7 +101,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .home-search svg{width:21px;height:21px}.home-search input{font-size:14px;line-height:20px}
 .home-content{padding:14px 21px 0}
 .category-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:14px}
-.category-grid>category-card:nth-child(5){grid-column:1}
+
 .category-card{min-height:79px;padding:9px 3px 7px;border-width:1px;border-radius:12px;gap:5px;font-size:11px;font-weight:500;line-height:14px}
 .category-icon{height:31px;font-size:29px}.category-icon img{width:30px;height:30px}.category-card.more .category-icon img{width:25px;height:25px}
 .recommended-section{padding-top:24px}.recommended-section .section-title h2{max-width:285px;font-size:18px;line-height:24px}
@@ -867,3 +867,24 @@ label>span{display:block}
    do botao e a barra tem rolagem horizontal, o que corta o que sobra.
    O respiro no topo resolve o corte e afasta os icones do cabecalho. */
 .professionals-content .filter-row{padding-top:9px}
+
+/* O Safari do iPhone dá zoom sozinho quando o campo em foco tem fonte menor
+   que 16px, e a tela passa a exigir arrasto lateral. Os campos do app do
+   morador ficam em 16px para que isso não aconteça; as alturas acompanham. */
+@media (max-width: 820px) {
+  .mobile-page input:not([type='checkbox']):not([type='radio']):not([type='color']),
+  .mobile-page textarea,
+  .mobile-page select,
+  .auth-page input:not([type='checkbox']):not([type='radio']),
+  .auth-page textarea,
+  .professional-filter-sheet input,
+  .professional-filter-sheet select{font-size:16px}
+
+  .comment-input-shell textarea{min-height:38px;padding:9px 2px;line-height:22px}
+  .comment-reply-form{min-height:42px}
+  .comment-reply-form input{padding:9px 11px;line-height:22px}
+  .home-search input{font-size:16px}
+  .indicate-service-search input{font-size:16px !important}
+  .professional-filter-sheet app-searchable-select .select-trigger{font-size:16px}
+  .auth-field input{line-height:24px}
+}

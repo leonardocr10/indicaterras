@@ -1867,7 +1867,8 @@ export class DataStoreService implements OnModuleInit {
   createReview(payload: { userId: string; condominiumId: string; professionalId: string; rating: number; comment: string; serviceDate?: string; images?: string[] }) {
     const user = this.findUserById(payload.userId);
     const professional = this.getProfessionalById(payload.professionalId);
-    if (!user || !professional) throw new NotFoundException('Usuário ou profissional não encontrado');
+    if (!user) throw new UnauthorizedException('Sessão inválida');
+    if (!professional) throw new NotFoundException('Profissional não encontrado');
     const review = {
       id: `rev-${Date.now()}-${this.reviews.length + 1}`,
       userId: payload.userId,

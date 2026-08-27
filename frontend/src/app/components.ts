@@ -6,6 +6,7 @@ import { ApiService } from './services/api.service';
 import { ToastService } from './services/toast.service';
 import { AuthService } from './services/auth.service';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
+import { categoryAvatar } from './category-art.util';
 import {
   LucideBell,
   LucideBriefcaseBusiness,
@@ -196,7 +197,7 @@ export class ProfessionalCardComponent {
   }
 
   get avatarUrl(): string {
-    return this.api.assetUrl(this.professional.avatar) || '/assets/placeholders/default-avatar.svg';
+    return this.api.assetUrl(this.professional.avatar) || categoryAvatar(this.professional);
   }
 
   get displayedRecommendationCount(): number { return this.recommendationCount() ?? this.professional.recommendationCount; }

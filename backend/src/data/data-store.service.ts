@@ -17,6 +17,7 @@ import {
   type DemoUser,
 } from './demo-data';
 import { PrismaService } from './prisma.service';
+import { SERVICE_ALIASES } from './service-aliases';
 import { SupabaseRestService } from './supabase-rest.service';
 
 type SupabaseProfessional = {
@@ -127,7 +128,7 @@ export class DataStoreService implements OnModuleInit {
 
     const mappedServices = categoryServices.map((service) => ({
       id: service.id, categoryId: service.category_id, name: service.name, slug: service.slug, icon: service.icon ?? 'wrench',
-      displayOrder: service.display_order, active: service.active, aliases: [],
+      displayOrder: service.display_order, active: service.active, aliases: SERVICE_ALIASES[service.slug] ?? [],
     } satisfies DemoCategoryService));
     const allMappedCategories = categories.map((item) => ({
       id: item.id, name: item.name, slug: item.slug, icon: item.icon ?? 'grid', displayOrder: item.display_order,

@@ -30,6 +30,7 @@ import { SpreadsheetService } from './services/spreadsheet.service';
 import { matchesSearch } from './search.util';
 import { environment } from '../environments/environment';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
+import { categoryAvatar, categoryCover } from './category-art.util';
 import { SearchableSelectComponent } from './searchable-select';
 import { PhoneMaskDirective } from './phone-mask.directive';
 
@@ -796,11 +797,15 @@ export class ProfessionalProfilePageComponent implements OnInit {
   }
 
   protected avatarUrl() {
-    return this.api.assetUrl(this.professional()?.avatar) || '/assets/placeholders/default-avatar.svg';
+    const professional = this.professional();
+    if (!professional) return '/assets/placeholders/default-avatar.svg';
+    return this.api.assetUrl(professional.avatar) || categoryAvatar(professional);
   }
 
   protected profileCoverUrl() {
-    return this.api.assetUrl(this.professional()?.coverImage) || '/assets/placeholders/default-cover.svg';
+    const professional = this.professional();
+    if (!professional) return '/assets/placeholders/default-cover.svg';
+    return this.api.assetUrl(professional.coverImage) || categoryCover(professional);
   }
 
   ngOnInit() {

@@ -8,8 +8,6 @@ import type { ComplaintAction, ComplaintStatus } from '../data/complaints';
 
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
 
-// Os arquivos ficam em memoria e vao para o Supabase Storage; no disco local
-// eles se perderiam a cada deploy da hospedagem.
 const opcoesDeUpload = (maximoMb: number) => ({
   limits: { fileSize: maximoMb * 1024 * 1024 },
   fileFilter: (

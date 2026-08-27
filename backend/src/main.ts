@@ -21,6 +21,7 @@ async function bootstrap() {
     .map((origin) => origin.trim())
     .filter(Boolean);
   app.enableCors({ origin: allowedOrigins.length ? allowedOrigins : true });
+  app.setGlobalPrefix('api', { exclude: ['docs', 'uploads/(.*)'] });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

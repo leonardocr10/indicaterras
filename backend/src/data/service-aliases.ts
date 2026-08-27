@@ -1,6 +1,4 @@
 // Sinonimos de cada servico, usados pela busca do aplicativo.
-// A tabela category_services do Supabase nao tem coluna para isso, entao a
-// lista vive aqui e e aplicada quando os servicos sao carregados.
 export const SERVICE_ALIASES: Record<string, string[]> = {
   'instalacao-eletrica': ['instalacao eletrica', 'rede eletrica', 'fiacao', 'cabeamento'],
   'tomadas-e-interruptores': ['tomada', 'interruptor', 'ponto de energia', 'plug'],

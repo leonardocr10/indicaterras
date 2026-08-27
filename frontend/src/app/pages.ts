@@ -28,7 +28,6 @@ import {
 import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { matchesSearch } from './search.util';
-import { environment } from '../environments/environment';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import { categoryAvatar, categoryCover } from './category-art.util';
 import { SearchableSelectComponent } from './searchable-select';
@@ -82,9 +81,6 @@ export class LoginPageComponent {
   }
 
   private connectionMessage(status?: number) {
-    if (!environment.apiUrl) {
-      return 'Este site ainda não sabe o endereço da API. Configure a variável API_URL na hospedagem e publique de novo.';
-    }
     if (!status || status === 0 || status === 405 || status === 504) {
       return 'Não conseguimos falar com o servidor. Verifique se a API está no ar.';
     }

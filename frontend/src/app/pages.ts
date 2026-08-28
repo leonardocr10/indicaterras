@@ -2070,7 +2070,7 @@ export class AdminDashboardPageComponent implements OnInit {
 }
 
 type AdminResource = 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories';
-type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'password' | 'textarea' | 'checkbox'; select?: 'category' | 'condominium' | 'options'; options?: Array<{ value: string; label: string }>; hideForRoles?: string[]; wide?: boolean };
+type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'password' | 'textarea' | 'checkbox'; select?: 'category' | 'condominium' | 'options' | 'city' | 'neighborhood'; options?: Array<{ value: string; label: string }>; hideForRoles?: string[]; wide?: boolean };
 
 @Component({
   selector: 'admin-crud-page',
@@ -2124,14 +2124,23 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
               </div>
             </section>
             <div *ngIf="resource() !== 'residents'" class="admin-modal-fields">
-            <label *ngFor="let field of visibleFields()" [class.field-wide]="field.wide">{{ field.label }}
+            <ng-container *ngFor="let field of visibleFields()">
+            <label [class.field-wide]="field.wide">{{ field.label }}
               <textarea *ngIf="field.type === 'textarea'" [formControlName]="field.key"></textarea>
               <app-searchable-select *ngIf="field.select === 'category'" [formControlName]="field.key" [items]="categories()" valueKey="id" labelKey="name" emptyLabel="Selecione" searchPlaceholder="Pesquisar categoria..." />
               <app-searchable-select *ngIf="field.select === 'condominium'" [formControlName]="field.key" [items]="condominiums()" valueKey="id" labelKey="name" emptyLabel="Selecione" searchPlaceholder="Pesquisar condomínio..." />
               <app-searchable-select *ngIf="field.select === 'options'" [formControlName]="field.key" [items]="field.options" valueKey="value" labelKey="label" searchPlaceholder="Pesquisar opção..." />
+              <app-searchable-select *ngIf="field.select === 'city'" [formControlName]="field.key" [items]="cities()" valueKey="name" labelKey="label" [emptyLabel]="loadingCities() ? 'Carregando cidades...' : 'Selecione a cidade'" searchPlaceholder="Pesquisar cidade..." />
+              <app-searchable-select *ngIf="field.select === 'neighborhood' && neighborhoodOptions().length" [formControlName]="field.key" [items]="neighborhoodOptions()" emptyLabel="Selecione o bairro" searchPlaceholder="Pesquisar bairro..." />
+              <input *ngIf="field.select === 'neighborhood' && !neighborhoodOptions().length" [formControlName]="field.key" [placeholder]="form.controls.city.value ? 'Digite o bairro' : 'Selecione a cidade primeiro'" />
               <input *ngIf="field.type !== 'textarea' && field.type !== 'checkbox' && !field.select" [type]="field.type ?? 'text'" [attr.inputmode]="field.type === 'tel' ? 'tel' : null" [attr.maxlength]="field.type === 'tel' ? 15 : null" [formControlName]="field.key" [appPhoneMask]="field.type === 'tel'" />
               <input *ngIf="field.type === 'checkbox'" type="checkbox" [formControlName]="field.key" />
             </label>
+            <label *ngIf="field.key === 'phone' && resource() === 'professionals'" class="admin-same-whatsapp">
+              <input type="checkbox" [checked]="sameWhatsapp()" (change)="toggleSameWhatsapp()" />
+              WhatsApp é o mesmo número
+            </label>
+            </ng-container>
             </div>
             <section *ngIf="resource() === 'professionals'" class="admin-taxonomy-section">
               <h3>Categorias do profissional</h3>
@@ -2200,6 +2209,13 @@ export class AdminCrudPageComponent implements OnInit {
   protected readonly categoryServices = signal<CategoryService[]>([]);
   protected readonly serviceEditorOpen = signal(false);
   protected readonly editorOpen = signal(false);
+  protected readonly cities = signal<Array<{ name: string; label: string }>>([]);
+  protected readonly loadingCities = signal(false);
+  /** Acompanha a cidade escolhida para filtrar a lista de bairros. */
+  protected readonly selectedCity = signal('');
+  protected readonly neighborhoodOptions = computed(() => neighborhoodsForCity(this.selectedCity()));
+  /** Na prática o WhatsApp do profissional é o mesmo telefone, então evitamos digitar duas vezes. */
+  protected readonly sameWhatsapp = signal(true);
   protected readonly searchTerm = signal('');
   protected readonly filterValue = signal('');
   protected readonly page = signal(1);
@@ -2232,7 +2248,7 @@ export class AdminCrudPageComponent implements OnInit {
       { key: 'emailVerified', label: 'E-mail verificado', type: 'checkbox' }, { key: 'active', label: 'Usuário ativo', type: 'checkbox' },
       { key: 'password', label: 'Senha (deixe em branco para manter)', type: 'password' },
     ], columns: ['Nome', 'E-mail', 'Perfil', 'E-mail verificado', 'Aprovação', 'Ativo'], columnKeys: ['name', 'email', 'role', 'emailVerified', 'approvalStatus', 'active'] },
-    professionals: { title: 'Profissionais', fields: [{ key: 'name', label: 'Nome' }, { key: 'companyName', label: 'Empresa' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'whatsapp', label: 'WhatsApp', type: 'tel' }, { key: 'instagram', label: 'Instagram' }, { key: 'city', label: 'Cidade' }, { key: 'neighborhood', label: 'Bairro' }, { key: 'bio', label: 'Sobre o profissional', type: 'textarea' }], columns: ['Foto', 'Nome', 'Categoria', 'Cidade', 'WhatsApp'], columnKeys: ['avatar', 'name', 'category', 'city', 'whatsapp'] },
+    professionals: { title: 'Profissionais', fields: [{ key: 'name', label: 'Nome' }, { key: 'companyName', label: 'Empresa' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'whatsapp', label: 'WhatsApp', type: 'tel' }, { key: 'instagram', label: 'Instagram' }, { key: 'city', label: 'Cidade', select: 'city' }, { key: 'neighborhood', label: 'Bairro', select: 'neighborhood' }, { key: 'bio', label: 'Sobre o profissional', type: 'textarea' }], columns: ['Foto', 'Nome', 'Categoria', 'Cidade', 'WhatsApp'], columnKeys: ['avatar', 'name', 'category', 'city', 'whatsapp'] },
     categories: { title: 'Categorias', fields: [{ key: 'name', label: 'Nome' }, { key: 'slug', label: 'Slug' }, { key: 'icon', label: 'Ícone' }, { key: 'description', label: 'Descrição curta', type: 'textarea' }, { key: 'displayOrder', label: 'Ordem' }], columns: ['Nome', 'Slug', 'Ícone'], columnKeys: ['name', 'slug', 'icon'] },
   };
 
@@ -2261,6 +2277,8 @@ export class AdminCrudPageComponent implements OnInit {
   ngOnInit() {
     this.api.getCategories().subscribe((categories) => this.categories.set(categories));
     this.api.getCondominiums().subscribe((condominiums) => this.condominiums.set(condominiums));
+    this.loadCities();
+    this.watchDependentFields();
     this.route.data.subscribe((data) => {
       const value = (data['resource'] ?? this.route.snapshot.paramMap.get('entity')) as AdminResource;
       this.resource.set(value in this.configs ? value : 'condominiums');
@@ -2271,7 +2289,41 @@ export class AdminCrudPageComponent implements OnInit {
 
   visibleFields(): AdminField[] {
     const role = String(this.form.controls.role.value ?? '');
-    return this.config.fields.filter((field) => !field.hideForRoles?.includes(role));
+    const espelhaWhatsapp = this.resource() === 'professionals' && this.sameWhatsapp();
+    return this.config.fields.filter(
+      (field) => !field.hideForRoles?.includes(role) && !(espelhaWhatsapp && field.key === 'whatsapp'),
+    );
+  }
+
+  protected toggleSameWhatsapp() {
+    const proximo = !this.sameWhatsapp();
+    this.sameWhatsapp.set(proximo);
+    if (proximo) this.form.controls.whatsapp.setValue(this.form.controls.phone.value ?? '');
+  }
+
+  private loadCities() {
+    this.loadingCities.set(true);
+    fetchBrazilianCities(this.http).subscribe({
+      next: (cities) => {
+        this.cities.set(cities.map((city) => ({ name: city.name, label: city.uf ? `${city.name} - ${city.uf}` : city.name })));
+        this.loadingCities.set(false);
+      },
+      error: () => this.loadingCities.set(false),
+    });
+  }
+
+  /** Mantém WhatsApp e bairro coerentes com o que foi digitado em telefone e cidade. */
+  private watchDependentFields() {
+    this.form.controls.phone.valueChanges.subscribe((phone) => {
+      if (this.sameWhatsapp()) this.form.controls.whatsapp.setValue(phone ?? '', { emitEvent: false });
+    });
+    this.form.controls.city.valueChanges.subscribe((city) => {
+      const cidade = city ?? '';
+      if (cidade === this.selectedCity()) return;
+      this.selectedCity.set(cidade);
+      // Trocar de cidade invalida o bairro anterior, que pertencia a outra lista.
+      if (this.form.controls.neighborhood.value) this.form.controls.neighborhood.setValue('', { emitEvent: false });
+    });
   }
 
   value(record: Record<string, unknown>, key: string) {
@@ -2311,12 +2363,19 @@ export class AdminCrudPageComponent implements OnInit {
     this.hasError.set(false);
     this.adminZipStatus.set('');
     this.adminZipFailed.set(false);
+    this.selectedCity.set('');
+    this.sameWhatsapp.set(true);
     this.editorOpen.set(openEditor);
   }
 
   editRecord(record: Record<string, unknown>) {
     this.editingId.set(String(record['id']));
     this.form.patchValue(record as never);
+    this.selectedCity.set(String(record['city'] ?? ''));
+    // Só desmarca quando o cadastro realmente tem um WhatsApp diferente do telefone.
+    const telefone = String(record['phone'] ?? '');
+    const whatsapp = String(record['whatsapp'] ?? '');
+    this.sameWhatsapp.set(!whatsapp || whatsapp === telefone);
     this.selectedPhoto = null;
     this.selectedCover = null;
     this.selectedPortfolioPhotos = [];
@@ -2368,7 +2427,12 @@ export class AdminCrudPageComponent implements OnInit {
       return;
     }
     const payload: Record<string, unknown> = Object.fromEntries(this.visibleFields().map((field) => [field.key, rawRecord[field.key]]));
-    if (this.resource() === 'professionals') { payload['avatar'] = raw.avatar; payload['coverImage'] = raw.coverImage; }
+    if (this.resource() === 'professionals') {
+      payload['avatar'] = raw.avatar;
+      payload['coverImage'] = raw.coverImage;
+      // O campo fica oculto quando espelha o telefone, então não vem por visibleFields().
+      if (this.sameWhatsapp()) payload['whatsapp'] = raw.phone;
+    }
     if (this.resource() === 'condominiums') payload['coverImage'] = raw.coverImage;
     if (this.resource() === 'professionals') { payload['categoryIds'] = this.selectedCategoryIds(); payload['serviceIds'] = this.selectedServiceIds(); }
     this.saving.set(true);

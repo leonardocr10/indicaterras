@@ -1534,14 +1534,47 @@ export class DataStoreService implements OnModuleInit {
         coverImage: '',
         featured: false,
       };
+      if (this.databaseAvailable) {
+        const record = await this.prisma.professional.create({
+          data: {
+            name: professional.name,
+            bio: professional.bio || null,
+            phone: professional.phone,
+            whatsapp: professional.whatsapp || null,
+            instagram: professional.instagram || null,
+            city: professional.city,
+            neighborhood: professional.neighborhood,
+            avatar: professional.avatar || null,
+            coverImage: professional.coverImage || null,
+            professionalCategories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
+            professionalServices: { create: serviceIds.map((categoryServiceId) => ({ categoryServiceId })) },
+          },
+        });
+        professional.id = record.id;
+      }
       this.professionals.push(professional);
     }
     if (this.recommendations.some((item) => item.userId === payload.userId && item.professionalId === professional.id)) {
       throw new ConflictException('Você já indicou este profissional');
     }
     const rating = Math.min(5, Math.max(0, Math.round(Number(payload.rating ?? 0))));
+    let recommendationId = `rec-${Date.now()}-${this.recommendations.length + 1}`;
+    if (this.databaseAvailable) {
+      const record = await this.prisma.recommendation.create({
+        data: {
+          condominiumId: payload.condominiumId,
+          userId: payload.userId,
+          professionalId: professional.id,
+          comment: payload.comment ?? '',
+          rating,
+          status: 'ACTIVE',
+          recommended: payload.recommended,
+        },
+      });
+      recommendationId = record.id;
+    }
     const recommendation = {
-      id: `rec-${Date.now()}-${this.recommendations.length + 1}`,
+      id: recommendationId,
       professionalId: professional.id,
       userId: payload.userId,
       condominiumId: payload.condominiumId,
@@ -1567,14 +1600,17 @@ export class DataStoreService implements OnModuleInit {
     return recommendation;
   }
 
-  removeRecommendation(id: string, userId: string) {
+  async removeRecommendation(id: string, userId: string) {
     const recommendation = this.recommendations.find((item) => item.id === id && item.userId === userId);
     if (!recommendation) throw new NotFoundException('Indicação não encontrada');
     recommendation.status = 'REMOVED';
+    if (this.databaseAvailable) {
+      await this.prisma.recommendation.update({ where: { id }, data: { status: 'REMOVED' } });
+    }
     return recommendation;
   }
 
-  toggleProfessionalRecommendation(userId: string, professionalId: string) {
+  async toggleProfessionalRecommendation(userId: string, professionalId: string) {
     const user = this.findUserById(userId);
     const professional = this.getProfessionalById(professionalId);
     if (!user) throw new UnauthorizedException('Sessão inválida');
@@ -1586,11 +1622,28 @@ export class DataStoreService implements OnModuleInit {
       existing.status = active ? 'ACTIVE' : 'REMOVED';
       existing.recommended = active;
       professional.recommendationCount = Math.max(0, professional.recommendationCount + (active ? 1 : -1));
+      if (this.databaseAvailable) {
+        await this.prisma.recommendation.update({ where: { id: existing.id }, data: { status: active ? 'ACTIVE' : 'REMOVED', recommended: active } });
+      }
       return { active, recommendationCount: professional.recommendationCount };
     }
 
+    let newId = `rec-${this.recommendations.length + 1}`;
+    if (this.databaseAvailable) {
+      const record = await this.prisma.recommendation.create({
+        data: {
+          condominiumId: user.condominiumId,
+          userId,
+          professionalId,
+          recommended: true,
+          comment: '',
+          status: 'ACTIVE',
+        },
+      });
+      newId = record.id;
+    }
     this.recommendations.push({
-      id: `rec-${this.recommendations.length + 1}`,
+      id: newId,
       professionalId,
       userId,
       condominiumId: user.condominiumId,

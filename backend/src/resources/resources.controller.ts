@@ -202,13 +202,13 @@ export class ResourcesController {
   }
 
   @Post('recommendations/:professionalId/toggle')
-  toggleProfessionalRecommendation(@Param('professionalId') professionalId: string, @Body('userId') userId: string) {
-    return { data: this.dataStoreService.toggleProfessionalRecommendation(userId, professionalId) };
+  async toggleProfessionalRecommendation(@Param('professionalId') professionalId: string, @Body('userId') userId: string) {
+    return { data: await this.dataStoreService.toggleProfessionalRecommendation(userId, professionalId) };
   }
 
   @Post('recommendations/:id/remove')
-  removeRecommendation(@Param('id') id: string, @Body('userId') userId: string) {
-    return { data: this.dataStoreService.removeRecommendation(id, userId) };
+  async removeRecommendation(@Param('id') id: string, @Body('userId') userId: string) {
+    return { data: await this.dataStoreService.removeRecommendation(id, userId) };
   }
 
   @Post('reviews')

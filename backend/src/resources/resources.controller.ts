@@ -186,9 +186,14 @@ export class ResourcesController {
     return { data: this.dataStoreService.getHomePayload() };
   }
 
+  @Get('admin-pending')
+  getPendingItems() {
+    return { data: this.dataStoreService.getPendingItems() };
+  }
+
   @Post('favorites/:professionalId/toggle')
-  toggleFavorite(@Param('professionalId') professionalId: string, @Body('userId') userId: string) {
-    return { data: this.dataStoreService.toggleFavorite(userId, professionalId) };
+  async toggleFavorite(@Param('professionalId') professionalId: string, @Body('userId') userId: string) {
+    return { data: await this.dataStoreService.toggleFavorite(userId, professionalId) };
   }
 
   @Post('recommendations')

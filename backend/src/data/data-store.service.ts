@@ -1400,13 +1400,29 @@ export class DataStoreService implements OnModuleInit {
     return this.professionals.filter((item) => ids.has(item.id));
   }
 
-  toggleFavorite(userId: string, professionalId: string) {
+  async toggleFavorite(userId: string, professionalId: string) {
     if (!this.getProfessionalById(professionalId)) throw new NotFoundException('Profissional não encontrado');
     const favorites = this.favoriteProfessionalIds.get(userId) ?? new Set<string>();
     const active = !favorites.has(professionalId);
     if (active) favorites.add(professionalId);
     else favorites.delete(professionalId);
     this.favoriteProfessionalIds.set(userId, favorites);
+
+    if (this.databaseAvailable) {
+      if (active) {
+        const user = this.findUserById(userId);
+        if (user) {
+          await this.prisma.favorite.upsert({
+            where: { userId_professionalId: { userId, professionalId } },
+            update: {},
+            create: { userId, professionalId, condominiumId: user.condominiumId },
+          });
+        }
+      } else {
+        await this.prisma.favorite.deleteMany({ where: { userId, professionalId } });
+      }
+    }
+
     return { professionalId, active };
   }
 
@@ -1582,6 +1598,32 @@ export class DataStoreService implements OnModuleInit {
         reports: this.reports.filter((report) => (this.moderationStatuses.get(report.id) ?? report.status) === 'Pendente').length,
       },
     };
+  }
+
+  getPendingItems() {
+    const condominiumName = (condominiumId: string) => this.condominiums.find((item) => item.id === condominiumId)?.name ?? '';
+
+    const newResidents = this.users
+      .filter((user) => user.role === 'RESIDENT' && user.approvalStatus === 'PENDING')
+      .map((user) => ({
+        id: `resident-${user.id}`,
+        type: 'NEW_RESIDENT' as const,
+        title: 'Novo morador aguardando aprovação',
+        subtitle: [user.name, condominiumName(user.condominiumId), user.unit].filter(Boolean).join(' · '),
+        link: '/admin/moradores',
+      }));
+
+    const pendingReports = this.getComplaints()
+      .filter((row) => row.status === 'Pendente')
+      .map((row) => ({
+        id: `report-${row.id}`,
+        type: 'REPORT' as const,
+        title: 'Denúncia aguardando análise',
+        subtitle: [row.professional, row.reason, row.date].filter(Boolean).join(' · '),
+        link: `/admin/denuncias/${row.id}`,
+      }));
+
+    return [...newResidents, ...pendingReports];
   }
 
   private recommendationsByPeriod() {

@@ -510,6 +510,9 @@ export class ServiceRequestDetailsPageComponent implements OnInit {
 
         <request-preferences-step *ngIf="currentStep() === 2" [draft]="draft()" (patch)="patchDraft($event)" />
 
+        <p class="request-address-hint" *ngIf="currentStep() === 3 && enderecoDoCadastro()">
+          Preenchemos com o endereço do seu cadastro. Ajuste se o serviço for em outro lugar.
+        </p>
         <request-location-step *ngIf="currentStep() === 3" [draft]="draft()" (patch)="patchDraft($event)" />
 
         <request-confirm-step
@@ -542,6 +545,8 @@ export class ServiceRequestNewPageComponent implements OnInit, OnDestroy {
   protected readonly currentStep = signal(0);
   protected readonly match = signal<ProblemMatchResult | null>(null);
   protected readonly matching = signal(false);
+  /** Sinaliza na tela que o endereço veio do cadastro e pode ser ajustado. */
+  protected readonly enderecoDoCadastro = signal(false);
   protected readonly saving = signal(false);
   protected readonly availableServices = computed(() => {
     const category = this.categories().find((item) => item.id === this.draft().categoryId);
@@ -553,6 +558,7 @@ export class ServiceRequestNewPageComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.api.getCategories().subscribe((categories) => this.categories.set(categories.filter((category) => category.active)));
+    this.carregarEnderecoDaConta();
     this.route.queryParamMap.subscribe((params) => {
       const problem = params.get('problema')?.trim();
       if (!problem || this.draft().description) return;
@@ -573,6 +579,30 @@ export class ServiceRequestNewPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.matchTimer) clearTimeout(this.matchTimer);
+  }
+
+  /**
+   * O endereço do cliente já está cadastrado; repetir a digitação a cada
+   * solicitação é trabalho à toa. Só preenche campo vazio, para não
+   * sobrescrever o que a pessoa tenha ajustado nesta solicitação.
+   */
+  private carregarEnderecoDaConta() {
+    this.api.getMyAccount().subscribe({
+      next: (conta) => {
+        const atual = this.draft();
+        const doCadastro: Partial<ServiceRequestDraft> = {};
+        const campos = ['zipCode', 'street', 'number', 'complement', 'neighborhood', 'city', 'state'] as const;
+        for (const campo of campos) {
+          const valor = (conta[campo] ?? '').trim();
+          if (valor && !atual[campo]) doCadastro[campo] = valor;
+        }
+        if (Object.keys(doCadastro).length) {
+          this.store.patch(doCadastro);
+          this.enderecoDoCadastro.set(true);
+        }
+      },
+      error: () => undefined,
+    });
   }
 
   protected patchDraft(partial: Partial<ServiceRequestDraft>) {

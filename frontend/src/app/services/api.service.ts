@@ -5,6 +5,21 @@ import { AiAnalysisLogRow, AiProblemAnalysisResult, AiPublicConfig, AiSettings, 
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
+export interface MyAccount {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  zipCode: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+}
+
 export interface CreateServiceRequestPayload {
   title: string;
   description: string;
@@ -140,7 +155,7 @@ export class ApiService {
 
   getMyAccount() {
     const userId = this.auth.user()?.id ?? '';
-    return this.http.get<ApiResponse<{ id: string; name: string; email: string; phone: string | null; role: string }>>(`${this.baseUrl}/me/account?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+    return this.http.get<ApiResponse<MyAccount>>(`${this.baseUrl}/me/account?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
   }
 
   updateMyAccount(payload: { name: string; email: string; phone: string }) {

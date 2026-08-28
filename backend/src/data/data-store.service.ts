@@ -1202,8 +1202,36 @@ export class DataStoreService implements OnModuleInit {
     return { success: true };
   }
 
-  private accountPayload(user: { id: string; name: string; email: string; phone: string | null; role: string }) {
-    return { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role };
+  private accountPayload(user: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    role: string;
+    zipCode?: string | null;
+    street?: string | null;
+    number?: string | null;
+    complement?: string | null;
+    neighborhood?: string | null;
+    city?: string | null;
+    state?: string | null;
+  }) {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      // O endereço já está cadastrado: as telas que precisam dele (ex.: pedir
+      // propostas) preenchem sozinhas em vez de pedir tudo de novo.
+      zipCode: user.zipCode ?? '',
+      street: user.street ?? '',
+      number: user.number ?? '',
+      complement: user.complement ?? '',
+      neighborhood: user.neighborhood ?? '',
+      city: user.city ?? '',
+      state: user.state ?? '',
+    };
   }
 
   getCategoryServices(categoryId: string, includeInactive = false) {

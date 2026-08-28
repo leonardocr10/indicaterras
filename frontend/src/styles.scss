@@ -4,7 +4,7 @@
 @use 'app/admin-header';
 @use 'app/admin-table-responsive';
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
-:root{--if-primary:#22C55E;--if-primary-dark:#065F46;--if-primary-light:#4ADE80;--if-background:#F7F9F8;--if-surface:#FFFFFF;--if-text:#1F2937;--if-text-secondary:#64748B;--if-border:#E4E8E5;--if-focus-ring:0 0 0 3px rgba(6,95,70,.12);--if-focus-border:#78ab93;--if-success:#22C55E;--if-warning:#F59E0B;--if-danger:#DC2626;--if-info:#2563EB;--if-radius-sm:7px;--if-radius-md:9px;--if-radius-lg:12px;--if-radius-xl:16px;--if-font:'Nunito',sans-serif;--primary:var(--if-primary);--primary-dark:var(--if-primary-dark);--primary-light:#EAF8EF;--secondary:var(--if-warning);--ink:var(--if-text);--muted:var(--if-text-secondary);--line:var(--if-border);--paper:var(--if-surface);--shadow:0 4px 16px rgba(15,23,42,.05);--font-family:var(--if-font);--font-body:var(--if-font);--font-xs:11px;--font-sm:12px;--font-md:14px;--font-base:15px;--font-lg:16px;--font-xl:18px;--font-2xl:22px;--font-3xl:24px;--font-4xl:28px;--font-5xl:30px;--font-rating:54px;font-family:var(--font-family);color:var(--ink)}
+:root{--if-primary:#22C55E;--if-primary-dark:#065F46;--if-primary-light:#4ADE80;--if-background:#F7F9F8;--if-surface:#FFFFFF;--if-text:#1F2937;--if-text-secondary:#64748B;--if-border:#E4E8E5;--if-focus-ring:0 0 0 3px rgba(6,95,70,.12);--if-bottom-nav-height:103px;--if-focus-border:#78ab93;--if-success:#22C55E;--if-warning:#F59E0B;--if-danger:#DC2626;--if-info:#2563EB;--if-radius-sm:7px;--if-radius-md:9px;--if-radius-lg:12px;--if-radius-xl:16px;--if-font:'Nunito',sans-serif;--primary:var(--if-primary);--primary-dark:var(--if-primary-dark);--primary-light:#EAF8EF;--secondary:var(--if-warning);--ink:var(--if-text);--muted:var(--if-text-secondary);--line:var(--if-border);--paper:var(--if-surface);--shadow:0 4px 16px rgba(15,23,42,.05);--font-family:var(--if-font);--font-body:var(--if-font);--font-xs:11px;--font-sm:12px;--font-md:14px;--font-base:15px;--font-lg:16px;--font-xl:18px;--font-2xl:22px;--font-3xl:24px;--font-4xl:28px;--font-5xl:30px;--font-rating:54px;font-family:var(--font-family);color:var(--ink)}
 *{box-sizing:border-box}
 /* Barra de rolagem moderna em todo o sistema - fina, arredondada, some quando
    nao esta em uso. As faixas horizontais que ja escondem a propria barra
@@ -30,7 +30,7 @@ body{margin:0;min-height:100vh;overflow-x:hidden;background:var(--if-background)
 /* professionals */
 .professionals-page{background:#fbfcfc}.professionals-heading{padding:37px 26px 27px;display:flex;justify-content:space-between;align-items:center}.professionals-heading h1{margin:0 0 5px;font:700 41px var(--font-family);letter-spacing:-2px}.professionals-heading p{margin:0;color:#536074;font-size:19px}.professionals-heading button{width:68px;height:68px;border:0;border-radius:50%;color:var(--ink);background:#fff;box-shadow:var(--shadow);font-size:38px}.professionals-content{padding:15px 20px}.filter-row{display:flex;gap:12px;overflow-x:auto;padding:0 0 22px}.filter-chip{white-space:nowrap;min-height:54px;border:1px solid #d8dde5;color:var(--ink);background:#fff;font-size:16px}.filter-chip.active{color:#fff;border-color:var(--primary);background:linear-gradient(110deg,#087441,#005c32)}
 /* bottom nav */
-.bottom-nav{z-index:5;position:fixed;left:50%;bottom:0;transform:translateX(-50%);display:grid;grid-template-columns:repeat(5,1fr);align-items:end;width:min(100%,390px);min-height:103px;padding:19px 11px 12px;border-radius:18px 18px 0 0;background:rgba(255,255,255,.98);box-shadow:0 -7px 24px rgba(8,20,16,.08)}.desktop-brand-logo{display:none}.bottom-nav a{display:grid;justify-items:center;gap:5px;color:#586274;font-size:13px}.bottom-nav a b{font-size:33px;font-weight:400;line-height:.8}.bottom-nav a.active{color:var(--primary);font-weight:700}.bottom-nav .center-action{transform:translateY(-30px);color:var(--primary);font-weight:700}.bottom-nav .center-action b{width:75px;height:75px;border:6px solid #fff;border-radius:50%;display:grid;place-items:center;color:#fff;background:radial-gradient(circle at 70% 20%,#148153,#00472e);box-shadow:0 4px 16px rgba(0,64,36,.32);font-size:34px}
+.bottom-nav{z-index:5;position:fixed;left:50%;bottom:0;transform:translateX(-50%);display:grid;grid-template-columns:repeat(5,1fr);align-items:end;width:min(100%,390px);min-height:var(--if-bottom-nav-height);padding:19px 11px 12px;border-radius:18px 18px 0 0;background:rgba(255,255,255,.98);box-shadow:0 -7px 24px rgba(8,20,16,.08)}.desktop-brand-logo{display:none}.bottom-nav a{display:grid;justify-items:center;gap:5px;color:#586274;font-size:13px}.bottom-nav a b{font-size:33px;font-weight:400;line-height:.8}.bottom-nav a.active{color:var(--primary);font-weight:700}.bottom-nav .center-action{transform:translateY(-30px);color:var(--primary);font-weight:700}.bottom-nav .center-action b{width:75px;height:75px;border:6px solid #fff;border-radius:50%;display:grid;place-items:center;color:#fff;background:radial-gradient(circle at 70% 20%,#148153,#00472e);box-shadow:0 4px 16px rgba(0,64,36,.32);font-size:34px}
 /* profile */
 .profile-page{background:#f7f8f8;padding-bottom:20px}.profile-cover{min-height:290px;padding:28px;display:flex;justify-content:space-between;align-items:flex-start;background-position:center;background-size:cover;border-radius:0 0 20px 20px}.floating-icon{width:57px;height:57px;border:0;border-radius:50%;display:grid;place-items:center;background:rgba(16,34,25,.68);color:#fff;font-size:38px}.floating-actions{display:flex;gap:12px}.profile-card{position:relative;margin-top:-28px;padding:88px 30px 30px;border-radius:22px 22px 0 0;background:#fff}.profile-avatar{position:absolute;top:-90px;left:35px;width:160px;height:160px;border:5px solid #fff;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#0d3c42,#39726e);font:700 50px var(--font-family)}.profile-card h1{margin:0;font:700 41px var(--font-family);letter-spacing:-2px}.profile-meta>span{display:block;margin:7px 0 20px;color:#4f5968;font-size:22px}.profile-meta .rating-line{margin:0}.profile-meta .stars{font-size:35px}.badge{margin:31px 0;padding:25px 28px;border-radius:16px;color:#005435;background:linear-gradient(110deg,#ebf7ef,#eff5f1);font-size:19px;line-height:1.35;font-weight:600}.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);margin:0 0 25px;padding:0 0 25px;border-bottom:1px solid #dfe3e3}.quick-actions a,.quick-actions button{min-width:0;border:0;border-right:1px solid #dfe3e3;background:transparent;display:grid;justify-items:center;gap:7px;color:#17202c;font-size:14px}.quick-actions :last-child{border-right:0}.quick-actions b{color:var(--primary);font-size:34px;line-height:1;font-weight:500}.detail-section h2{margin:28px 0 10px;font:700 25px var(--font-family)}.detail-section p,.detail-section li{color:#263241;font-size:18px;line-height:1.55}.detail-section ul{margin:0;padding:0;list-style:none}.detail-section li{margin:7px 0}.detail-section li:before{content:'✓';margin-right:12px;color:var(--primary)}.profile-card>.primary-button{margin-top:30px;min-height:70px;font-size:23px;border-radius:14px}
 /* forms/reviews/favs */
@@ -134,7 +134,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .recommended-section .compact-card .recommendation-line{right:82px;width:78px}.card-recommend-button{position:absolute;right:45px;bottom:23px;width:30px;height:30px;padding:0;border:1px solid #b7d8c7;border-radius:50%;display:grid;place-items:center;color:#087044;background:#fff;cursor:pointer;transition:background .18s ease,color .18s ease,border-color .18s ease,transform .18s ease}.card-recommend-button:hover{border-color:#087044;background:#edf8f1;transform:translateY(-1px)}.card-recommend-button.active{border-color:#087044;color:#fff;background:#087044}.card-recommend-button svg{width:16px;height:16px;stroke-width:2}.recommended-section .compact-card .card-whatsapp{right:10px}
 
 /* Mobile navigation */
-.bottom-nav{width:min(100%,430px);height:76px;min-height:76px;max-height:76px;padding:8px;border-radius:14px 14px 0 0}
+.bottom-nav{width:min(100%,430px);height:var(--if-bottom-nav-height);min-height:var(--if-bottom-nav-height);max-height:var(--if-bottom-nav-height);padding:8px;border-radius:14px 14px 0 0}
 .bottom-nav a{gap:3px;font-size:11px;font-weight:500;line-height:14px}.bottom-nav a.active{font-weight:600}
 .bottom-nav a b svg{width:22px;height:22px}.bottom-nav .center-action{transform:translateY(-18px)}
 .bottom-nav .center-action b{width:57px;height:57px;border-width:4px;font-size:26px}.bottom-nav .center-action b svg{width:25px;height:25px}
@@ -234,7 +234,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .professionals-page .filter-chip.icon-only{position:relative;width:48px;min-width:48px;min-height:44px;padding:0;display:grid;place-items:center;border-radius:8px}.professionals-page .filter-chip.icon-only svg{width:21px;height:21px;margin:0;stroke-width:2}.professionals-page .filter-chip.icon-only>span{position:absolute;top:-6px;right:-5px;min-width:19px;height:19px;padding:0 5px;border:2px solid #fff;border-radius:999px;display:grid;place-items:center;color:#fff;background:#087044;font-size:10px;line-height:1}.professionals-page .filter-chip.icon-only.active svg{fill:rgba(255,255,255,.18)}
 
 /* Keep the mobile navigation fully visible, including device safe areas. */
-.bottom-nav{height:auto;min-height:84px;max-height:none;padding:12px 8px calc(10px + env(safe-area-inset-bottom));align-items:end;overflow:visible}
+.bottom-nav{height:auto;min-height:var(--if-bottom-nav-height);max-height:none;padding:12px 8px calc(10px + env(safe-area-inset-bottom));align-items:end;overflow:visible}
 .bottom-nav a{min-width:0;min-height:44px;align-content:end;justify-content:center;transform:none}
 .bottom-nav .center-action{transform:none}
 .bottom-nav .center-action b{margin-bottom:-18px;transform:translateY(-18px)}
@@ -996,7 +996,7 @@ label>span{display:block}
 .request-flow-topbar strong{font-size:15px;text-align:center;color:#17251d}
 .request-flow-back{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;color:#1d3527;text-decoration:none}
 .request-flow-back svg{width:20px;height:20px}
-.request-flow-body{gap:18px;padding-top:14px;padding-bottom:108px}
+.request-flow-body{gap:18px;padding-top:14px;padding-bottom:calc(var(--if-bottom-nav-height) + 96px)}
 .request-create-button{text-decoration:none}
 .request-builder-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .request-builder-header h1{margin:0;font:700 26px var(--font-family)}
@@ -1036,7 +1036,7 @@ label>span{display:block}
 .request-summary-list span{color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .request-summary-list strong{font-size:16px}
 .request-summary-list small{color:#516171;font-size:13px;line-height:1.45}
-.request-builder-actions{position:fixed;z-index:3;right:0;bottom:0;left:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:var(--page-max-width, 560px);margin:auto;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #e5ebe7;background:rgba(255,255,255,.97);backdrop-filter:blur(12px)}
+.request-builder-actions{position:fixed;z-index:6;right:0;bottom:calc(var(--if-bottom-nav-height) + env(safe-area-inset-bottom));left:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:var(--page-max-width, 560px);margin:auto;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #e5ebe7;background:rgba(255,255,255,.97);backdrop-filter:blur(12px)}
 .request-builder-actions .primary-button,.request-builder-actions .secondary-button{min-height:44px;font-size:13px}
 .request-builder-actions .primary-button:only-child{grid-column:1 / -1}
 .request-list{display:grid;gap:12px}
@@ -1293,3 +1293,10 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
 /* Campos com moldura propria ja exibem o anel no wrapper; o input interno
    nao deve desenhar o seu, senao aparecem dois halos desalinhados. */
 .admin-search-field input:focus,.client-input input:focus,.auth-field>span input:focus,.select-search input:focus,.filter-search-field input:focus,.indicate-category-input input:focus,.home-search input:focus,.home-ai-field input:focus{box-shadow:none;border-color:transparent}
+
+.request-address-hint{margin:0;padding:11px 13px;border:1px solid #cde9d9;border-radius:10px;color:#245c43;background:#f1faf5;font-size:12px;line-height:17px}
+
+/* Altura da barra inferior por faixa, na mesma ordem das regras de .bottom-nav.
+   O rodape de acoes do fluxo de propostas se apoia nesse valor. */
+@media(max-width:980px){:root{--if-bottom-nav-height:76px}}
+@media(max-width:760px){:root{--if-bottom-nav-height:84px}}

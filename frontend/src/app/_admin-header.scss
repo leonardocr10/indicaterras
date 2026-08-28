@@ -1,0 +1,2 @@
+/* O rótulo institucional vem do template; evita duplicá-lo via pseudoelemento. */
+.admin-topbar > div:first-child::before { content: none; display: none; }

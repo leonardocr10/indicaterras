@@ -648,7 +648,9 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
   .admin-sidebar::-webkit-scrollbar{display:none}
   .admin-sidebar>a{flex:0 0 auto;min-height:36px;padding:0 12px;gap:8px;font-size:12px;border-radius:999px}
   .admin-sidebar .brand-card{display:none}
-  .notification-bell-wrapper{top:12px;right:14px}
+  /* Nessa largura o menu vira uma barra horizontal no topo; o sino, que e
+     fixo na tela, precisa descer pra nao ficar em cima dos itens do menu. */
+  .notification-bell-wrapper{top:64px;right:14px}
   .notification-bell{width:34px;height:34px}
   .admin-sidebar .sidebar-user{order:9;flex:0 0 auto;margin:0 0 0 6px;padding:0 0 0 10px;border-top:0;border-left:1px solid rgba(255,255,255,.16);grid-template-columns:auto;gap:0}
   .admin-sidebar .sidebar-user .sidebar-avatar,.admin-sidebar .sidebar-user>span{display:none}

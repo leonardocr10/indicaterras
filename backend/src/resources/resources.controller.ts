@@ -8,6 +8,7 @@ import type { ComplaintAction, ComplaintStatus } from '../data/complaints';
 import { CommunicationsService } from './communications.service';
 import { CatalogService } from '../data/catalog.service';
 import { AiSettingsService } from '../ai/ai-settings.service';
+import { NearbyProfessionalsService } from '../data/nearby-professionals.service';
 
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
 const TIPOS_SOLICITACAO = [...TIPOS_ACEITOS, 'video/mp4', 'video/webm', 'video/quicktime'];
@@ -45,6 +46,7 @@ export class ResourcesController {
     private readonly communicationsService: CommunicationsService,
     private readonly catalogService: CatalogService,
     private readonly aiSettingsService: AiSettingsService,
+    private readonly nearbyProfessionalsService: NearbyProfessionalsService,
   ) {}
 
   @Get('condominiums')
@@ -183,6 +185,43 @@ export class ResourcesController {
     return { data: this.dataStoreService.getProfessionals(category, service, search, condominiumId) };
   }
 
+  // Precisa vir antes de 'professionals/:id', senão "nearby" seria lido como um id.
+  @Get('professionals/nearby')
+  async getNearbyProfessionals(
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+    @Query('radius') radius?: string,
+    @Query('categorySlug') categorySlug?: string,
+    @Query('serviceSlug') serviceSlug?: string,
+    @Query('minRating') minRating?: string,
+    @Query('recommended') recommended?: string,
+    @Query('sort') sort?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const numero = (valor?: string) => {
+      const convertido = Number(valor);
+      return valor !== undefined && valor !== '' && Number.isFinite(convertido) ? convertido : null;
+    };
+    const ordens = ['distance', 'recommended', 'rating', 'reviews', 'az'] as const;
+    return {
+      data: await this.nearbyProfessionalsService.search({
+        lat: numero(lat),
+        lng: numero(lng),
+        radius: numero(radius),
+        categorySlug,
+        serviceSlug,
+        minRating: numero(minRating) ?? undefined,
+        recommended: recommended === 'true',
+        sort: ordens.find((item) => item === sort),
+        search,
+        page: numero(page) ?? undefined,
+        limit: numero(limit) ?? undefined,
+      }),
+    };
+  }
+
   @Get('professionals/:id/services')
   async getProfessionalServices(@Param('id') id: string) {
     return { data: this.dataStoreService.getProfessionalServices(id) };
@@ -231,7 +270,15 @@ export class ResourcesController {
 
   @Get('public-settings')
   async getPublicSettings() {
-    return { data: { ...this.dataStoreService.getPublicSettings(), ai: await this.aiSettingsService.getPublicConfig() } };
+    return {
+      data: {
+        ...this.dataStoreService.getPublicSettings(),
+        ai: await this.aiSettingsService.getPublicConfig(),
+        // A chave do Maps é carregada pelo navegador por natureza da API do Google;
+        // a proteção correta é restringi-la por referenciador no Google Cloud.
+        maps: { apiKey: process.env.GOOGLE_MAPS_API_KEY ?? '' },
+      },
+    };
   }
 
   @Get('me/professional')

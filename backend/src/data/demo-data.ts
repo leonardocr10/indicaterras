@@ -85,6 +85,10 @@ export interface DemoProfessional {
   avatar: string;
   coverImage: string;
   featured: boolean;
+  /** Falso quando o cadastro foi desativado; o admin continua enxergando. */
+  active?: boolean;
+  /** Verdadeiro enquanto houver punição vigente de ocultar, suspender ou bloquear. */
+  moderationHidden?: boolean;
 }
 
 export interface DemoReview {

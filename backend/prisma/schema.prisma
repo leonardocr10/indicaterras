@@ -236,6 +236,10 @@ model Professional {
   neighborhood           String
   avatar                 String?                @db.Text
   coverImage             String?                @db.Text
+  // Centroide do bairro, preenchido pelo geocode. A precisao e de bairro, nunca
+  // de endereco - a interface sempre mostra a distancia como aproximada.
+  latitude               Decimal?               @db.Decimal(10, 7)
+  longitude              Decimal?               @db.Decimal(10, 7)
   active                 Boolean                @default(true)
   featured               Boolean                @default(false)
   createdAt              DateTime               @default(now())

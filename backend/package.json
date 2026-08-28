@@ -17,6 +17,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
     "seed:categorias-vazias": "ts-node prisma/seed-categorias-vazias.ts",
+    "geocode:profissionais": "ts-node prisma/geocode-professionals.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

@@ -95,6 +95,8 @@ export class DataStoreService implements OnModuleInit {
           professionalServices: { include: { categoryService: { include: { aliases: true } } } },
           recommendations: true,
           reviews: true,
+          // Necessário para tirar do app quem está oculto, suspenso ou bloqueado.
+          actions: { where: { active: true } },
         },
         orderBy: { name: 'asc' },
       }),
@@ -206,6 +208,12 @@ export class DataStoreService implements OnModuleInit {
           avatar: item.avatar ?? '',
           coverImage: item.coverImage ?? '',
           featured: item.recommendations.length > 0,
+          active: item.active,
+          moderationHidden: item.actions.some(
+            (acao) =>
+              ['HIDE', 'SUSPEND_7', 'SUSPEND_30', 'BLOCK'].includes(acao.action) &&
+              (acao.endsAt === null || acao.endsAt.getTime() > Date.now()),
+          ),
         } satisfies DemoProfessional;
       }),
     );
@@ -950,6 +958,9 @@ export class DataStoreService implements OnModuleInit {
             neighborhood: String(payload.neighborhood ?? '') || undefined,
             avatar: String(payload.avatar ?? '') || null,
             coverImage: payload.coverImage === undefined ? undefined : String(payload.coverImage) || null,
+            // Sem isto, ocultar/suspender/bloquear pela moderação não tinha efeito:
+            // o valor era descartado aqui e o profissional continuava no app.
+            active: payload.active === undefined ? undefined : Boolean(payload.active),
           },
         });
         if (categoryIds.length) {
@@ -1129,9 +1140,17 @@ export class DataStoreService implements OnModuleInit {
     return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
+  /**
+   * Profissionais que o app pode exibir. O administrador continua enxergando
+   * todos por getAdminRecords, senão não teria como restaurar quem foi punido.
+   */
+  private visibleProfessionals() {
+    return this.professionals.filter((professional) => professional.active !== false && !professional.moderationHidden);
+  }
+
   getProfessionals(categorySlug?: string, serviceSlug?: string, search?: string, condominiumId?: string): Array<DemoProfessional & { matchesLocation?: boolean }> {
     const query = search ?? '';
-    const filtered = this.professionals.filter((professional) => {
+    const filtered = this.visibleProfessionals().filter((professional) => {
       const categoryMatch = !categorySlug || professional.categories.some((category) => category.slug === categorySlug);
       const serviceMatch = !serviceSlug || professional.serviceDetails.some((service) => service.slug === serviceSlug);
       if (!categoryMatch || !serviceMatch) return false;
@@ -1816,7 +1835,8 @@ export class DataStoreService implements OnModuleInit {
   }
 
   getProfessionalById(id: string): DemoProfessional | undefined {
-    return this.professionals.find((item) => item.id === id);
+    // Perfil de quem foi bloqueado nao deve abrir pelo link direto.
+    return this.visibleProfessionals().find((item) => item.id === id);
   }
 
   getProfessionalReviews(professionalId: string): DemoReview[] {
@@ -1900,7 +1920,7 @@ export class DataStoreService implements OnModuleInit {
 
   getFavorites(userId: string): DemoProfessional[] {
     const ids = this.favoriteProfessionalIds.get(userId) ?? new Set<string>();
-    return this.professionals.filter((item) => ids.has(item.id));
+    return this.visibleProfessionals().filter((item) => ids.has(item.id));
   }
 
   async toggleFavorite(userId: string, professionalId: string) {
@@ -2220,7 +2240,7 @@ export class DataStoreService implements OnModuleInit {
     return {
       condominium: this.condominiums[0],
       categories: this.categories.filter((category) => category.active),
-      featuredProfessionals: [...this.professionals]
+      featuredProfessionals: [...this.visibleProfessionals()]
         .sort((left, right) => right.recommendationCount - left.recommendationCount || right.rating - left.rating || left.name.localeCompare(right.name))
         .slice(0, 4),
       user: this.findUserById('user-leonardo'),

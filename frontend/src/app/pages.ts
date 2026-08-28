@@ -26,7 +26,7 @@ import {
   LucideHouse, LucideHandshake, LucideX,
   LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideShieldCheck,
 } from '@lucide/angular';
-import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
+import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { matchesSearch } from './search.util';
 import { fetchBrazilianCities, neighborhoodsForCity } from './brazil-locations';
@@ -461,7 +461,7 @@ export class HomePageComponent implements OnInit {
           </header>
 
           <label>Buscar por nome ou serviço
-            <span class="filter-search-field"><svg lucideSearch /><input [ngModel]="searchText()" (ngModelChange)="searchText.set($event)" placeholder="Ex.: instalação elétrica" /></span>
+            <span class="filter-search-field"><svg lucideSearch /><input [ngModel]="searchText()" (ngModelChange)="setSearchText($event)" placeholder="Ex.: instalação elétrica" /></span>
           </label>
 
           <label>Categoria
@@ -498,6 +498,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private searchMatchTimer: ReturnType<typeof setTimeout> | null = null;
   protected readonly professionals = signal<Professional[]>([]);
   protected readonly categories = signal<Category[]>([]);
   protected readonly sortMode = signal<'recommended' | 'rating' | 'reviews' | 'az'>('recommended');
@@ -505,6 +506,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
   protected readonly filtersOpen = signal(false);
   protected readonly selectedCategory = signal('');
   protected readonly searchText = signal('');
+  protected readonly problemMatch = signal<ProblemMatchResult | null>(null);
   protected readonly cityFilter = signal('');
   protected readonly neighborhoodFilter = signal('');
   protected readonly serviceFilter = signal('');
@@ -567,11 +569,12 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     const neighborhood = this.neighborhoodFilter();
     const service = this.serviceFilter();
     const minimumRating = this.minimumRating();
+    const problemMatch = this.problemMatch();
 
     return this.professionals()
       .filter((professional) => {
         const searchable = [professional.name, professional.companyName ?? '', professional.bio, professional.city, professional.neighborhood, ...professional.categories.map((item) => item.name), ...professional.serviceDetails.flatMap((item) => [item.name, ...item.aliases])].join(' ');
-        const intelligentSearch = matchesSearch(searchable, search);
+        const intelligentSearch = matchesSearch(searchable, search) || this.matchesProblem(professional, problemMatch);
         return (!category || professional.categories.some((item) => item.slug === category))
           && intelligentSearch
           && (!city || professional.city === city)
@@ -595,7 +598,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     this.api.getCategories().subscribe((categories) => this.categories.set(categories.filter((category) => category.slug !== 'mais')));
     this.route.queryParamMap.subscribe((params) => {
       this.selectedCategory.set(params.get('categoria') ?? '');
-      this.searchText.set(params.get('busca') ?? '');
+      this.setSearchText(params.get('busca') ?? '');
       this.serviceFilter.set(params.get('servico') ?? '');
       const sort = params.get('ordem');
       if (sort && this.sortOptions.some((option) => option.value === sort)) this.sortMode.set(sort as 'recommended' | 'rating' | 'reviews' | 'az');
@@ -633,9 +636,26 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  protected setSearchText(value: string) {
+    const query = value.replace(/\s+/g, ' ').trim();
+    this.searchText.set(value);
+    this.problemMatch.set(null);
+    if (this.searchMatchTimer) clearTimeout(this.searchMatchTimer);
+    if (query.length < 3) return;
+
+    this.searchMatchTimer = setTimeout(() => {
+      this.api.matchProblem(query).subscribe({
+        next: (match) => {
+          // Ignora respostas antigas quando a pessoa continua digitando.
+          if (this.searchText().replace(/\s+/g, ' ').trim() === query) this.problemMatch.set(match);
+        },
+      });
+    }, 220);
+  }
+
   protected clearFilters() {
     this.selectedCategory.set('');
-    this.searchText.set('');
+    this.setSearchText('');
     this.cityFilter.set('');
     this.neighborhoodFilter.set('');
     this.serviceFilter.set('');
@@ -659,6 +679,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.searchMatchTimer) clearTimeout(this.searchMatchTimer);
     document.body.classList.remove('mobile-menu-open');
   }
 
@@ -677,6 +698,12 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
       case 'az': return first.name.localeCompare(second.name, 'pt-BR');
       default: return second.recommendationCount - first.recommendationCount || second.rating - first.rating || second.reviewCount - first.reviewCount;
     }
+  }
+
+  private matchesProblem(professional: Professional, match: ProblemMatchResult | null) {
+    if (!match?.category) return false;
+    if (!professional.categories.some((category) => category.id === match.category!.id)) return false;
+    return !match.services.length || professional.serviceDetails.some((service) => match.services.some((matched) => matched.id === service.id));
   }
 }
 

@@ -803,7 +803,7 @@ export class HomePageComponent implements OnInit {
               <svg lucideMapPin aria-hidden="true" />
               <div>
                 <strong>Raio de busca: {{ radius() }} km</strong>
-                <small>{{ location()?.label || 'Localização não definida' }}</small>
+                <small>{{ locationLabel() }}</small>
               </div>
             </div>
             <button type="button" (click)="locationSheetOpen.set(true)">Alterar localização</button>
@@ -991,6 +991,13 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
   protected readonly aiEnabled = signal(false);
   protected readonly radiusOptions = RADIUS_OPTIONS;
   protected zipInput = '';
+  protected readonly locationLabel = computed(() => {
+    const local = this.location();
+    if (!local) return 'Localização não definida';
+    // Deixa claro de onde veio, para a pessoa saber que pode trocar.
+    const origem = { profile: 'do seu cadastro', device: 'do seu aparelho', zip: 'pelo CEP', manual: '' }[local.origin] ?? '';
+    return origem ? `${local.label} · ${origem}` : local.label;
+  });
   protected readonly nearbyItems = computed(() => this.nearby()?.items ?? []);
   protected readonly nearbyWithoutLocation = computed(() => this.nearby()?.withoutLocation ?? 0);
   protected readonly quickCategories = computed(() => {
@@ -1083,6 +1090,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     this.nearbyMode.set(this.router.url.split('?')[0].endsWith('/buscar'));
     if (this.nearbyMode()) {
       this.api.getPublicSettings().subscribe({ next: (settings) => this.aiEnabled.set(settings.ai?.enabled === true), error: () => undefined });
+      void this.useProfileAddress();
     }
     this.route.queryParamMap.subscribe((params) => {
       this.selectedCategory.set(params.get('categoria') ?? '');
@@ -1124,6 +1132,28 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
           this.loadingNearby.set(false);
         },
       });
+  }
+
+  /**
+   * Usa o CEP do cadastro quando ainda não há localização escolhida, para não
+   * pedir permissão nem digitação a quem já informou o endereço ao se cadastrar.
+   * Silencioso de propósito: falhar aqui só mantém o convite manual na tela.
+   */
+  private async useProfileAddress() {
+    if (this.location()) return;
+    this.api.getMyAccount().subscribe({
+      next: async (conta) => {
+        const cep = (conta.zipCode ?? '').replace(/\D/g, '');
+        if (cep.length !== 8 || this.location()) return;
+        try {
+          await this.locationService.useZipCode(cep, 'profile');
+          this.loadNearby();
+        } catch {
+          // Sem coordenada para o CEP, a pessoa escolhe manualmente.
+        }
+      },
+      error: () => undefined,
+    });
   }
 
   protected setRadius(valor: number) {

@@ -42,7 +42,8 @@
 .home-page .category-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; margin-top: 15px; }
 .home-page .category-card { min-height: 91px; padding: 10px 3px 8px; border: 1px solid #e0e8e4; border-radius: 16px; gap: 5px; color: #172c40; font-size: 10px; font-weight: 700; box-shadow: 0 3px 9px rgba(18, 45, 32, .035); }
 .home-page .category-icon { height: 36px; }
-.home-page .category-icon img { width: 31px; height: 31px; filter: brightness(0) saturate(100%) invert(26%) sepia(24%) saturate(1866%) hue-rotate(108deg) brightness(82%) contrast(100%); }
+.category-card .category-icon { color: var(--if-primary-dark) !important; }
+.category-card .category-icon img { width: 31px; height: 31px; filter: brightness(0) saturate(100%) invert(26%) sepia(24%) saturate(1866%) hue-rotate(108deg) brightness(82%) contrast(100%); }
 .home-page .category-card.more .category-icon img { width: 26px; height: 26px; }
 .home-page .home-verified { margin: 23px 0 0; padding: 15px 13px; border: 0; border-radius: 17px; gap: 10px; background: linear-gradient(108deg, #eaf8ef, #f4fbf7); }
 .home-page .home-verified > span { width: 43px; height: 43px; border-radius: 14px; color: #075e3a; background: #d8f0e1; }
@@ -67,5 +68,5 @@
   .home-decision-card h2 { font-size: 13px; }
   .home-decision-card p { font-size: 10px; }
   .home-page .category-card { min-height: 82px; font-size: 9px; }
-  .home-page .category-icon img { width: 27px; height: 27px; }
+  .category-card .category-icon img { width: 27px; height: 27px; }
 }

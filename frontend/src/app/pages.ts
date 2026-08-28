@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { of, switchMap } from 'rxjs';
 import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -28,6 +29,7 @@ import {
 import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { matchesSearch } from './search.util';
+import { fetchBrazilianCities, neighborhoodsForCity } from './brazil-locations';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import { categoryAvatar, categoryCover } from './category-art.util';
 import { SearchableSelectComponent } from './searchable-select';
@@ -145,10 +147,9 @@ export class LoginPageComponent {
           <ng-container *ngIf="isProfessional()">
             <input placeholder="Empresa (opcional)" formControlName="companyName" />
             <app-searchable-select formControlName="categoryId" [items]="activeCategories()" valueKey="id" labelKey="name" placeholder="Selecione sua categoria" searchPlaceholder="Pesquisar categoria..." />
-            <div class="grid-2">
-              <input placeholder="Cidade" formControlName="city" />
-              <input placeholder="Bairro (opcional)" formControlName="neighborhood" />
-            </div>
+            <app-searchable-select formControlName="city" [items]="cities()" valueKey="name" labelKey="label" [placeholder]="loadingCities() ? 'Carregando cidades...' : 'Selecione a cidade'" searchPlaceholder="Pesquisar cidade..." />
+            <app-searchable-select *ngIf="neighborhoodOptions().length; else bairroLivre" formControlName="neighborhood" [items]="neighborhoodOptions()" placeholder="Selecione o bairro" searchPlaceholder="Pesquisar bairro..." />
+            <ng-template #bairroLivre><input placeholder="Bairro" formControlName="neighborhood" /></ng-template>
             <textarea placeholder="Conte sobre o seu trabalho (opcional)" formControlName="bio" maxlength="600"></textarea>
           </ng-container>
 
@@ -165,6 +166,7 @@ export class RegisterPageComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   protected readonly condominiums = signal<Condominium[]>([]);
   protected readonly categories = signal<Category[]>([]);
@@ -173,6 +175,10 @@ export class RegisterPageComponent implements OnInit {
   protected readonly isProfessional = signal(false);
   protected readonly feedback = signal('');
   protected readonly hasError = signal(false);
+  protected readonly cities = signal<Array<{ name: string; label: string }>>([]);
+  protected readonly loadingCities = signal(false);
+  protected readonly selectedCity = signal('');
+  protected readonly neighborhoodOptions = computed(() => neighborhoodsForCity(this.selectedCity()));
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
@@ -201,6 +207,21 @@ export class RegisterPageComponent implements OnInit {
       next: (settings) => this.professionalSignupEnabled.set(settings.professionalSelfRegistration),
       error: () => this.professionalSignupEnabled.set(false),
     });
+    this.form.controls.city.valueChanges.subscribe((city) => {
+      this.selectedCity.set(city ?? '');
+      this.form.controls.neighborhood.setValue('');
+    });
+  }
+
+  private loadCities() {
+    this.loadingCities.set(true);
+    fetchBrazilianCities(this.http).subscribe({
+      next: (cities) => {
+        this.cities.set(cities.map((city) => ({ name: city.name, label: city.uf ? `${city.name} - ${city.uf}` : city.name })));
+        this.loadingCities.set(false);
+      },
+      error: () => this.loadingCities.set(false),
+    });
   }
 
   setAccountType(type: 'resident' | 'professional') {
@@ -208,18 +229,21 @@ export class RegisterPageComponent implements OnInit {
     this.isProfessional.set(professional);
     this.feedback.set('');
     this.hasError.set(false);
-    const { condominiumId, categoryId, city } = this.form.controls;
+    const { condominiumId, categoryId, city, neighborhood } = this.form.controls;
     if (professional) {
       condominiumId.clearValidators();
       categoryId.setValidators(Validators.required);
       city.setValidators(Validators.required);
+      neighborhood.setValidators(Validators.required);
+      if (!this.cities().length) this.loadCities();
     } else {
       condominiumId.setValidators(Validators.required);
       if (!condominiumId.value) condominiumId.setValue(this.condominiums()[0]?.id ?? '');
       categoryId.clearValidators();
       city.clearValidators();
+      neighborhood.clearValidators();
     }
-    [condominiumId, categoryId, city].forEach((control) => control.updateValueAndValidity());
+    [condominiumId, categoryId, city, neighborhood].forEach((control) => control.updateValueAndValidity());
   }
 
   submit() {

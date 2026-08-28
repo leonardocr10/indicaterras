@@ -32,6 +32,7 @@ import {
   LucideUsersRound,
   LucideHandshake,
   LucideChartNoAxesColumn,
+  LucideSparkles,
   LucideChevronDown,
   LucideX,
 } from '@lucide/angular';
@@ -378,7 +379,7 @@ export class BottomNavigationComponent { protected readonly brand = brand; }
 @Component({
   selector: 'admin-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideClipboardCheck, LucideUserRound, LucideUsersRound, LucideBriefcaseBusiness, LucideTag, LucideStar, LucideHandshake, LucideTriangleAlert, LucideSettings, LucideChartNoAxesColumn],
+  imports: [CommonModule, RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideClipboardCheck, LucideUserRound, LucideUsersRound, LucideBriefcaseBusiness, LucideTag, LucideStar, LucideHandshake, LucideTriangleAlert, LucideSettings, LucideChartNoAxesColumn, LucideSparkles],
   template: `
     <aside class="admin-sidebar">
       <div class="brand-card">
@@ -401,6 +402,7 @@ export class BottomNavigationComponent { protected readonly brand = brand; }
 
       <span class="sidebar-group-label">Sistema</span>
       <a *ngIf="isVisible('configuracoes')" routerLink="/admin/configuracoes" routerLinkActive="active"><svg lucideSettings /><span>Configurações</span></a>
+      <a *ngIf="isVisible('inteligencia-artificial')" routerLink="/admin/inteligencia-artificial" routerLinkActive="active"><svg lucideSparkles /><span>Inteligência Artificial</span></a>
       <a *ngIf="isVisible('relatorios')" routerLink="/admin/relatorios" routerLinkActive="active"><svg lucideChartNoAxesColumn /><span>Relatórios</span></a>
 
     </aside>

@@ -7,6 +7,7 @@ import type { ArquivoEnviado } from '../data/file-storage.service';
 import type { ComplaintAction, ComplaintStatus } from '../data/complaints';
 import { CommunicationsService } from './communications.service';
 import { CatalogService } from '../data/catalog.service';
+import { AiSettingsService } from '../ai/ai-settings.service';
 
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
 const TIPOS_SOLICITACAO = [...TIPOS_ACEITOS, 'video/mp4', 'video/webm', 'video/quicktime'];
@@ -43,6 +44,7 @@ export class ResourcesController {
     private readonly fileStorageService: FileStorageService,
     private readonly communicationsService: CommunicationsService,
     private readonly catalogService: CatalogService,
+    private readonly aiSettingsService: AiSettingsService,
   ) {}
 
   @Get('condominiums')
@@ -228,8 +230,8 @@ export class ResourcesController {
   }
 
   @Get('public-settings')
-  getPublicSettings() {
-    return { data: this.dataStoreService.getPublicSettings() };
+  async getPublicSettings() {
+    return { data: { ...this.dataStoreService.getPublicSettings(), ai: await this.aiSettingsService.getPublicConfig() } };
   }
 
   @Get('me/professional')

@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 
 type GroupRecord = { id: string; name: string; slug: string };
-type CategoryRecord = { id: string; name: string; slug: string; group: GroupRecord | null; services: Array<{ id: string; categoryId: string; name: string; slug: string; aliases: Array<{ alias: string }> }> };
+export type CategoryRecord = { id: string; name: string; slug: string; group: GroupRecord | null; services: Array<{ id: string; categoryId: string; name: string; slug: string; aliases: Array<{ alias: string }> }> };
+export type GroupedCategory = { id: string; name: string; slug: string };
 
 @Injectable()
 export class CatalogService {
@@ -16,30 +17,22 @@ export class CatalogService {
     });
   }
 
-  async match(query: string) {
-    const normalizedQuery = this.normalize(query);
-    if (!normalizedQuery) return this.empty(normalizedQuery);
-    const categories = await this.prisma.category.findMany({
+  /** Categorias ativas com serviços e aliases — usada tanto pelo matcher local quanto para montar os candidatos enviados à IA. */
+  async activeCategories(): Promise<CategoryRecord[]> {
+    return this.prisma.category.findMany({
       where: { active: true },
       include: { group: true, services: { where: { active: true }, include: { aliases: true }, orderBy: { displayOrder: 'asc' } } },
       orderBy: { displayOrder: 'asc' },
-    }) as CategoryRecord[];
-    const tokens = this.tokens(normalizedQuery);
-    const matches = categories.flatMap((category) => category.services.map((service) => ({ category, service, score: this.score(normalizedQuery, tokens, category, service) })))
-      .filter((item) => item.score >= 40)
-      .sort((a, b) => b.score - a.score || a.service.name.localeCompare(b.service.name, 'pt-BR'));
-    const best = matches[0];
-    if (!best) return this.empty(normalizedQuery, tokens, categories);
-    const sameCategory = matches.filter((item) => item.category.id === best.category.id);
-    const services = sameCategory.slice(0, 3).map(({ service, score }) => ({ id: service.id, categoryId: best.category.id, name: service.name, slug: service.slug, score }));
-    const alternativeServices = matches.filter((item) => item.service.id !== best.service.id).slice(0, 4)
-      .map(({ service, score }) => ({ id: service.id, categoryId: service.categoryId, name: service.name, slug: service.slug, score }));
-    const serviceIds = services.map((service) => service.id);
+    }) as Promise<CategoryRecord[]>;
+  }
+
+  /** Profissionais compatíveis com uma categoria (e, se informados, com prioridade para os serviços exatos). Reaproveitada pelo matcher local e pela camada de IA. */
+  async professionalsForCategory(category: GroupedCategory, serviceIds: string[]) {
     const professionals = await this.prisma.professional.findMany({
-      where: { active: true, professionalCategories: { some: { categoryId: best.category.id } } },
+      where: { active: true, professionalCategories: { some: { categoryId: category.id } } },
       include: { professionalCategories: { include: { category: true } }, professionalServices: { include: { categoryService: true } }, recommendations: true, reviews: true },
     });
-    const compatibleProfessionals = professionals
+    return professionals
       .map((professional) => ({
         professional,
         exactService: professional.professionalServices.some((item) => serviceIds.includes(item.categoryServiceId)),
@@ -51,8 +44,8 @@ export class CatalogService {
         id: professional.id,
         name: professional.name,
         companyName: professional.companyName ?? '',
-        categoryId: best.category.id,
-        category: best.category.name,
+        categoryId: category.id,
+        category: category.name,
         categoryIds: professional.professionalCategories.map((item) => item.categoryId),
         categories: professional.professionalCategories.map((item) => ({ id: item.category.id, name: item.category.name, slug: item.category.slug })),
         serviceIds: professional.professionalServices.map((item) => item.categoryServiceId),
@@ -61,6 +54,24 @@ export class CatalogService {
         rating: Number(rating.toFixed(1)), reviewCount: professional.reviews.length, recommendationCount: professional.recommendations.length,
         city: professional.city, neighborhood: professional.neighborhood, condominiumId: '', bio: professional.bio ?? '', whatsapp: professional.whatsapp ?? '', phone: professional.phone, instagram: professional.instagram ?? '', avatar: professional.avatar ?? '', coverImage: professional.coverImage ?? '', featured: professional.featured,
       }));
+  }
+
+  async match(query: string) {
+    const normalizedQuery = this.normalize(query);
+    if (!normalizedQuery) return this.empty(normalizedQuery);
+    const categories = await this.activeCategories();
+    const tokens = this.tokens(normalizedQuery);
+    const matches = categories.flatMap((category) => category.services.map((service) => ({ category, service, score: this.score(normalizedQuery, tokens, category, service) })))
+      .filter((item) => item.score >= 40)
+      .sort((a, b) => b.score - a.score || a.service.name.localeCompare(b.service.name, 'pt-BR'));
+    const best = matches[0];
+    if (!best) return this.empty(normalizedQuery, tokens, categories);
+    const sameCategory = matches.filter((item) => item.category.id === best.category.id);
+    const services = sameCategory.slice(0, 3).map(({ service, score }) => ({ id: service.id, categoryId: best.category.id, name: service.name, slug: service.slug, score }));
+    const alternativeServices = matches.filter((item) => item.service.id !== best.service.id).slice(0, 4)
+      .map(({ service, score }) => ({ id: service.id, categoryId: service.categoryId, name: service.name, slug: service.slug, score }));
+    const serviceIds = services.map((service) => service.id);
+    const compatibleProfessionals = await this.professionalsForCategory(best.category, serviceIds);
     return { query, normalizedQuery, keywords: tokens, confidence: Number(Math.min(1, best.score / 100).toFixed(2)), group: best.category.group, category: { id: best.category.id, name: best.category.name, slug: best.category.slug }, services, alternativeServices, professionals: compatibleProfessionals };
   }
 

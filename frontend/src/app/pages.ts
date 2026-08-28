@@ -25,9 +25,9 @@ import {
   LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideMapPin,
   LucideHouse, LucideHandshake, LucideX,
   LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideShieldCheck,
-  LucideBadgeCheck, LucideClipboardList, LucidePencil, LucideTrash2,
+  LucideBadgeCheck, LucideClipboardList, LucidePencil, LucideTrash2, LucideCheck,
 } from '@lucide/angular';
-import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
+import { AiProblemAnalysisResult, AiPublicConfig, Category, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { matchesSearch } from './search.util';
 import { fetchAddressByZipCode, fetchBrazilianCities, neighborhoodsForCity } from './brazil-locations';
@@ -118,8 +118,8 @@ export class LoginPageComponent {
   protected readonly forgotSent = signal(false);
   protected readonly forgotError = signal('');
   protected readonly form = this.fb.nonNullable.group({
-    email: ['leonardo@terrasalphas.com.br', [Validators.required, Validators.email]],
-    password: ['123456', [Validators.required, Validators.minLength(6)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
     rememberMe: [true],
   });
 
@@ -538,21 +538,70 @@ export class RegisterPageComponent implements OnInit {
     LucideMessageCircle,
     LucideUsersRound,
     LucideArrowRight,
+    LucideSparkles,
+    LucideCheck,
   ],
   template: `
       <section class="mobile-page home-page" *ngIf="payload() as home">
       <mobile-topbar />
       <section class="home-surface">
-        <div class="home-hero">
-          <div><h1>Encontre o profissional ideal</h1><p>com confiança e segurança.</p></div>
-          <div class="home-hero-proof" aria-label="Profissionais verificados e avaliados"><span><svg lucideShieldCheck /></span><i class="hero-avatar avatar-one"></i><i class="hero-avatar avatar-two"></i><i class="hero-avatar avatar-three"></i></div>
-        </div>
-        <form class="home-search" role="search" (ngSubmit)="searchProfessionals()">
-          <svg lucideSearch aria-hidden="true" />
-          <input name="homeSearch" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" [(ngModel)]="searchText" (ngModelChange)="suggestProblem($event)" (keydown.enter)="searchProfessionals(); $event.preventDefault()" placeholder="Conte o que aconteceu. Ex.: meu chuveiro queimou" aria-label="Descreva o problema" />
-          <a class="home-search-filters" routerLink="/app/profissionais" aria-label="Abrir filtros de busca"><svg lucideSlidersHorizontal /></a>
-        </form>
-        <aside class="home-problem-suggestion" *ngIf="problemSuggestion() as match">
+        <ng-container *ngIf="aiEnabled(); else classicHero">
+          <div class="home-ai-hero">
+            <span class="home-ai-badge"><svg lucideSparkles aria-hidden="true" />Assistente IA</span>
+            <h1>{{ aiTexts().title }}</h1>
+            <p>{{ aiTexts().subtitle }}</p>
+          </div>
+          <form class="home-ai-form" (ngSubmit)="analyzeProblem(); $event.preventDefault()">
+            <label class="home-ai-field">
+              <svg lucideSparkles aria-hidden="true" />
+              <input name="aiProblem" type="text" autocomplete="off" [(ngModel)]="searchText" (ngModelChange)="suggestProblem($event)" [placeholder]="aiTexts().placeholder" aria-label="Descreva o problema" />
+            </label>
+            <small class="home-ai-helper">{{ aiTexts().helperText }}</small>
+            <div class="home-ai-examples">
+              <span>Exemplos rápidos</span>
+              <div>
+                <button *ngFor="let example of aiExamples" type="button" (click)="useExample(example)">{{ example }}</button>
+              </div>
+            </div>
+            <button type="submit" class="primary-button home-ai-submit" [disabled]="analyzing()">
+              <svg lucideSparkles aria-hidden="true" />{{ analyzing() ? 'Analisando...' : 'Analisar meu problema' }}<svg lucideArrowRight aria-hidden="true" />
+            </button>
+          </form>
+          <aside class="home-ai-progress" *ngIf="analyzing()" aria-live="polite">
+            <strong>Entendendo o que você precisa...</strong>
+            <ul><li>Analisando problema</li><li>Identificando serviço</li><li>Buscando profissionais</li></ul>
+          </aside>
+          <aside class="home-ai-clarification" *ngIf="analysis() as result">
+            <ng-container *ngIf="result.needsClarification && result.clarificationQuestion">
+              <strong>{{ result.message }}</strong>
+              <p>{{ result.clarificationQuestion }}</p>
+            </ng-container>
+          </aside>
+          <article class="home-ai-result" *ngIf="analysisCategory() as category">
+            <strong>{{ analysis()?.message }}</strong>
+            <h2>{{ category.name }}</h2>
+            <ul *ngIf="analysis()?.services?.length">
+              <li *ngFor="let service of analysis()?.services"><svg lucideCheck aria-hidden="true" />{{ service.name }}</li>
+            </ul>
+            <div class="home-ai-actions">
+              <button type="button" class="primary-button" (click)="viewProfessionalsForAnalysis()">Ver profissionais</button>
+              <button type="button" class="secondary-button" (click)="createRequest()">Quero receber propostas</button>
+              <button type="button" class="ghost-button" (click)="resetAnalysis()">Ajustar</button>
+            </div>
+          </article>
+        </ng-container>
+        <ng-template #classicHero>
+          <div class="home-hero">
+            <div><h1>Encontre o profissional ideal</h1><p>com confiança e segurança.</p></div>
+            <div class="home-hero-proof" aria-label="Profissionais avaliados pela comunidade"><span><svg lucideShieldCheck /></span><i class="hero-avatar avatar-one"></i><i class="hero-avatar avatar-two"></i><i class="hero-avatar avatar-three"></i></div>
+          </div>
+          <form class="home-search" role="search" (ngSubmit)="searchProfessionals()">
+            <svg lucideSearch aria-hidden="true" />
+            <input name="homeSearch" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" [(ngModel)]="searchText" (ngModelChange)="suggestProblem($event)" (keydown.enter)="searchProfessionals(); $event.preventDefault()" placeholder="Conte o que aconteceu. Ex.: meu chuveiro queimou" aria-label="Descreva o problema" />
+            <a class="home-search-filters" routerLink="/app/profissionais" aria-label="Abrir filtros de busca"><svg lucideSlidersHorizontal /></a>
+          </form>
+        </ng-template>
+        <aside class="home-problem-suggestion" *ngIf="!analysis() && problemSuggestion() as match">
           <p *ngIf="match.category; else noMatch">Parece que você precisa de <b>{{ match.category.name }}</b><span *ngIf="match.services[0]">: {{ match.services[0].name }}</span>.</p>
           <ng-template #noMatch><p>Não identificamos o serviço com segurança. Você pode escolher manualmente.</p></ng-template>
           <div *ngIf="match.category"><button type="button" (click)="searchProfessionals()">Ver profissionais</button><button type="button" (click)="createRequest()">Quero receber propostas</button></div>
@@ -566,7 +615,7 @@ export class RegisterPageComponent implements OnInit {
           </article>
           <article class="home-decision-card browse">
             <span><svg lucideUsersRound /></span><h2>Ver profissionais</h2>
-            <p>Navegue e escolha o profissional ideal para o que você precisa.</p>
+            <p>{{ aiEnabled() ? 'Prefere escolher manualmente? Navegue por categorias e profissionais.' : 'Navegue e escolha o profissional ideal para o que você precisa.' }}</p>
             <a routerLink="/app/profissionais" class="secondary-button">Ver profissionais<svg lucideArrowRight /></a>
             <small><svg lucideShieldCheck />Compare avaliações, preços e escolha com segurança.</small>
           </article>
@@ -600,6 +649,15 @@ export class HomePageComponent implements OnInit {
   private readonly router = inject(Router);
   protected readonly payload = signal<HomePayload | null>(null);
   protected readonly problemSuggestion = signal<ProblemMatchResult | null>(null);
+  protected readonly aiConfig = signal<AiPublicConfig | null>(null);
+  protected readonly analysis = signal<AiProblemAnalysisResult | null>(null);
+  protected readonly analyzing = signal(false);
+  protected readonly aiEnabled = computed(() => this.aiConfig()?.enabled === true);
+  protected readonly analysisCategory = computed(() => {
+    const result = this.analysis();
+    return result && !result.needsClarification ? result.category : null;
+  });
+  protected readonly aiExamples = ['Meu chuveiro queimou', 'Minha pia está vazando', 'Meu ar não gela', 'Preciso de psicóloga', 'Minha internet está caindo'];
   protected searchText = '';
   private suggestionTimer?: ReturnType<typeof setTimeout>;
 
@@ -612,6 +670,59 @@ export class HomePageComponent implements OnInit {
     this.api.getHome().subscribe((payload) => {
       this.payload.set(payload);
       this.theme.applyCondominiumTheme(payload.condominium);
+    });
+    // Sem a configuração pública a Home simplesmente mantém a experiência clássica, sem IA.
+    this.api.getPublicSettings().subscribe({ next: (settings) => this.aiConfig.set(settings.ai ?? null) });
+  }
+
+  protected aiTexts() {
+    const config = this.aiConfig();
+    return {
+      title: config?.homeTitle || 'Conte o que aconteceu',
+      subtitle: config?.homeSubtitle || 'A IA do IndicaFácil ajuda você a encontrar quem pode resolver.',
+      placeholder: config?.homePlaceholder || 'Ex.: meu chuveiro queimou',
+      helperText: config?.homeHelperText || 'Descreva o problema com suas palavras. A IA identifica o serviço para você.',
+    };
+  }
+
+  protected useExample(example: string) {
+    this.searchText = example;
+    this.analysis.set(null);
+    this.problemSuggestion.set(null);
+  }
+
+  protected resetAnalysis() {
+    this.analysis.set(null);
+  }
+
+  /** Só roda por ação explícita do usuário — a digitação continua usando apenas o matcher local. */
+  protected analyzeProblem() {
+    const text = this.searchText.replace(/\s+/g, ' ').trim();
+    if (!text || this.analyzing()) return;
+    this.problemSuggestion.set(null);
+    this.analysis.set(null);
+    this.analyzing.set(true);
+    this.api.analyzeProblem(text).subscribe({
+      next: (result) => {
+        this.analysis.set(result);
+        this.analyzing.set(false);
+      },
+      // O erro técnico fica no log administrativo; aqui o morador segue pelo caminho manual.
+      error: () => {
+        this.analyzing.set(false);
+        this.findProfessionalsForProblem(text);
+      },
+    });
+  }
+
+  protected viewProfessionalsForAnalysis() {
+    const result = this.analysis();
+    if (!result?.category) {
+      this.searchProfessionals();
+      return;
+    }
+    void this.router.navigate(['/app/profissionais'], {
+      queryParams: { categoria: result.category.slug, servico: result.services[0]?.slug ?? null },
     });
   }
 
@@ -628,6 +739,17 @@ export class HomePageComponent implements OnInit {
 
   protected createRequest() {
     const problem = this.searchText.trim();
+    const result = this.analysis();
+    if (result?.category && !result.needsClarification) {
+      void this.router.navigate(['/app/solicitacoes/nova'], {
+        queryParams: {
+          problema: result.normalizedProblem || problem,
+          categoria: result.category.id,
+          servicos: result.services.map((service) => service.id).join(',') || null,
+        },
+      });
+      return;
+    }
     void this.router.navigate(['/app/solicitacoes/nova'], { queryParams: problem ? { problema: problem } : {} });
   }
 

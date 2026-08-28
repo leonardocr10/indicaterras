@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
-import { ApiResponse, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, HomePayload, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
+import { AiAnalysisLogRow, AiProblemAnalysisResult, AiPublicConfig, AiSettings, AiUsageSummary, ApiResponse, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, HomePayload, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
@@ -171,6 +171,45 @@ export class ApiService {
     return this.http.post<ApiResponse<ProblemMatchResult>>(`${this.baseUrl}/service-requests/match-problem`, { query }).pipe(map((response) => response.data));
   }
 
+  // Só deve ser chamado por ação explícita do usuário (botão "Analisar"), nunca a cada tecla digitada.
+  analyzeProblem(text: string) {
+    return this.http.post<ApiResponse<AiProblemAnalysisResult>>(`${this.baseUrl}/ai/problem-analysis`, { text, userId: this.auth.user()?.id }).pipe(map((response) => response.data));
+  }
+
+  getAdminAiSettings() {
+    return this.http.get<ApiResponse<AiSettings>>(`${this.baseUrl}/admin/ai-settings`).pipe(map((response) => response.data));
+  }
+
+  updateAdminAiSettings(payload: Partial<AiSettings>) {
+    return this.http.put<ApiResponse<AiSettings>>(`${this.baseUrl}/admin/ai-settings`, payload).pipe(map((response) => response.data));
+  }
+
+  testAiConnection() {
+    return this.http.post<ApiResponse<{ ok: boolean; message: string; latencyMs: number }>>(`${this.baseUrl}/admin/ai-settings/test-connection`, {}).pipe(map((response) => response.data));
+  }
+
+  testAiAnalysis(text: string) {
+    return this.http.post<ApiResponse<AiProblemAnalysisResult>>(`${this.baseUrl}/admin/ai-settings/test-analysis`, { text }).pipe(map((response) => response.data));
+  }
+
+  getAiAnalysisLogs(page = 1, pageSize = 20) {
+    return this.http
+      .get<ApiResponse<{ total: number; page: number; pageSize: number; items: AiAnalysisLogRow[] }>>(`${this.baseUrl}/admin/ai-analysis-logs?page=${page}&pageSize=${pageSize}`)
+      .pipe(map((response) => response.data));
+  }
+
+  getAiAnalysisLog(id: string) {
+    return this.http.get<ApiResponse<AiAnalysisLogRow>>(`${this.baseUrl}/admin/ai-analysis-logs/${id}`).pipe(map((response) => response.data));
+  }
+
+  setAiLogFeedback(id: string, feedback: 'correct' | 'incorrect') {
+    return this.http.patch<ApiResponse<AiAnalysisLogRow>>(`${this.baseUrl}/admin/ai-analysis-logs/${id}/feedback`, { feedback }).pipe(map((response) => response.data));
+  }
+
+  getAiUsage() {
+    return this.http.get<ApiResponse<AiUsageSummary>>(`${this.baseUrl}/admin/ai-usage`).pipe(map((response) => response.data));
+  }
+
   getMyServiceRequests() {
     const userId = this.auth.user()?.id ?? '';
     return this.http.get<ApiResponse<ServiceRequestRecord[]>>(`${this.baseUrl}/service-requests?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
@@ -257,7 +296,7 @@ export class ApiService {
 
   getPublicSettings() {
     return this.http
-      .get<ApiResponse<{ systemName: string; selfRegistration: boolean; professionalSelfRegistration: boolean; showBlock: boolean }>>(`${this.baseUrl}/public-settings`)
+      .get<ApiResponse<{ systemName: string; selfRegistration: boolean; professionalSelfRegistration: boolean; showBlock: boolean; ai: AiPublicConfig }>>(`${this.baseUrl}/public-settings`)
       .pipe(map((response) => response.data));
   }
 

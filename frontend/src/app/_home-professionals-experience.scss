@@ -60,6 +60,38 @@
 /* A arte da categoria é o fallback visual, sem símbolos coloridos ou emojis. */
 .professionals-page .professional-card .avatar:not(:has(img))::after { content: ''; }
 
+/* Assistente de IA: mesma identidade verde da marca, sem visual futurista. */
+.home-ai-hero { padding: 4px 3px 14px; }
+.home-ai-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border: 1px solid #cce8d7; border-radius: 999px; color: #076a41; background: #edf8f1; font-size: 11px; font-weight: 700; }
+.home-ai-badge svg { width: 14px; height: 14px; }
+.home-ai-hero h1 { margin: 12px 0 0; color: #102338; font-size: 25px; line-height: 30px; letter-spacing: -.8px; }
+.home-ai-hero p { margin: 5px 0 0; color: #344b60; font-size: 14px; line-height: 20px; }
+.home-ai-form { display: grid; gap: 10px; }
+.home-ai-field { min-height: 58px; padding: 0 14px; border: 1px solid #dce7e1; border-radius: 12px; display: flex; align-items: center; gap: 10px; background: #fff; box-shadow: 0 5px 18px rgba(14, 43, 29, .055); }
+.home-ai-field svg { width: 20px; height: 20px; flex: 0 0 auto; color: #087044; }
+.home-ai-field input { width: 100%; border: 0; outline: 0; background: transparent; color: #172c40; font: 400 14px var(--font-family); }
+.home-ai-helper { color: #5b7183; font-size: 11px; line-height: 16px; }
+.home-ai-examples { display: grid; gap: 7px; }
+.home-ai-examples > span { color: #476074; font-size: 11px; font-weight: 700; }
+.home-ai-examples > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.home-ai-examples button { min-height: 31px; padding: 6px 12px; border: 1px solid #d8e3de; border-radius: 999px; color: #283a4a; background: #fff; font: 600 11px var(--font-family); }
+.home-ai-submit { width: 100%; min-height: 48px; gap: 8px; font-size: 13px; }
+.home-ai-submit svg { width: 17px; height: 17px; flex: 0 0 auto; }
+.home-ai-progress { margin-top: 12px; padding: 13px; border: 1px solid #cde9d9; border-radius: 11px; background: #f4fbf7; }
+.home-ai-progress strong { color: #075e3a; font-size: 13px; }
+.home-ai-progress ul { margin: 8px 0 0; padding-left: 17px; color: #38566a; font-size: 11px; line-height: 19px; }
+.home-ai-clarification:not(:empty) { margin-top: 12px; padding: 13px; border: 1px solid #dce7e1; border-radius: 11px; background: #fff; }
+.home-ai-clarification strong { display: block; color: #13283d; font-size: 13px; }
+.home-ai-clarification p { margin: 6px 0 0; color: #38566a; font-size: 12px; line-height: 18px; }
+.home-ai-result { margin-top: 12px; padding: 15px 14px; border: 1px solid #cde9d9; border-radius: 12px; background: linear-gradient(145deg, #f4fbf7, #fff); }
+.home-ai-result strong { color: #075e3a; font-size: 12px; }
+.home-ai-result h2 { margin: 6px 0 0; color: #102338; font-size: 19px; letter-spacing: -.4px; }
+.home-ai-result ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.home-ai-result li { display: flex; align-items: center; gap: 7px; color: #294b3d; font-size: 12px; }
+.home-ai-result li svg { width: 15px; height: 15px; color: #087044; }
+.home-ai-actions { margin-top: 13px; display: grid; gap: 8px; }
+.home-ai-actions button { width: 100%; min-height: 42px; padding: 9px 12px; border-radius: 8px; font-size: 12px; }
+
 @media (max-width: 360px) {
   .home-hero h1 { font-size: 22px; line-height: 27px; }
   .home-hero p { font-size: 16px; }

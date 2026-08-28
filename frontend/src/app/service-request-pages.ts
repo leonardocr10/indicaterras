@@ -555,13 +555,19 @@ export class ServiceRequestNewPageComponent implements OnInit, OnDestroy {
     this.api.getCategories().subscribe((categories) => this.categories.set(categories.filter((category) => category.active)));
     this.route.queryParamMap.subscribe((params) => {
       const problem = params.get('problema')?.trim();
-      if (problem && !this.draft().description) {
-        this.patchDraft({
-          title: this.draft().title || problem.slice(0, 80),
-          description: problem,
-        });
-        this.scheduleMatch();
+      if (!problem || this.draft().description) return;
+      this.patchDraft({
+        title: this.draft().title || problem.slice(0, 80),
+        description: problem,
+      });
+      // Categoria e serviços já identificados (pela IA ou pelo matcher) evitam refazer a análise aqui.
+      const categoryId = params.get('categoria')?.trim();
+      const serviceIds = (params.get('servicos') ?? '').split(',').map((id) => id.trim()).filter(Boolean);
+      if (categoryId) {
+        this.store.patch({ categoryId, serviceIds });
+        return;
       }
+      this.scheduleMatch();
     });
   }
 

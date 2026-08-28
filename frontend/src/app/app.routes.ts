@@ -82,6 +82,7 @@ export const routes: Routes = [
       { path: 'denuncias', component: AdminReportsPageComponent },
       { path: 'denuncias/:id', component: AdminReportDetailsPageComponent },
       { path: 'configuracoes', component: AdminSectionPageComponent, data: { section: 'settings' } },
+      { path: 'inteligencia-artificial', loadComponent: () => import('./admin-ai-page').then((m) => m.AdminAiPageComponent) },
       { path: 'relatorios', component: AdminSectionPageComponent, data: { section: 'reports-dashboard' } },
     ],
   },

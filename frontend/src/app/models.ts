@@ -218,6 +218,88 @@ export interface ProblemMatchResult {
   professionals: Professional[];
 }
 
+export interface AiProblemAnalysisResult {
+  usedAi: boolean;
+  usedFallback: boolean;
+  confidence: number;
+  needsClarification: boolean;
+  clarificationQuestion: string | null;
+  message: string | null;
+  group: { id: string; name: string; slug: string } | null;
+  category: Pick<Category, 'id' | 'name' | 'slug'> | null;
+  services: Array<Pick<CategoryService, 'id' | 'categoryId' | 'name' | 'slug'> & { score?: number }>;
+  alternativeServices: Array<Pick<CategoryService, 'id' | 'categoryId' | 'name' | 'slug'> & { score?: number }>;
+  normalizedProblem: string;
+  professionals: Professional[];
+  suggestedActions: string[];
+}
+
+export interface AiPublicConfig {
+  enabled: boolean;
+  homeTitle: string | null;
+  homeSubtitle: string | null;
+  homePlaceholder: string | null;
+  homeHelperText: string | null;
+}
+
+export interface AiSettings {
+  id: string;
+  enabled: boolean;
+  provider: string;
+  model: string;
+  apiKey: string | null;
+  apiKeySource: 'env' | 'database' | 'none';
+  endpointUrl: string | null;
+  temperature: number;
+  maxOutputTokens: number;
+  timeoutMs: number;
+  problemAnalysisEnabled: boolean;
+  categorySuggestionEnabled: boolean;
+  serviceSuggestionEnabled: boolean;
+  summaryEnabled: boolean;
+  clarificationEnabled: boolean;
+  fallbackKeywordsEnabled: boolean;
+  minimumConfidence: number;
+  autoApplyConfidence: number;
+  dailyLimit: number | null;
+  monthlyLimit: number | null;
+  maxInputLength: number;
+  homeTitle: string | null;
+  homeSubtitle: string | null;
+  homePlaceholder: string | null;
+  homeHelperText: string | null;
+  successMessage: string | null;
+  lowConfidenceMessage: string | null;
+  fallbackMessage: string | null;
+}
+
+export interface AiAnalysisLogRow {
+  id: string;
+  userId: string | null;
+  provider: string | null;
+  model: string | null;
+  inputText: string;
+  normalizedText: string | null;
+  matchedCategoryId: string | null;
+  confidence: number | null;
+  usedAi: boolean;
+  usedFallback: boolean;
+  needsClarification: boolean;
+  responseJson: unknown;
+  status: string;
+  errorMessage: string | null;
+  latencyMs: number | null;
+  adminFeedback: string | null;
+  createdAt: string;
+}
+
+export interface AiUsageSummary {
+  today: { total: number; aiCalls: number; fallbackCalls: number; errors: number };
+  month: { total: number; aiCalls: number; fallbackCalls: number; errors: number };
+  averageConfidence: number | null;
+  averageLatencyMs: number | null;
+}
+
 export interface ServiceRequestMedia {
   id: string;
   mediaType: 'IMAGE' | 'VIDEO';

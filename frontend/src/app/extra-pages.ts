@@ -23,6 +23,7 @@ const ADMIN_MODULES: Array<{ key: string; label: string }> = [
   { key: 'indicacoes', label: 'Indicações' },
   { key: 'denuncias', label: 'Denúncias' },
   { key: 'configuracoes', label: 'Configurações' },
+  { key: 'inteligencia-artificial', label: 'Inteligência Artificial' },
   { key: 'relatorios', label: 'Relatórios' },
 ];
 
@@ -53,8 +54,8 @@ export class AdminLoginPageComponent {
   protected readonly feedback = signal('');
   protected readonly brand = brand;
   protected readonly form = this.fb.nonNullable.group({
-    email: ['admin@terrasalphas.com.br', [Validators.required, Validators.email]],
-    password: ['123456', [Validators.required, Validators.minLength(6)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
     rememberMe: [true],
   });
 

@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { DataModule } from './data/data.module';
 import { ResourcesModule } from './resources/resources.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -16,6 +17,9 @@ import { ResourcesModule } from './resources/resources.module';
     }),
     DataModule,
     AuthModule,
+    // AiModule vem antes de ResourcesModule: o Nest resolve rotas na ordem de registro
+    // e o curinga `admin/:resource` capturaria `admin/ai-settings` se viesse primeiro.
+    AiModule,
     ResourcesModule,
   ],
   controllers: [AppController],

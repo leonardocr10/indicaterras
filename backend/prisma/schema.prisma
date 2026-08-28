@@ -598,3 +598,74 @@ model ServiceRequestMedia {
   @@index([requestId, displayOrder])
   @@map("service_request_media")
 }
+
+model AiSettings {
+  id                        String   @id @default(cuid())
+  enabled                   Boolean  @default(false)
+  provider                  String   @default("gemini")
+  model                     String   @default("gemini-2.5-flash-lite")
+  apiKey                    String?  @db.Text
+  endpointUrl               String?
+  temperature               Decimal  @default(0.20) @db.Decimal(4, 2)
+  maxOutputTokens           Int      @default(500)
+  timeoutMs                 Int      @default(15000)
+  problemAnalysisEnabled    Boolean  @default(true)
+  categorySuggestionEnabled Boolean  @default(true)
+  serviceSuggestionEnabled  Boolean  @default(true)
+  summaryEnabled            Boolean  @default(true)
+  clarificationEnabled      Boolean  @default(true)
+  fallbackKeywordsEnabled   Boolean  @default(true)
+  minimumConfidence         Decimal  @default(0.75) @db.Decimal(5, 2)
+  autoApplyConfidence       Decimal  @default(0.85) @db.Decimal(5, 2)
+  dailyLimit                Int?     @default(500)
+  monthlyLimit              Int?     @default(10000)
+  maxInputLength            Int      @default(500)
+  homeTitle                 String?
+  homeSubtitle              String?
+  homePlaceholder           String?
+  homeHelperText            String?
+  successMessage            String?
+  lowConfidenceMessage      String?
+  fallbackMessage           String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@map("ai_settings")
+}
+
+model AiAnalysisLog {
+  id                 String                 @id @default(cuid())
+  userId             String?
+  provider           String?
+  model              String?
+  inputText          String                 @db.Text
+  normalizedText     String?                @db.Text
+  matchedCategoryId  String?
+  confidence         Decimal?               @db.Decimal(5, 2)
+  usedAi             Boolean                @default(false)
+  usedFallback       Boolean                @default(false)
+  needsClarification Boolean                @default(false)
+  responseJson       Json?
+  status             String                 @default("success")
+  errorMessage       String?                @db.Text
+  latencyMs          Int?
+  adminFeedback      String?
+  createdAt          DateTime               @default(now())
+  services           AiAnalysisLogService[]
+
+  @@index([createdAt])
+  @@index([userId])
+  @@map("ai_analysis_logs")
+}
+
+model AiAnalysisLogService {
+  id        String        @id @default(cuid())
+  logId     String
+  serviceId String
+  score     Int?
+  position  Int           @default(0)
+  log       AiAnalysisLog @relation(fields: [logId], references: [id], onDelete: Cascade)
+
+  @@index([logId])
+  @@map("ai_analysis_log_services")
+}

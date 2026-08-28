@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, tap } from 'rxjs/operators';
+import { throwError } from 'rxjs';
 import { ApiResponse } from '../models';
 import { environment } from '../../environments/environment';
 
@@ -13,7 +14,7 @@ export interface SessionUser {
   role: 'SUPER_ADMIN' | 'CONDO_ADMIN' | 'RESIDENT' | 'PROFESSIONAL';
 }
 
-interface AuthSession {
+export interface AuthSession {
   accessToken: string;
   refreshToken: string;
   user: SessionUser;
@@ -70,6 +71,23 @@ export class AuthService {
   logout() {
     this.sessionState.set(null);
     localStorage.removeItem(this.storageKey);
+  }
+
+  /**
+   * Troca o refresh token (7 dias) por um novo par de tokens. O de acesso dura
+   * 15 minutos, então sem isso qualquer tela protegida quebraria a cada 15 min.
+   * Chamado pelo interceptor quando a API responde 401.
+   */
+  refreshSession() {
+    const refreshToken = this.sessionState()?.refreshToken;
+    if (!refreshToken) return throwError(() => new Error('Sessão sem refresh token.'));
+    return this.http.post<ApiResponse<AuthSession | null>>(`${this.baseUrl}/auth/refresh`, { refreshToken }).pipe(
+      map((response) => response.data),
+      tap((session) => {
+        if (!session) throw new Error('Refresh token recusado pelo servidor.');
+        this.persist(session);
+      }),
+    );
   }
 
   forgotPassword(email: string) {

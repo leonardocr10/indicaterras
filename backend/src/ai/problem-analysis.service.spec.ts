@@ -28,7 +28,7 @@ const settings = (overrides: Record<string, unknown> = {}) => ({
   id: 'settings-1',
   enabled: true,
   provider: 'gemini',
-  model: 'gemini-2.5-flash-lite',
+  model: 'gemini-3.5-flash-lite',
   apiKey: 'chave',
   endpointUrl: null,
   temperature: decimal(0.2),

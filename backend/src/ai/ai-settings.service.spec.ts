@@ -6,7 +6,7 @@ const settingsRow = (overrides: Record<string, unknown> = {}) => ({
   id: 'settings-1',
   enabled: false,
   provider: 'gemini',
-  model: 'gemini-2.5-flash-lite',
+  model: 'gemini-3.5-flash-lite',
   apiKey: 'AIzaSyTOP-SECRET-1234',
   endpointUrl: null,
   temperature: decimal(0.2),

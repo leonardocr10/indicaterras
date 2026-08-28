@@ -8,6 +8,7 @@ import { AiLogsService } from './ai-logs.service';
 import { ProblemAnalysisService } from './problem-analysis.service';
 import { AiProviderFactory } from './provider-factory';
 import { UpdateAiSettingsDto } from './dto/update-ai-settings.dto';
+import { TestConnectionDto } from './dto/test-connection.dto';
 
 @ApiTags('admin-ai')
 @Controller('admin/ai-settings')
@@ -31,15 +32,17 @@ export class AiAdminSettingsController {
   }
 
   @Post('test-connection')
-  async testConnection() {
+  async testConnection(@Body() payload: TestConnectionDto) {
     const settings = await this.settingsService.getRaw();
-    const apiKey = await this.settingsService.getResolvedApiKey(settings);
+    // O corpo traz o que está na tela e ainda não foi salvo; o salvo é o padrão.
+    // A chave do ambiente continua tendo prioridade, como no restante do sistema.
+    const apiKey = process.env.GEMINI_API_KEY || payload.apiKey?.trim() || settings.apiKey || '';
     const provider = this.providerFactory.getProvider(settings.provider);
     const result = await provider.testConnection({
-      apiKey: apiKey ?? '',
-      model: settings.model,
-      endpointUrl: settings.endpointUrl,
-      timeoutMs: settings.timeoutMs,
+      apiKey,
+      model: payload.model?.trim() || settings.model,
+      endpointUrl: payload.endpointUrl?.trim() || settings.endpointUrl,
+      timeoutMs: payload.timeoutMs ?? settings.timeoutMs,
     });
     return { data: result };
   }

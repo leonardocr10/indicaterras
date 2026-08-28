@@ -8,7 +8,7 @@ const CACHE_TTL_MS = 60_000;
 const DEFAULTS: Prisma.AiSettingsCreateInput = {
   enabled: false,
   provider: 'gemini',
-  model: 'gemini-2.5-flash-lite',
+  model: 'gemini-3.5-flash-lite',
   apiKey: null,
   endpointUrl: null,
   temperature: 0.2,

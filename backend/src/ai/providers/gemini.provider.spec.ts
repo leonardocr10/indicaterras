@@ -4,7 +4,7 @@ import { ProblemAnalysisInput } from './ai-provider.interface';
 const input: ProblemAnalysisInput = {
   text: 'meu chuveiro queimou',
   categories: [{ id: 'electrician', name: 'Eletricista', services: [{ id: 'service-shower', name: 'Chuveiro' }] }],
-  model: 'gemini-2.5-flash-lite',
+  model: 'gemini-3.5-flash-lite',
   apiKey: 'chave-de-teste',
   endpointUrl: null,
   temperature: 0.2,
@@ -97,7 +97,7 @@ describe('GeminiProvider', () => {
   it('testConnection devolve ok=false com a mensagem de erro em vez de lançar', async () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 401, text: () => Promise.resolve('unauthorized') }) as never;
 
-    const result = await provider.testConnection({ apiKey: 'errada', model: 'gemini-2.5-flash-lite', endpointUrl: null, timeoutMs: 5000 });
+    const result = await provider.testConnection({ apiKey: 'errada', model: 'gemini-3.5-flash-lite', endpointUrl: null, timeoutMs: 5000 });
 
     expect(result.ok).toBe(false);
     expect(result.message).toMatch(/401/);

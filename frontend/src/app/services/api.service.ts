@@ -184,8 +184,9 @@ export class ApiService {
     return this.http.put<ApiResponse<AiSettings>>(`${this.baseUrl}/admin/ai-settings`, payload).pipe(map((response) => response.data));
   }
 
-  testAiConnection() {
-    return this.http.post<ApiResponse<{ ok: boolean; message: string; latencyMs: number }>>(`${this.baseUrl}/admin/ai-settings/test-connection`, {}).pipe(map((response) => response.data));
+  // Envia o que está na tela para permitir testar antes de salvar.
+  testAiConnection(payload: { model?: string; apiKey?: string; endpointUrl?: string; timeoutMs?: number } = {}) {
+    return this.http.post<ApiResponse<{ ok: boolean; message: string; latencyMs: number }>>(`${this.baseUrl}/admin/ai-settings/test-connection`, payload).pipe(map((response) => response.data));
   }
 
   testAiAnalysis(text: string) {

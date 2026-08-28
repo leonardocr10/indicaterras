@@ -603,7 +603,7 @@ model AiSettings {
   id                        String   @id @default(cuid())
   enabled                   Boolean  @default(false)
   provider                  String   @default("gemini")
-  model                     String   @default("gemini-2.5-flash-lite")
+  model                     String   @default("gemini-3.5-flash-lite")
   apiKey                    String?  @db.Text
   endpointUrl               String?
   temperature               Decimal  @default(0.20) @db.Decimal(4, 2)

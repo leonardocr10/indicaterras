@@ -236,7 +236,15 @@ export class AdminAiPageComponent implements OnInit {
   protected testConnection() {
     this.testingConnection.set(true);
     this.connectionResult.set(null);
-    this.api.testAiConnection().subscribe({
+    const form = this.form.getRawValue();
+    // Testa o que está na tela: sem isso o botão validaria a configuração antiga,
+    // justamente a que a pessoa está tentando substituir.
+    this.api.testAiConnection({
+      model: form.model,
+      apiKey: form.apiKey || undefined,
+      endpointUrl: form.endpointUrl || undefined,
+      timeoutMs: form.timeoutMs,
+    }).subscribe({
       next: (result) => {
         this.connectionResult.set(result);
         this.testingConnection.set(false);

@@ -22,6 +22,7 @@ import { ProfessionalAccountPageComponent } from './professional-account-page';
 import { AdminReportsPageComponent } from './admin-reports-page';
 import { AdminReportDetailsPageComponent } from './admin-report-details-page';
 import { AdminPendingPageComponent } from './admin-pending-page';
+import { LandingPageComponent } from './landing-page';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -83,6 +84,6 @@ export const routes: Routes = [
   { path: 'indicar', redirectTo: 'app/indicar', pathMatch: 'full' },
   { path: 'favoritos', redirectTo: 'app/favoritos', pathMatch: 'full' },
   { path: 'minhas-indicacoes', redirectTo: 'app/minhas-indicacoes', pathMatch: 'full' },
-  { path: '', pathMatch: 'full', redirectTo: 'login' },
-  { path: '**', redirectTo: 'login' },
+  { path: '', pathMatch: 'full', component: LandingPageComponent },
+  { path: '**', redirectTo: '', pathMatch: 'full' },
 ];

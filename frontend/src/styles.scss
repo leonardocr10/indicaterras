@@ -1116,3 +1116,14 @@ label>span{display:block}
   .request-list-card{display:grid}
   .request-list-meta{justify-items:start;text-align:left}
 }
+
+/* Controles de escolha e upload consistentes em todos os formulários. */
+input[type='checkbox']:not(.access-switch input){appearance:none;width:18px!important;height:18px!important;min-width:18px;margin:0;padding:0!important;border:1.5px solid #b9d2c5!important;border-radius:6px!important;background:#fff;cursor:pointer;transition:background .16s,border-color .16s,box-shadow .16s}
+input[type='checkbox']:not(.access-switch input):hover{border-color:var(--if-primary-dark)!important}
+input[type='checkbox']:not(.access-switch input):focus-visible{outline:0;box-shadow:0 0 0 3px rgba(6,95,70,.14)}
+input[type='checkbox']:not(.access-switch input):checked{border-color:var(--if-primary-dark)!important;background-color:var(--if-primary-dark)!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3 8 3 3 7-7' fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.3'/%3E%3C/svg%3E")!important;background-position:center!important;background-repeat:no-repeat!important;background-size:12px!important}
+input[type='checkbox']:not(.access-switch input):disabled{cursor:not-allowed;opacity:.55}
+input[type='file']:not([hidden]){min-height:48px;padding:7px 10px;border:1px dashed #a9cdb9;border-radius:12px;color:var(--if-text-secondary);background:#f8fcf9;cursor:pointer}
+input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding:8px 10px;border:0;border-radius:8px;color:#fff;background:var(--if-primary-dark);font:600 12px var(--if-font);cursor:pointer}
+.file-drop-field{display:grid!important;gap:7px;padding:13px!important;border:1px dashed #a9cdb9!important;border-radius:12px;background:#f8fcf9;cursor:pointer}.file-drop-field input[type='file']{min-height:40px;border:0;border-radius:8px;background:#fff}.file-drop-field small{color:var(--if-text-secondary);font-size:11px;font-weight:500}
+.file-drop-active{outline:3px solid rgba(74,222,128,.35);outline-offset:2px;border-color:var(--if-primary)!important;background:#ecfdf3!important}

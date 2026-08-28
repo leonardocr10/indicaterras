@@ -19,6 +19,7 @@ import {
 import { PrismaService } from './prisma.service';
 import { SERVICE_ALIASES } from './service-aliases';
 import { ACTION_LABELS, ACTION_TYPE_MAP, COMPLAINT_LABEL_TO_STATUS, COMPLAINT_STATUS_TO_LABEL, ComplaintAction, ComplaintEvent, ComplaintStatus } from './complaints';
+import { ProblemMatcherService } from './problem-matcher.service';
 
 @Injectable()
 export class DataStoreService implements OnModuleInit {
@@ -45,7 +46,7 @@ export class DataStoreService implements OnModuleInit {
     systemName: 'Terras Alphas Indica', condominiumName: 'Terras Alphas', phone: '(34) 99999-0000', email: 'contato@terrasalphas.com.br',
     primaryColor: '#006538', secondaryColor: '#ffad00', selfRegistration: true, residentApproval: true, requireUserApproval: true, showBlock: true,
     allowRecommendations: true, recommendationApproval: true, allowReviews: true, requireComment: true,
-    professionalSelfRegistration: false,
+    professionalSelfRegistration: false, restrictedModules: [] as string[],
   };
   private readonly users: Array<DemoUser & { passwordHash: string }> = [];
   private readonly favoriteProfessionalIds = new Map<string, Set<string>>([
@@ -54,7 +55,10 @@ export class DataStoreService implements OnModuleInit {
   private readonly usersReady: Promise<void>;
   private databaseAvailable = false;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly problemMatcher: ProblemMatcherService,
+  ) {
     this.usersReady = this.initializeUsers();
   }
 
@@ -105,7 +109,10 @@ export class DataStoreService implements OnModuleInit {
       this.prisma.professionalImage.findMany({ where: { isCover: false }, orderBy: { displayOrder: 'asc' } }),
     ]);
 
-    const condominiumSettings = await this.prisma.condominiumSettings.findFirst();
+    const defaultCondominiumId = condominiums[0]?.id ?? '';
+    const condominiumSettings = defaultCondominiumId
+      ? await this.prisma.condominiumSettings.findUnique({ where: { condominiumId: defaultCondominiumId } })
+      : null;
     if (condominiumSettings) {
       this.settings = {
         ...this.settings,
@@ -124,6 +131,7 @@ export class DataStoreService implements OnModuleInit {
         recommendationApproval: condominiumSettings.recommendationApproval,
         allowReviews: condominiumSettings.allowReviews,
         requireComment: condominiumSettings.requireComment,
+        restrictedModules: Array.isArray(condominiumSettings.restrictedModules) ? condominiumSettings.restrictedModules : [],
       };
     }
 
@@ -163,7 +171,6 @@ export class DataStoreService implements OnModuleInit {
     );
     this.categoryServices.splice(0, this.categoryServices.length, ...this.categories.flatMap((category) => category.services ?? []));
 
-    const defaultCondominiumId = condominiums[0]?.id ?? '';
     this.professionals.splice(
       0,
       this.professionals.length,
@@ -348,12 +355,12 @@ export class DataStoreService implements OnModuleInit {
     unit?: string;
   }): Promise<Omit<DemoUser, 'password'>> {
     await this.usersReady;
+    this.ensureDatabase('criar a conta do morador');
     if (this.users.some((user) => user.email.toLowerCase() === payload.email.toLowerCase())) {
       throw new ConflictException('Este e-mail já possui cadastro');
     }
     const requireApproval = this.requiresUserApproval();
-    if (this.databaseAvailable) {
-      const record = await this.prisma.user.create({
+    const record = await this.prisma.user.create({
         data: {
           condominiumId: payload.condominiumId || null,
           name: payload.name,
@@ -368,32 +375,11 @@ export class DataStoreService implements OnModuleInit {
           approvedAt: requireApproval ? null : new Date(),
           active: true,
         },
-      });
-      await this.loadDatabaseData();
-      const user = this.findUserById(record.id);
-      if (!user) throw new NotFoundException('Usuário recém-criado não encontrado');
-      return user;
-    }
-
-    const newUser: DemoUser = {
-      id: `user-${this.users.length + 1}`,
-      condominiumId: payload.condominiumId,
-      name: payload.name,
-      email: payload.email.toLowerCase().trim(),
-      phone: payload.phone,
-      password: payload.password,
-      role: 'RESIDENT',
-      emailVerified: true,
-      approvalStatus: requireApproval ? 'PENDING' : 'APPROVED',
-      active: true,
-      block: payload.block,
-      unit: payload.unit,
-    };
-
-    this.users.push({ ...newUser, passwordHash: await bcrypt.hash(payload.password, 10) });
-
-    const { password: _password, ...safeUser } = newUser;
-    return safeUser;
+    });
+    await this.loadDatabaseData();
+    const user = this.findUserById(record.id);
+    if (!user) throw new NotFoundException('Usuário recém-criado não encontrado');
+    return user;
   }
 
   requiresUserApproval() {
@@ -430,6 +416,7 @@ export class DataStoreService implements OnModuleInit {
     condominiumId?: string;
   }) {
     await this.usersReady;
+    this.ensureDatabase('criar a conta do profissional');
     if (!this.allowsProfessionalSignup()) throw new ForbiddenException('O cadastro de profissionais está desativado pelo condomínio.');
     if (this.users.some((user) => user.email.toLowerCase() === payload.email.toLowerCase())) {
       throw new ConflictException('Este e-mail já possui cadastro');
@@ -453,31 +440,45 @@ export class DataStoreService implements OnModuleInit {
     const professionalId = String((professional as { id?: string })?.id ?? '');
     if (!professionalId) throw new ConflictException('Não foi possível criar o perfil do profissional');
 
-    const newUser: DemoUser = {
-      id: `user-${Date.now()}-${this.users.length + 1}`,
-      condominiumId: payload.condominiumId || this.condominiums[0]?.id || '',
-      name: payload.name,
-      email: payload.email.toLowerCase().trim(),
-      phone: payload.phone,
-      password: payload.password,
-      role: 'PROFESSIONAL',
-      emailVerified: true,
-      approvalStatus: 'APPROVED',
-      active: true,
-    };
-    this.users.push({ ...newUser, passwordHash: await bcrypt.hash(payload.password, 10) });
-    this.professionalByUserId.set(newUser.id, professionalId);
-
-    const { password: _password, ...safeUser } = newUser;
-    return { user: safeUser, professionalId };
+    try {
+      const user = await this.prisma.$transaction(async (transaction) => {
+        const created = await transaction.user.create({
+          data: {
+            condominiumId: payload.condominiumId || this.condominiums[0]?.id || null,
+            name: payload.name,
+            email: payload.email.toLowerCase().trim(),
+            phone: payload.phone || null,
+            passwordHash: await bcrypt.hash(payload.password, 10),
+            role: 'PROFESSIONAL',
+            emailVerified: true,
+            emailVerifiedAt: new Date(),
+            approvalStatus: 'APPROVED',
+            approvedAt: new Date(),
+            active: true,
+          },
+        });
+        await transaction.professional.update({ where: { id: professionalId }, data: { userId: created.id } });
+        return created;
+      });
+      await this.loadDatabaseData();
+      const savedUser = this.findUserById(user.id);
+      if (!savedUser) throw new NotFoundException('Conta profissional recém-criada não encontrada');
+      return { user: savedUser, professionalId };
+    } catch (error) {
+      await this.prisma.professional.delete({ where: { id: professionalId } }).catch(() => undefined);
+      await this.loadDatabaseData().catch(() => undefined);
+      throw error;
+    }
   }
 
   async removeProfessionalAccount(userId: string) {
+    this.ensureDatabase('excluir a conta do profissional');
     const professionalId = this.professionalByUserId.get(userId);
-    this.professionalByUserId.delete(userId);
-    const index = this.users.findIndex((user) => user.id === userId);
-    if (index >= 0) this.users.splice(index, 1);
-    if (professionalId) await this.deleteAdminRecord('professionals', professionalId).catch(() => undefined);
+    await this.prisma.$transaction(async (transaction) => {
+      if (professionalId) await transaction.professional.delete({ where: { id: professionalId } });
+      await transaction.user.delete({ where: { id: userId } });
+    });
+    await this.loadDatabaseData();
   }
 
   getOwnProfessional(userId: string) {
@@ -493,11 +494,6 @@ export class DataStoreService implements OnModuleInit {
     if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
     const editable = ['name', 'companyName', 'phone', 'whatsapp', 'instagram', 'city', 'neighborhood', 'bio', 'avatar', 'coverImage', 'categoryIds', 'serviceIds'];
     const allowed = Object.fromEntries(Object.entries(payload).filter(([key]) => editable.includes(key)));
-    if (typeof allowed['coverImage'] === 'string') {
-      const cover = String(allowed['coverImage']);
-      const current = this.getProfessionalById(professionalId);
-      if (current) current.coverImage = cover;
-    }
     const updated = await this.updateAdminRecord('professionals', professionalId, allowed);
     const refreshed = this.getProfessionalById(professionalId);
     return refreshed ?? updated;
@@ -508,6 +504,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async addOwnProfessionalWorks(userId: string, images: string[], title = '') {
+    this.ensureDatabase('adicionar as fotos do profissional');
     const professionalId = this.professionalByUserId.get(userId);
     if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
     const clean = images.map((image) => String(image).trim()).filter(Boolean);
@@ -551,6 +548,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async removeOwnProfessionalWork(userId: string, workId: string) {
+    this.ensureDatabase('excluir a foto do profissional');
     const professionalId = this.professionalByUserId.get(userId);
     if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
     const works = this.professionalWorks.get(professionalId) ?? [];
@@ -720,123 +718,53 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async updateAdminSettings(payload: Record<string, unknown>) {
-    this.settings = { ...this.settings, ...payload };
+    this.ensureDatabase('salvar as configurações');
+    const nextSettings = { ...this.settings, ...payload };
     const requireUserApproval = Boolean(payload['requireUserApproval'] ?? payload['residentApproval'] ?? this.requiresUserApproval());
-    this.settings['requireUserApproval'] = requireUserApproval;
-    this.settings['residentApproval'] = requireUserApproval;
-    if (this.databaseAvailable) {
-      const condominiumId = this.condominiums[0]?.id;
-      if (condominiumId) {
-        const data = {
-          systemName: String(this.settings['systemName'] ?? 'Terras Alphas Indica'),
-          condominiumName: String(this.settings['condominiumName'] ?? 'Terras Alphas'),
-          phone: this.settings['phone'] === undefined || this.settings['phone'] === null ? null : String(this.settings['phone']) || null,
-          email: this.settings['email'] === undefined || this.settings['email'] === null ? null : String(this.settings['email']) || null,
-          primaryColor: String(this.settings['primaryColor'] ?? '#006538'),
-          secondaryColor: String(this.settings['secondaryColor'] ?? '#ffad00'),
-          selfRegistration: Boolean(this.settings['selfRegistration']),
-          requireUserApproval,
-          professionalSelfRegistration: Boolean(this.settings['professionalSelfRegistration']),
-          showBlock: Boolean(this.settings['showBlock']),
-          allowRecommendations: Boolean(this.settings['allowRecommendations']),
-          recommendationApproval: Boolean(this.settings['recommendationApproval']),
-          allowReviews: Boolean(this.settings['allowReviews']),
-          requireComment: Boolean(this.settings['requireComment']),
-        };
-        await this.prisma.condominiumSettings.upsert({
-          where: { condominiumId },
-          update: data,
-          create: { condominiumId, ...data },
-        });
-      }
-    }
+    nextSettings['requireUserApproval'] = requireUserApproval;
+    nextSettings['residentApproval'] = requireUserApproval;
+    const condominiumId = this.condominiums[0]?.id;
+    if (!condominiumId) throw new ServiceUnavailableException('Não foi possível salvar as configurações: condomínio não encontrado no banco de dados.');
+
+    const data = {
+      systemName: String(nextSettings['systemName'] ?? 'Terras Alphas Indica'),
+      condominiumName: String(nextSettings['condominiumName'] ?? 'Terras Alphas'),
+      phone: nextSettings['phone'] === undefined || nextSettings['phone'] === null ? null : String(nextSettings['phone']) || null,
+      email: nextSettings['email'] === undefined || nextSettings['email'] === null ? null : String(nextSettings['email']) || null,
+      primaryColor: String(nextSettings['primaryColor'] ?? '#006538'),
+      secondaryColor: String(nextSettings['secondaryColor'] ?? '#ffad00'),
+      selfRegistration: Boolean(nextSettings['selfRegistration']),
+      requireUserApproval,
+      professionalSelfRegistration: Boolean(nextSettings['professionalSelfRegistration']),
+      showBlock: Boolean(nextSettings['showBlock']),
+      allowRecommendations: Boolean(nextSettings['allowRecommendations']),
+      recommendationApproval: Boolean(nextSettings['recommendationApproval']),
+      allowReviews: Boolean(nextSettings['allowReviews']),
+      requireComment: Boolean(nextSettings['requireComment']),
+      restrictedModules: Array.isArray(nextSettings['restrictedModules']) ? nextSettings['restrictedModules'] : [],
+    };
+    await this.prisma.condominiumSettings.upsert({
+      where: { condominiumId },
+      update: data,
+      create: { condominiumId, ...data },
+    });
+    this.settings = nextSettings;
     return this.settings;
   }
 
   async createAdminRecord(resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', payload: Record<string, unknown>) {
-    if (this.databaseAvailable) return this.createDatabaseRecord(resource, payload);
-    const id = `${resource.slice(0, 3)}-${Date.now()}`;
-    if (resource === 'categories') {
-      const name = String(payload.name ?? 'Nova categoria');
-      const record: DemoCategory = {
-        id,
-        name,
-        slug: this.toSlug(String(payload.slug ?? name)),
-        icon: String(payload.icon ?? 'grid'),
-        description: String(payload.description ?? ''),
-        displayOrder: Number(payload.displayOrder ?? this.categories.length + 1),
-        active: payload.active !== false,
-        services: [],
-      };
-      this.categories.push(record);
-      return record;
-    }
-    if (resource === 'condominiums') {
-      const name = String(payload.name ?? 'Novo condomínio');
-      const record: DemoCondominium = {
-        id, name, slug: this.toSlug(String(payload.slug ?? name)), logo: String(payload.logo ?? ''), coverImage: String(payload.coverImage ?? ''), primaryColor: '#0F5A3C', secondaryColor: '#F4C542',
-        address: String(payload.address ?? ''), city: String(payload.city ?? ''), state: String(payload.state ?? 'MG'), neighborhood: String(payload.neighborhood ?? ''), phone: String(payload.phone ?? ''), email: String(payload.email ?? ''), active: true,
-      };
-      this.condominiums.push(record);
-      return record;
-    }
-    if (resource === 'professionals') {
-      const categoryIds = this.stringArray(payload.categoryIds, payload.categoryId);
-      const selectedCategories = this.categories.filter((item) => categoryIds.includes(item.id));
-      const category = selectedCategories[0] ?? this.categories[0];
-      const serviceIds = this.stringArray(payload.serviceIds);
-      const serviceDetails = this.categoryServices.filter((service) => serviceIds.includes(service.id) && categoryIds.includes(service.categoryId));
-      const record: DemoProfessional = {
-        id, name: String(payload.name ?? 'Novo profissional'), companyName: String(payload.companyName ?? ''), categoryId: category.id, category: category.name,
-        categoryIds: selectedCategories.map((item) => item.id), categories: selectedCategories, serviceIds: serviceDetails.map((item) => item.id), serviceDetails,
-        rating: 0, reviewCount: 0, recommendationCount: 0,
-        services: serviceDetails.map((item) => item.name), city: String(payload.city ?? ''), neighborhood: String(payload.neighborhood ?? ''), condominiumId: String(payload.condominiumId ?? this.condominiums[0].id),
-        bio: String(payload.bio ?? ''), whatsapp: String(payload.whatsapp ?? payload.phone ?? ''), phone: String(payload.phone ?? ''), instagram: String(payload.instagram ?? ''),
-        avatar: String(payload.avatar ?? ''), coverImage: String(payload.coverImage ?? ''), featured: false,
-      };
-      this.professionals.push(record);
-      return record;
-    }
-    const password = String(payload.password ?? '123456');
-    const record: DemoUser & { passwordHash: string } = {
-      id, condominiumId: String(payload.condominiumId ?? this.condominiums[0].id), name: String(payload.name ?? 'Novo morador'), email: String(payload.email ?? ''),
-      phone: String(payload.phone ?? ''), password, role: this.userRole(payload.role), passwordHash: await bcrypt.hash(password, 10),
-      emailVerified: payload.emailVerified !== false,
-      approvalStatus: this.approvalStatus(payload.approvalStatus ?? 'APPROVED'),
-      active: payload.active !== false,
-      block: String(payload.block ?? '') || undefined,
-      unit: String(payload.unit ?? '') || undefined,
-    };
-    this.users.push(record);
-    return this.safeUser(record);
+    this.ensureDatabase('criar o cadastro');
+    return this.createDatabaseRecord(resource, payload);
   }
 
   async updateAdminRecord(resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', id: string, payload: Record<string, unknown>) {
-    if (this.databaseAvailable) return this.updateDatabaseRecord(resource, id, payload);
-    const records = resource === 'condominiums' ? this.condominiums : resource === 'professionals' ? this.professionals : resource === 'categories' ? this.categories : this.users;
-    const record = records.find((item) => item.id === id);
-    if (!record) throw new NotFoundException('Cadastro não encontrado');
-    const allowed = Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined && value !== ''));
-    Object.assign(record, allowed);
-    if ((resource === 'residents' || resource === 'users') && payload.password) {
-      (record as DemoUser & { passwordHash: string }).passwordHash = await bcrypt.hash(String(payload.password), 10);
-    }
-    if (resource === 'categories' && 'name' in allowed && !('slug' in allowed)) (record as DemoCategory).slug = this.toSlug(String(allowed.name));
-    if (resource === 'professionals' && 'categoryId' in allowed) {
-      const category = this.categories.find((item) => item.id === allowed.categoryId);
-      if (category) { (record as DemoProfessional).category = category.name; }
-    }
-    if (resource === 'professionals') this.updateMemoryProfessionalTaxonomy(record as DemoProfessional, payload);
-    return resource === 'residents' || resource === 'users' ? this.safeUser(record as DemoUser & { passwordHash: string }) : record;
+    this.ensureDatabase('atualizar o cadastro');
+    return this.updateDatabaseRecord(resource, id, payload);
   }
 
   async deleteAdminRecord(resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', id: string) {
-    if (this.databaseAvailable) return this.deleteDatabaseRecord(resource, id);
-    const records = resource === 'condominiums' ? this.condominiums : resource === 'professionals' ? this.professionals : resource === 'categories' ? this.categories : this.users;
-    const index = records.findIndex((item) => item.id === id);
-    if (index < 0) throw new NotFoundException('Cadastro não encontrado');
-    records.splice(index, 1);
-    return { id };
+    this.ensureDatabase('excluir o cadastro');
+    return this.deleteDatabaseRecord(resource, id);
   }
 
   private async createDatabaseRecord(resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', payload: Record<string, unknown>) {
@@ -1175,7 +1103,150 @@ export class DataStoreService implements OnModuleInit {
       .sort((left, right) => left.displayOrder - right.displayOrder || left.name.localeCompare(right.name));
   }
 
+  matchProblem(query: string) {
+    return this.problemMatcher.matchProblem(
+      query,
+      this.categories.map((category) => ({ ...category, services: category.services ?? [] })),
+      this.professionals,
+    );
+  }
+
+  async createServiceRequest(payload: {
+    userId: string;
+    title: string;
+    description: string;
+    categoryId?: string;
+    serviceIds?: string[];
+    urgency?: string;
+    preferredDate?: string;
+    preferredPeriod?: string;
+    budgetType?: string;
+    budgetMin?: number | string | null;
+    budgetMax?: number | string | null;
+    zipCode?: string;
+    street?: string;
+    number?: string;
+    complement?: string;
+    neighborhood?: string;
+    city?: string;
+    state?: string;
+    latitude?: number | string | null;
+    longitude?: number | string | null;
+  }) {
+    this.ensureDatabase('publicar a solicitação');
+    const user = this.findUserById(payload.userId);
+    if (!user) throw new UnauthorizedException('Sessão inválida');
+    const title = String(payload.title ?? '').trim();
+    const description = String(payload.description ?? '').trim();
+    if (!title) throw new ConflictException('Informe um título para o problema');
+    if (!description) throw new ConflictException('Descreva o problema para publicar a solicitação');
+
+    const serviceIds = this.stringArray(payload.serviceIds);
+    const firstService = serviceIds.length ? this.categoryServices.find((service) => service.id === serviceIds[0]) : undefined;
+    const category = payload.categoryId ? this.getCategoryById(payload.categoryId) : firstService ? this.getCategoryById(firstService.categoryId) : undefined;
+    if (!category) throw new ConflictException('Selecione uma categoria para a solicitação');
+    const validServiceIds = serviceIds.length
+      ? this.categoryServices
+          .filter((service) => serviceIds.includes(service.id) && service.categoryId === category.id)
+          .map((service) => service.id)
+      : [];
+    if (!validServiceIds.length) throw new ConflictException('Selecione ao menos um serviço relacionado');
+
+    const record = await this.prisma.serviceRequest.create({
+      data: {
+        clientId: user.id,
+        categoryId: category.id,
+        title,
+        description,
+        urgency: this.parseUrgency(payload.urgency),
+        preferredDate: payload.preferredDate ? new Date(payload.preferredDate) : null,
+        preferredPeriod: this.parsePreferredPeriod(payload.preferredPeriod),
+        budgetType: this.parseBudgetType(payload.budgetType),
+        budgetMin: this.decimalOrNull(payload.budgetMin),
+        budgetMax: this.decimalOrNull(payload.budgetMax),
+        zipCode: this.optionalString(payload.zipCode),
+        street: this.optionalString(payload.street),
+        number: this.optionalString(payload.number),
+        complement: this.optionalString(payload.complement),
+        neighborhood: this.optionalString(payload.neighborhood),
+        city: this.optionalString(payload.city),
+        state: this.optionalString(payload.state),
+        latitude: this.decimalOrNull(payload.latitude),
+        longitude: this.decimalOrNull(payload.longitude),
+        status: 'OPEN',
+        services: {
+          create: validServiceIds.map((categoryServiceId) => ({ categoryServiceId })),
+        },
+      },
+    });
+
+    return this.getServiceRequestById(record.id, user.id);
+  }
+
+  async attachServiceRequestMedia(
+    requestId: string,
+    userId: string,
+    files: Array<{ url: string; storagePath: string; mediaType: 'IMAGE' | 'VIDEO' }>,
+  ) {
+    this.ensureDatabase('salvar as mídias da solicitação');
+    const request = await this.prisma.serviceRequest.findUnique({
+      where: { id: requestId },
+      include: { media: true },
+    });
+    if (!request || request.clientId !== userId) throw new NotFoundException('Solicitação não encontrada');
+
+    const totalImages = request.media.filter((item) => item.mediaType === 'IMAGE').length + files.filter((item) => item.mediaType === 'IMAGE').length;
+    const totalVideos = request.media.filter((item) => item.mediaType === 'VIDEO').length + files.filter((item) => item.mediaType === 'VIDEO').length;
+    if (totalImages > 10) throw new ConflictException('A solicitação aceita no máximo 10 imagens.');
+    if (totalVideos > 1) throw new ConflictException('A solicitação aceita apenas 1 vídeo.');
+
+    if (files.length) {
+      await this.prisma.serviceRequestMedia.createMany({
+        data: files.map((file, index) => ({
+          requestId,
+          mediaType: file.mediaType,
+          url: file.url,
+          storagePath: file.storagePath,
+          displayOrder: request.media.length + index,
+        })),
+      });
+    }
+
+    return this.getServiceRequestById(requestId, userId);
+  }
+
+  async getServiceRequestsForUser(userId: string) {
+    this.ensureDatabase('carregar as solicitações');
+    if (!this.findUserById(userId)) throw new UnauthorizedException('Sessão inválida');
+    const requests = await this.prisma.serviceRequest.findMany({
+      where: { clientId: userId },
+      include: {
+        category: true,
+        services: { include: { categoryService: true } },
+        media: { orderBy: { displayOrder: 'asc' } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return requests.map((request) => this.mapServiceRequest(request));
+  }
+
+  async getServiceRequestById(id: string, userId: string) {
+    this.ensureDatabase('carregar a solicitação');
+    if (!this.findUserById(userId)) throw new UnauthorizedException('Sessão inválida');
+    const request = await this.prisma.serviceRequest.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        services: { include: { categoryService: true } },
+        media: { orderBy: { displayOrder: 'asc' } },
+      },
+    });
+    if (!request || request.clientId !== userId) throw new NotFoundException('Solicitação não encontrada');
+    return this.mapServiceRequest(request);
+  }
+
   async createCategoryService(categoryId: string, payload: Record<string, unknown>) {
+    this.ensureDatabase('criar o serviço da categoria');
     const category = this.getCategoryById(categoryId);
     if (!category) throw new NotFoundException('Categoria não encontrada');
     const name = String(payload.name ?? '').trim();
@@ -1202,6 +1273,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async updateCategoryService(id: string, payload: Record<string, unknown>) {
+    this.ensureDatabase('atualizar o serviço da categoria');
     const service = this.categoryServices.find((item) => item.id === id);
     if (!service) throw new NotFoundException('Serviço não encontrado');
     if (this.databaseAvailable) {
@@ -1229,6 +1301,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async deleteCategoryService(id: string) {
+    this.ensureDatabase('excluir o serviço da categoria');
     if (!this.categoryServices.some((service) => service.id === id)) throw new NotFoundException('Serviço não encontrado');
     if (this.databaseAvailable) {
       await this.prisma.categoryService.delete({ where: { id } });
@@ -1247,6 +1320,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async updateProfessionalServices(id: string, serviceIds: string[]) {
+    this.ensureDatabase('atualizar os serviços do profissional');
     const professional = this.getProfessionalById(id);
     if (!professional) throw new NotFoundException('Profissional não encontrado');
     const validIds = this.categoryServices.filter((service) => serviceIds.includes(service.id) && professional.categoryIds.includes(service.categoryId)).map((service) => service.id);
@@ -1260,13 +1334,110 @@ export class DataStoreService implements OnModuleInit {
     return this.getProfessionalServices(id);
   }
 
+  private mapServiceRequest(request: {
+    id: string;
+    clientId: string;
+    title: string;
+    description: string;
+    urgency: string;
+    preferredDate: Date | null;
+    preferredPeriod: string | null;
+    budgetType: string | null;
+    budgetMin: { toNumber(): number } | null;
+    budgetMax: { toNumber(): number } | null;
+    zipCode: string | null;
+    street: string | null;
+    number: string | null;
+    complement: string | null;
+    neighborhood: string | null;
+    city: string | null;
+    state: string | null;
+    latitude: { toNumber(): number } | null;
+    longitude: { toNumber(): number } | null;
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+    closedAt: Date | null;
+    category: { id: string; name: string; slug: string } | null;
+    services: Array<{ categoryService: { id: string; categoryId: string; name: string; slug: string; icon: string | null } }>;
+    media: Array<{ id: string; mediaType: string; url: string; storagePath: string; displayOrder: number; createdAt: Date }>;
+  }) {
+    return {
+      id: request.id,
+      clientId: request.clientId,
+      title: request.title,
+      description: request.description,
+      categoryId: request.category?.id ?? '',
+      categoryName: request.category?.name ?? '',
+      categorySlug: request.category?.slug ?? '',
+      serviceIds: request.services.map((entry) => entry.categoryService.id),
+      services: request.services.map((entry) => ({
+        id: entry.categoryService.id,
+        categoryId: entry.categoryService.categoryId,
+        name: entry.categoryService.name,
+        slug: entry.categoryService.slug,
+        icon: entry.categoryService.icon ?? 'wrench',
+      })),
+      urgency: request.urgency,
+      preferredDate: request.preferredDate?.toISOString() ?? '',
+      preferredPeriod: request.preferredPeriod ?? '',
+      budgetType: request.budgetType ?? '',
+      budgetMin: request.budgetMin?.toNumber() ?? null,
+      budgetMax: request.budgetMax?.toNumber() ?? null,
+      zipCode: request.zipCode ?? '',
+      street: request.street ?? '',
+      number: request.number ?? '',
+      complement: request.complement ?? '',
+      neighborhood: request.neighborhood ?? '',
+      city: request.city ?? '',
+      state: request.state ?? '',
+      latitude: request.latitude?.toNumber() ?? null,
+      longitude: request.longitude?.toNumber() ?? null,
+      status: request.status,
+      createdAt: request.createdAt.toISOString(),
+      updatedAt: request.updatedAt.toISOString(),
+      closedAt: request.closedAt?.toISOString() ?? '',
+      media: request.media.map((item) => ({
+        id: item.id,
+        mediaType: item.mediaType,
+        url: item.url,
+        storagePath: item.storagePath,
+        displayOrder: item.displayOrder,
+        createdAt: item.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  private parseUrgency(value: unknown) {
+    return value === 'EMERGENCY' || value === 'TODAY' || value === 'NEXT_DAYS' ? value : 'NO_RUSH';
+  }
+
+  private parsePreferredPeriod(value: unknown) {
+    return value === 'MORNING' || value === 'AFTERNOON' || value === 'EVENING' ? value : value === 'ANY' ? 'ANY' : null;
+  }
+
+  private parseBudgetType(value: unknown) {
+    return value === 'FIXED' || value === 'RANGE' || value === 'OPEN' ? value : null;
+  }
+
+  private optionalString(value: unknown) {
+    const clean = String(value ?? '').trim();
+    return clean || null;
+  }
+
+  private decimalOrNull(value: unknown) {
+    if (value === undefined || value === null || value === '') return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+
 
   // ---------- Denúncias ----------
 
-  /** Toda a funcionalidade de denúncias depende de dados reais persistidos: sem banco, não há modo de demonstração. */
-  private ensureDatabase() {
+  /** Escritas nunca usam o modo de demonstração, evitando informar sucesso sem persistência. */
+  private ensureDatabase(operation = 'concluir esta operação') {
     if (!this.databaseAvailable) {
-      throw new ServiceUnavailableException('Denúncias indisponíveis no momento: banco de dados não conectado.');
+      throw new ServiceUnavailableException(`Não foi possível ${operation}: banco de dados não conectado. Nenhuma alteração foi salva.`);
     }
   }
 
@@ -1533,6 +1704,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async toggleCommentLike(reviewId: string, userId: string) {
+    this.ensureDatabase('registrar a curtida');
     if (!this.reviews.some((review) => review.id === reviewId)) throw new NotFoundException('Comentário não encontrado');
     if (!this.findUserById(userId)) throw new UnauthorizedException('Sessão inválida');
     const likes = this.reviewLikes.get(reviewId) ?? new Set<string>();
@@ -1557,6 +1729,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async replyToComment(reviewId: string, userId: string, comment: string) {
+    this.ensureDatabase('salvar a resposta');
     if (!this.reviews.some((review) => review.id === reviewId)) throw new NotFoundException('Comentário não encontrado');
     const user = this.findUserById(userId);
     if (!user) throw new UnauthorizedException('Sessão inválida');
@@ -1592,27 +1765,26 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async toggleFavorite(userId: string, professionalId: string) {
+    this.ensureDatabase('atualizar os favoritos');
     if (!this.getProfessionalById(professionalId)) throw new NotFoundException('Profissional não encontrado');
     const favorites = this.favoriteProfessionalIds.get(userId) ?? new Set<string>();
     const active = !favorites.has(professionalId);
+
+    if (active) {
+      const user = this.findUserById(userId);
+      if (!user) throw new UnauthorizedException('Sessão inválida');
+      await this.prisma.favorite.upsert({
+        where: { userId_professionalId: { userId, professionalId } },
+        update: {},
+        create: { userId, professionalId, condominiumId: user.condominiumId },
+      });
+    } else {
+      await this.prisma.favorite.deleteMany({ where: { userId, professionalId } });
+    }
+
     if (active) favorites.add(professionalId);
     else favorites.delete(professionalId);
     this.favoriteProfessionalIds.set(userId, favorites);
-
-    if (this.databaseAvailable) {
-      if (active) {
-        const user = this.findUserById(userId);
-        if (user) {
-          await this.prisma.favorite.upsert({
-            where: { userId_professionalId: { userId, professionalId } },
-            update: {},
-            create: { userId, professionalId, condominiumId: user.condominiumId },
-          });
-        }
-      } else {
-        await this.prisma.favorite.deleteMany({ where: { userId, professionalId } });
-      }
-    }
 
     return { professionalId, active };
   }
@@ -1635,6 +1807,7 @@ export class DataStoreService implements OnModuleInit {
     images?: string[];
     recommended: boolean;
   }) {
+    this.ensureDatabase('salvar a indicação');
     const user = this.findUserById(payload.userId);
     if (!user) throw new UnauthorizedException('Sessão inválida');
     let professional = payload.professionalId ? this.getProfessionalById(payload.professionalId) : undefined;
@@ -1737,16 +1910,16 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async removeRecommendation(id: string, userId: string) {
+    this.ensureDatabase('remover a indicação');
     const recommendation = this.recommendations.find((item) => item.id === id && item.userId === userId);
     if (!recommendation) throw new NotFoundException('Indicação não encontrada');
+    await this.prisma.recommendation.update({ where: { id }, data: { status: 'REMOVED' } });
     recommendation.status = 'REMOVED';
-    if (this.databaseAvailable) {
-      await this.prisma.recommendation.update({ where: { id }, data: { status: 'REMOVED' } });
-    }
     return recommendation;
   }
 
   async toggleProfessionalRecommendation(userId: string, professionalId: string) {
+    this.ensureDatabase('atualizar a recomendação');
     const user = this.findUserById(userId);
     const professional = this.getProfessionalById(professionalId);
     if (!user) throw new UnauthorizedException('Sessão inválida');
@@ -1755,12 +1928,10 @@ export class DataStoreService implements OnModuleInit {
     const existing = this.recommendations.find((item) => item.userId === userId && item.professionalId === professionalId);
     if (existing) {
       const active = existing.status !== 'ACTIVE';
+      await this.prisma.recommendation.update({ where: { id: existing.id }, data: { status: active ? 'ACTIVE' : 'REMOVED', recommended: active } });
       existing.status = active ? 'ACTIVE' : 'REMOVED';
       existing.recommended = active;
       professional.recommendationCount = Math.max(0, professional.recommendationCount + (active ? 1 : -1));
-      if (this.databaseAvailable) {
-        await this.prisma.recommendation.update({ where: { id: existing.id }, data: { status: active ? 'ACTIVE' : 'REMOVED', recommended: active } });
-      }
       return { active, recommendationCount: professional.recommendationCount };
     }
 
@@ -1793,6 +1964,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async createReview(payload: { userId: string; condominiumId: string; professionalId: string; rating: number; comment: string; serviceDate?: string; images?: string[] }) {
+    this.ensureDatabase('salvar a avaliação');
     const user = this.findUserById(payload.userId);
     const professional = this.getProfessionalById(payload.professionalId);
     if (!user) throw new UnauthorizedException('Sessão inválida');

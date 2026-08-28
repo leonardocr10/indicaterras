@@ -31,7 +31,7 @@ import { ToastService } from './services/toast.service';
     <main class="admin-content admin-detail-content" *ngIf="detalhe() as denuncia; else carregando">
       <header class="admin-topbar report-detail-topbar">
         <div>
-          <p class="admin-eyebrow">Gestão Terras Alphas</p>
+          <p class="admin-eyebrow">Gestão IndicaFácil</p>
           <nav class="report-breadcrumb"><a routerLink="/admin/denuncias">Denúncias</a><span>/</span><b>Detalhes da denúncia</b></nav>
           <h1>Detalhes da denúncia</h1>
           <p>Analise a ocorrência, as evidências e aplique ações contra o prestador.</p>

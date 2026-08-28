@@ -36,8 +36,8 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   const config = new DocumentBuilder()
-    .setTitle('Terras Alphas Indica API')
-    .setDescription('API multi-condominio para indicacoes e profissionais recomendados')
+    .setTitle('IndicaFácil API')
+    .setDescription('API para conexão entre clientes e profissionais recomendados')
     .setVersion('1.0.0')
     .addBearerAuth()
     .build();

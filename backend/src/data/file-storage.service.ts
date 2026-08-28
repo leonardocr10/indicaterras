@@ -15,8 +15,7 @@ export interface ArquivoEnviado {
 @Injectable()
 export class FileStorageService {
   async salvar(pasta: string, arquivo: ArquivoEnviado): Promise<string> {
-    const nome = this.gerarNome(pasta, arquivo.originalname);
-    return this.salvarNoDisco(pasta, nome, arquivo);
+    return (await this.salvarComDestino(pasta, [], arquivo)).url;
   }
 
   async salvarVarios(pasta: string, arquivos: ArquivoEnviado[]): Promise<string[]> {
@@ -25,16 +24,40 @@ export class FileStorageService {
     return urls;
   }
 
+  async salvarComDestino(pasta: string, subpastas: string[], arquivo: ArquivoEnviado): Promise<{ url: string; storagePath: string }> {
+    const nome = this.gerarNome(pasta, arquivo.originalname);
+    return this.salvarNoDisco(pasta, subpastas, nome, arquivo);
+  }
+
+  async salvarVariosComDestino(pasta: string, subpastas: string[], arquivos: ArquivoEnviado[]) {
+    const salvos: Array<{ url: string; storagePath: string }> = [];
+    for (const arquivo of arquivos) salvos.push(await this.salvarComDestino(pasta, subpastas, arquivo));
+    return salvos;
+  }
+
   private gerarNome(pasta: string, original: string) {
     const extensao = extname(original || '').toLowerCase() || '.jpg';
     const prefixo = pasta.replace(/s$/, '');
     return `${prefixo}-${Date.now()}-${Math.round(Math.random() * 1_000_000)}${extensao}`;
   }
 
-  private salvarNoDisco(pasta: string, nome: string, arquivo: ArquivoEnviado) {
-    const destino = join(process.cwd(), 'uploads', pasta);
+  private salvarNoDisco(pasta: string, subpastas: string[], nome: string, arquivo: ArquivoEnviado) {
+    const segmentos = subpastas.map((segmento) => this.sanitizarSegmento(segmento)).filter(Boolean);
+    const destino = join(process.cwd(), 'uploads', pasta, ...segmentos);
     if (!existsSync(destino)) mkdirSync(destino, { recursive: true });
     writeFileSync(join(destino, nome), arquivo.buffer);
-    return `/uploads/${pasta}/${nome}`;
+    const relativePath = [pasta, ...segmentos, nome].join('/');
+    return {
+      url: `/uploads/${relativePath}`,
+      storagePath: relativePath,
+    };
+  }
+
+  private sanitizarSegmento(value: string) {
+    return String(value ?? '')
+      .trim()
+      .replace(/[^a-zA-Z0-9-_]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 }

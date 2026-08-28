@@ -1,16 +1,37 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
-import { ApiResponse, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, DashboardPayload, HomePayload, PendingItem, Professional, ProfessionalComment, ProfessionalWork, Review } from '../models';
+import { ApiResponse, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, DashboardPayload, HomePayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
+
+export interface CreateServiceRequestPayload {
+  title: string;
+  description: string;
+  categoryId: string;
+  serviceIds: string[];
+  urgency: 'EMERGENCY' | 'TODAY' | 'NEXT_DAYS' | 'NO_RUSH';
+  preferredDate: string;
+  preferredPeriod: 'MORNING' | 'AFTERNOON' | 'EVENING' | 'ANY';
+  budgetType: 'FIXED' | 'RANGE' | 'OPEN';
+  budgetMin: number | null;
+  budgetMax: number | null;
+  zipCode: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  latitude: number | null;
+  longitude: number | null;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly baseUrl = environment.apiUrl;
-
   getHome() {
     return this.http
       .get<ApiResponse<HomePayload>>(`${this.baseUrl}/dashboard/home`)
@@ -113,6 +134,34 @@ export class ApiService {
 
   getCategoryServices(categoryId: string, includeInactive = false) {
     return this.http.get<ApiResponse<CategoryService[]>>(`${this.baseUrl}/categories/${categoryId}/services?includeInactive=${includeInactive}`).pipe(map((response) => response.data));
+  }
+
+  matchProblem(query: string) {
+    return this.http.post<ApiResponse<ProblemMatchResult>>(`${this.baseUrl}/service-requests/match-problem`, { query }).pipe(map((response) => response.data));
+  }
+
+  getMyServiceRequests() {
+    const userId = this.auth.user()?.id ?? '';
+    return this.http.get<ApiResponse<ServiceRequestRecord[]>>(`${this.baseUrl}/service-requests?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+  }
+
+  getServiceRequest(id: string) {
+    const userId = this.auth.user()?.id ?? '';
+    return this.http.get<ApiResponse<ServiceRequestRecord>>(`${this.baseUrl}/service-requests/${id}?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+  }
+
+  createServiceRequest(payload: CreateServiceRequestPayload) {
+    return this.http.post<ApiResponse<ServiceRequestRecord>>(`${this.baseUrl}/service-requests`, {
+      ...payload,
+      userId: this.auth.user()?.id,
+    }).pipe(map((response) => response.data));
+  }
+
+  uploadServiceRequestMedia(requestId: string, files: File[]) {
+    const body = new FormData();
+    body.append('userId', this.auth.user()?.id ?? '');
+    files.forEach((file) => body.append('files', file));
+    return this.http.post<ApiResponse<ServiceRequestRecord>>(`${this.baseUrl}/service-requests/${requestId}/media`, body).pipe(map((response) => response.data));
   }
 
   createCategoryService(categoryId: string, payload: Partial<CategoryService>) {

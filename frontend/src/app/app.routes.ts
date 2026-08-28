@@ -21,6 +21,7 @@ import { CommentsPageComponent } from './comments-page';
 import { ProfessionalAccountPageComponent } from './professional-account-page';
 import { AdminReportsPageComponent } from './admin-reports-page';
 import { AdminReportDetailsPageComponent } from './admin-report-details-page';
+import { AdminPendingPageComponent } from './admin-pending-page';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -42,6 +43,9 @@ export const routes: Routes = [
       { path: 'favoritos', component: FavoritesPageComponent },
       { path: 'minhas-indicacoes', component: IndicationsPageComponent },
       { path: 'perfil', component: ResidentProfilePageComponent },
+      { path: 'solicitacoes', loadComponent: () => import('./service-request-pages').then((m) => m.ServiceRequestsPageComponent) },
+      { path: 'solicitacoes/nova', loadComponent: () => import('./service-request-pages').then((m) => m.ServiceRequestNewPageComponent) },
+      { path: 'solicitacoes/:id', loadComponent: () => import('./service-request-pages').then((m) => m.ServiceRequestDetailsPageComponent) },
     ],
   },
   {
@@ -56,6 +60,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: AdminDashboardPageComponent },
+      { path: 'pendencias', component: AdminPendingPageComponent },
       { path: 'condominios/novo', redirectTo: 'condominios', pathMatch: 'full' },
       { path: 'condominios/:id', redirectTo: 'condominios', pathMatch: 'full' },
       { path: 'condominios', component: AdminCrudPageComponent, data: { resource: 'condominiums' } },

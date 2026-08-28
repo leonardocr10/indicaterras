@@ -7,11 +7,13 @@ import { ToastService } from './services/toast.service';
 import { AuthService } from './services/auth.service';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import { categoryAvatar } from './category-art.util';
+import { brand } from './brand';
 import {
   LucideBell,
   LucideBriefcaseBusiness,
   LucideBuilding2,
   LucideCirclePlus,
+  LucideClipboardCheck,
   LucideEllipsis,
   LucideHeart,
   LucideHouse,
@@ -259,7 +261,7 @@ export class ProfessionalCardComponent {
       <aside class="mobile-drawer" role="dialog" aria-modal="true" aria-label="Menu principal" (click)="$event.stopPropagation()">
         <header class="mobile-drawer-header">
           <div class="mobile-drawer-brand">
-            <img src="/assets/logo-terras-original.png" alt="Terras Alphas Indica" />
+            <img [src]="brand.assets.logoReverse" [alt]="brand.name" />
           </div>
           <button type="button" aria-label="Fechar menu" (click)="closeMenu()"><svg lucideX /></button>
         </header>
@@ -267,6 +269,7 @@ export class ProfessionalCardComponent {
         <nav class="mobile-drawer-nav" aria-label="Navegação principal">
           <a routerLink="/app/home" (click)="closeMenu()"><svg lucideHouse /><span>Início</span></a>
           <a routerLink="/app/buscar" (click)="closeMenu()"><svg lucideSearch /><span>Buscar profissionais</span></a>
+          <a routerLink="/app/solicitacoes" (click)="closeMenu()"><svg lucideClipboardCheck /><span>Minhas solicitações</span></a>
           <a routerLink="/app/indicar" (click)="closeMenu()"><svg lucideHandshake /><span>Indicar profissional</span></a>
           <a routerLink="/app/favoritos" (click)="closeMenu()"><svg lucideHeart /><span>Meus favoritos</span></a>
           <a routerLink="/app/minhas-indicacoes" (click)="closeMenu()"><svg lucideBriefcaseBusiness /><span>Minhas indicações</span></a>
@@ -286,6 +289,7 @@ export class MobileTopbarComponent implements OnDestroy, OnInit {
   protected readonly userName = computed(() => this.auth.user()?.name ?? 'Morador');
   protected readonly placeName = signal('');
   protected readonly notifications = signal(0);
+  protected readonly brand = brand;
 
   ngOnInit() {
     this.api.getCondominiums().subscribe({
@@ -326,28 +330,28 @@ export class MobileTopbarComponent implements OnDestroy, OnInit {
 @Component({
   selector: 'bottom-navigation',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, LucideHouse, LucideSearch, LucideHandshake, LucideHeart, LucideUserRound],
+  imports: [RouterLink, RouterLinkActive, LucideHouse, LucideSearch, LucideHeart, LucideUserRound],
   template: `
     <nav class="bottom-nav">
-      <img class="desktop-brand-logo" src="/assets/logo-terras-original.png" alt="Terras Alphas Indica" />
+      <img class="desktop-brand-logo" [src]="brand.assets.logoPrimary" [alt]="brand.name" />
       <a routerLink="/app/home" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><b><svg lucideHouse /></b><span>Início</span></a>
       <a routerLink="/app/buscar" routerLinkActive="active"><b><svg lucideSearch /></b><span>Buscar</span></a>
-      <a routerLink="/app/indicar" routerLinkActive="active" class="center-action"><b><svg lucideHandshake /></b><span>Indicar</span></a>
+      <a routerLink="/app/indicar" routerLinkActive="active" class="center-action"><b><img [src]="brand.assets.iconReverse" alt="" /></b><span>Indicar</span></a>
       <a routerLink="/app/favoritos" routerLinkActive="active"><b><svg lucideHeart /></b><span>Favoritos</span></a>
       <a routerLink="/app/perfil" routerLinkActive="active"><b><svg lucideUserRound /></b><span>Perfil</span></a>
     </nav>
   `,
 })
-export class BottomNavigationComponent {}
+export class BottomNavigationComponent { protected readonly brand = brand; }
 
 @Component({
   selector: 'admin-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideBuilding2, LucideUsersRound, LucideBriefcaseBusiness, LucideTag, LucideStar, LucideHandshake, LucideTriangleAlert, LucideSettings, LucideChartNoAxesColumn, LucideBell],
+  imports: [CommonModule, RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideClipboardCheck, LucideBuilding2, LucideUserRound, LucideUsersRound, LucideBriefcaseBusiness, LucideTag, LucideStar, LucideHandshake, LucideTriangleAlert, LucideSettings, LucideChartNoAxesColumn, LucideBell],
   template: `
     <aside class="admin-sidebar">
       <div class="brand-card">
-        <img class="admin-brand-logo" src="/assets/logo-terras.png" alt="Terras Alphas Indica" />
+        <img class="admin-brand-logo" [src]="brand.assets.logoReverse" [alt]="brand.name" />
       </div>
       <div class="notification-bell-wrapper">
         <button type="button" class="notification-bell" [attr.aria-expanded]="painelAberto()" aria-label="Notificações" (click)="alternarPainel($event)">
@@ -357,9 +361,9 @@ export class BottomNavigationComponent {}
         <div *ngIf="painelAberto()" class="notification-panel" (click)="$event.stopPropagation()">
           <h3>Notificações</h3>
           <ng-container *ngIf="totalNotificacoes() > 0; else semNotificacao">
-            <a *ngIf="pendentes().newResidents > 0" routerLink="/admin/usuarios" (click)="painelAberto.set(false)">
+            <a *ngIf="pendentes().newResidents > 0" routerLink="/admin/moradores" (click)="painelAberto.set(false)">
               <b>{{ pendentes().newResidents }}</b>
-              <span>{{ pendentes().newResidents === 1 ? 'novo usuário aguardando aprovação' : 'novos usuários aguardando aprovação' }}</span>
+              <span>{{ pendentes().newResidents === 1 ? 'novo morador aguardando aprovação' : 'novos moradores aguardando aprovação' }}</span>
             </a>
             <a *ngIf="pendentes().reports > 0" routerLink="/admin/denuncias" (click)="painelAberto.set(false)">
               <b>{{ pendentes().reports }}</b>
@@ -367,18 +371,30 @@ export class BottomNavigationComponent {}
             </a>
           </ng-container>
           <ng-template #semNotificacao><p class="notification-empty">Nenhuma pendência no momento.</p></ng-template>
+          <a routerLink="/admin/pendencias" class="notification-panel-footer" (click)="painelAberto.set(false)">Ver central de pendências</a>
         </div>
       </div>
+
+      <span class="sidebar-group-label">Operação</span>
       <a routerLink="/admin/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><svg lucideLayoutDashboard /><span>Dashboard</span></a>
-      <a routerLink="/admin/condominios" routerLinkActive="active"><svg lucideBuilding2 /><span>Condomínios</span></a>
-      <a routerLink="/admin/usuarios" routerLinkActive="active"><svg lucideUsersRound /><span>Usuários</span><b *ngIf="pendentes().newResidents > 0" class="sidebar-count">{{ pendentes().newResidents }}</b></a>
-      <a routerLink="/admin/profissionais" routerLinkActive="active"><svg lucideBriefcaseBusiness /><span>Profissionais</span></a>
-      <a routerLink="/admin/categorias" routerLinkActive="active"><svg lucideTag /><span>Categorias</span></a>
-      <a routerLink="/admin/avaliacoes" routerLinkActive="active"><svg lucideStar /><span>Avaliações</span></a>
-      <a routerLink="/admin/indicacoes" routerLinkActive="active"><svg lucideHandshake /><span>Indicações</span></a>
-      <a routerLink="/admin/denuncias" routerLinkActive="active"><svg lucideTriangleAlert /><span>Denúncias</span><b *ngIf="pendentes().reports > 0" class="sidebar-count">{{ pendentes().reports }}</b></a>
-      <a routerLink="/admin/configuracoes" routerLinkActive="active"><svg lucideSettings /><span>Configurações</span></a>
-      <a routerLink="/admin/relatorios" routerLinkActive="active"><svg lucideChartNoAxesColumn /><span>Relatórios</span></a>
+      <a *ngIf="isVisible('pendencias')" routerLink="/admin/pendencias" routerLinkActive="active"><svg lucideClipboardCheck /><span>Central de pendências</span><b *ngIf="totalNotificacoes() > 0" class="sidebar-count">{{ totalNotificacoes() }}</b></a>
+
+      <span class="sidebar-group-label">Cadastros</span>
+      <a *ngIf="isVisible('condominios')" routerLink="/admin/condominios" routerLinkActive="active"><svg lucideBuilding2 /><span>Condomínios</span></a>
+      <a *ngIf="isVisible('moradores')" routerLink="/admin/moradores" routerLinkActive="active"><svg lucideUserRound /><span>Moradores</span><b *ngIf="pendentes().newResidents > 0" class="sidebar-count">{{ pendentes().newResidents }}</b></a>
+      <a *ngIf="isVisible('usuarios')" routerLink="/admin/usuarios" routerLinkActive="active"><svg lucideUsersRound /><span>Usuários</span></a>
+      <a *ngIf="isVisible('profissionais')" routerLink="/admin/profissionais" routerLinkActive="active"><svg lucideBriefcaseBusiness /><span>Profissionais</span></a>
+      <a *ngIf="isVisible('categorias')" routerLink="/admin/categorias" routerLinkActive="active"><svg lucideTag /><span>Categorias</span></a>
+
+      <span class="sidebar-group-label">Moderação</span>
+      <a *ngIf="isVisible('avaliacoes')" routerLink="/admin/avaliacoes" routerLinkActive="active"><svg lucideStar /><span>Avaliações</span></a>
+      <a *ngIf="isVisible('indicacoes')" routerLink="/admin/indicacoes" routerLinkActive="active"><svg lucideHandshake /><span>Indicações</span></a>
+      <a *ngIf="isVisible('denuncias')" routerLink="/admin/denuncias" routerLinkActive="active"><svg lucideTriangleAlert /><span>Denúncias</span><b *ngIf="pendentes().reports > 0" class="sidebar-count">{{ pendentes().reports }}</b></a>
+
+      <span class="sidebar-group-label">Sistema</span>
+      <a *ngIf="isVisible('configuracoes')" routerLink="/admin/configuracoes" routerLinkActive="active"><svg lucideSettings /><span>Configurações</span></a>
+      <a *ngIf="isVisible('relatorios')" routerLink="/admin/relatorios" routerLinkActive="active"><svg lucideChartNoAxesColumn /><span>Relatórios</span></a>
+
       <div class="sidebar-user"><img class="sidebar-avatar" src="/assets/placeholders/default-avatar.svg" alt="Foto do administrador" /><span><b>{{ userName() }}</b><small>{{ roleLabel() }}</small></span><button type="button" (click)="logout()">Sair</button></div>
     </aside>
   `,
@@ -393,11 +409,23 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
   protected readonly painelAberto = signal(false);
   protected readonly pendentes = signal<{ newResidents: number; reports: number }>({ newResidents: 0, reports: 0 });
   protected readonly totalNotificacoes = computed(() => this.pendentes().newResidents + this.pendentes().reports);
+  protected readonly modulosRestritos = signal<string[]>([]);
+  protected readonly brand = brand;
   private intervalo?: ReturnType<typeof setInterval>;
 
   ngOnInit() {
     this.carregarPendencias();
     this.intervalo = setInterval(() => this.carregarPendencias(), 60_000);
+    if (this.auth.user()?.role !== 'SUPER_ADMIN') {
+      this.api.getAdminSettings().subscribe({
+        next: (settings) => this.modulosRestritos.set(Array.isArray(settings['restrictedModules']) ? (settings['restrictedModules'] as string[]) : []),
+        error: () => undefined,
+      });
+    }
+  }
+
+  protected isVisible(chave: string): boolean {
+    return chave === 'dashboard' || !this.modulosRestritos().includes(chave);
   }
 
   ngOnDestroy() {

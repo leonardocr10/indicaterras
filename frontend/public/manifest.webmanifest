@@ -1,13 +1,13 @@
 {
-  "name": "Alphas Indica",
-  "short_name": "Alphas Indica",
-  "description": "Profissionais indicados por quem mora perto de você.",
+  "name": "IndicaFácil",
+  "short_name": "IndicaFácil",
+  "description": "Profissionais certos, sem complicação.",
   "lang": "pt-BR",
   "display": "standalone",
   "orientation": "portrait",
   "scope": "./",
   "start_url": "./",
-  "theme_color": "#075e3a",
+  "theme_color": "#065F46",
   "background_color": "#ffffff",
   "icons": [
     {

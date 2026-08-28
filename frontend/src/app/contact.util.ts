@@ -17,7 +17,7 @@ export function whatsappGreeting(professionalName: string, residentName: string,
   return [
     `Olá, ${firstName}!`,
     `${identification} do ${condominium}.`,
-    'Encontrei seu contato no aplicativo Terras Alphas Indica, onde você foi indicado por moradores.',
+    'Encontrei seu contato pelo IndicaFácil, onde você foi recomendado por clientes.',
     'Você teria disponibilidade para um orçamento?',
   ].join(' ');
 }

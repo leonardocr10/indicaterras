@@ -18,7 +18,7 @@ const CHAVE_DISPENSADO = 'alphas-indica-instalacao-dispensada';
     <aside *ngIf="visivel()" class="install-banner" [class.acima-da-navegacao]="comNavegacao()" role="dialog" aria-label="Instalar aplicativo">
       <img src="icons/icon-96x96.png" alt="" />
       <div class="install-texto">
-        <strong>Instalar o Alphas Indica</strong>
+        <strong>Instalar o IndicaFácil</strong>
         <p *ngIf="modo() === 'android'">Adicione na tela de início e abra como aplicativo, sem passar pelo navegador.</p>
         <p *ngIf="modo() === 'ios-safari'">Toque em <svg lucideShare /> Compartilhar e escolha <b>Adicionar à Tela de Início</b>.</p>
         <p *ngIf="modo() === 'ios-chrome'">Toque em <b>⋯</b> no canto do Chrome e escolha <b>Adicionar à Tela de Início</b>.</p>

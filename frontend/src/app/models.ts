@@ -184,3 +184,53 @@ export interface PendingItem {
 export interface ApiResponse<T> {
   data: T;
 }
+
+export interface ProblemMatchResult {
+  normalizedQuery: string;
+  keywords: string[];
+  confidence: number;
+  category: Pick<Category, 'id' | 'name' | 'slug'> | null;
+  services: Array<Pick<CategoryService, 'id' | 'categoryId' | 'name' | 'slug'>>;
+  professionals: Professional[];
+}
+
+export interface ServiceRequestMedia {
+  id: string;
+  mediaType: 'IMAGE' | 'VIDEO';
+  url: string;
+  storagePath: string;
+  displayOrder: number;
+  createdAt: string;
+}
+
+export interface ServiceRequestRecord {
+  id: string;
+  clientId: string;
+  title: string;
+  description: string;
+  categoryId: string;
+  categoryName: string;
+  categorySlug: string;
+  serviceIds: string[];
+  services: Array<Pick<CategoryService, 'id' | 'categoryId' | 'name' | 'slug' | 'icon'>>;
+  urgency: 'EMERGENCY' | 'TODAY' | 'NEXT_DAYS' | 'NO_RUSH';
+  preferredDate: string;
+  preferredPeriod: 'MORNING' | 'AFTERNOON' | 'EVENING' | 'ANY' | '';
+  budgetType: 'FIXED' | 'RANGE' | 'OPEN' | '';
+  budgetMin: number | null;
+  budgetMax: number | null;
+  zipCode: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  latitude: number | null;
+  longitude: number | null;
+  status: 'OPEN' | 'MATCHED' | 'CLOSED' | 'CANCELLED';
+  createdAt: string;
+  updatedAt: string;
+  closedAt: string;
+  media: ServiceRequestMedia[];
+}

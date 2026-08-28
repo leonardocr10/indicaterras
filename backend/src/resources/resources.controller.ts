@@ -7,6 +7,7 @@ import type { ArquivoEnviado } from '../data/file-storage.service';
 import type { ComplaintAction, ComplaintStatus } from '../data/complaints';
 
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
+const TIPOS_SOLICITACAO = [...TIPOS_ACEITOS, 'video/mp4', 'video/webm', 'video/quicktime'];
 
 const opcoesDeUpload = (maximoMb: number) => ({
   limits: { fileSize: maximoMb * 1024 * 1024 },
@@ -19,6 +20,18 @@ const opcoesDeUpload = (maximoMb: number) => ({
     callback(aceito ? null : new BadRequestException('Envie imagens PNG, JPG ou WebP.'), aceito);
   },
 });
+
+const opcoesDeMidiaSolicitacao = {
+  limits: { fileSize: 25 * 1024 * 1024, files: 11 },
+  fileFilter: (
+    _request: unknown,
+    file: { mimetype: string },
+    callback: (erro: Error | null, aceito: boolean) => void,
+  ) => {
+    const aceito = TIPOS_SOLICITACAO.includes(file.mimetype);
+    callback(aceito ? null : new BadRequestException('Envie imagens PNG, JPG, WebP ou vídeo MP4/WebM/MOV.'), aceito);
+  },
+};
 
 @ApiTags('resources')
 @Controller()
@@ -51,6 +64,47 @@ export class ResourcesController {
   @Get('categories/:id/services')
   async getCategoryServices(@Param('id') id: string, @Query('includeInactive') includeInactive?: string) {
     return { data: this.dataStoreService.getCategoryServices(id, includeInactive === 'true') };
+  }
+
+  @Post('service-requests/match-problem')
+  matchProblem(@Body('query') query: string) {
+    return { data: this.dataStoreService.matchProblem(query) };
+  }
+
+  @Get('service-requests')
+  async getServiceRequests(@Query('userId') userId: string) {
+    return { data: await this.dataStoreService.getServiceRequestsForUser(userId) };
+  }
+
+  @Post('service-requests')
+  async createServiceRequest(@Body() payload: Parameters<DataStoreService['createServiceRequest']>[0]) {
+    return { data: await this.dataStoreService.createServiceRequest(payload) };
+  }
+
+  @Get('service-requests/:id')
+  async getServiceRequestById(@Param('id') id: string, @Query('userId') userId: string) {
+    return { data: await this.dataStoreService.getServiceRequestById(id, userId) };
+  }
+
+  @Post('service-requests/:id/media')
+  @UseInterceptors(FilesInterceptor('files', 11, opcoesDeMidiaSolicitacao))
+  async uploadServiceRequestMedia(
+    @Param('id') id: string,
+    @Body('userId') userId: string,
+    @UploadedFiles() files: ArquivoEnviado[] = [],
+  ) {
+    if (!files.length) throw new BadRequestException('Selecione ao menos uma mídia para enviar.');
+    const uploaded = await this.fileStorageService.salvarVariosComDestino('service-requests', [userId, id], files);
+    return {
+      data: await this.dataStoreService.attachServiceRequestMedia(
+        id,
+        userId,
+        uploaded.map((item, index) => ({
+          ...item,
+          mediaType: files[index]?.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+        })),
+      ),
+    };
   }
 
   @Post('categories/:id/services')

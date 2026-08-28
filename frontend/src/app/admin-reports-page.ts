@@ -17,7 +17,7 @@ import { ToastService } from './services/toast.service';
     <main class="admin-content admin-crud-content">
       <header class="admin-topbar">
         <div>
-          <p class="admin-eyebrow">Gestão Terras Alphas</p>
+          <p class="admin-eyebrow">Gestão IndicaFácil</p>
           <h1>Denúncias</h1>
           <p>Analise ocorrências reportadas.</p>
         </div>

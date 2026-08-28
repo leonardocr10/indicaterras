@@ -34,6 +34,7 @@ import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import { categoryAvatar, categoryCover } from './category-art.util';
 import { SearchableSelectComponent } from './searchable-select';
 import { PhoneMaskDirective } from './phone-mask.directive';
+import { brand } from './brand';
 
 @Component({
   selector: 'login-page',
@@ -42,8 +43,8 @@ import { PhoneMaskDirective } from './phone-mask.directive';
   template: `
     <section class="auth-page resident-login-page">
       <div class="auth-card resident-login-card">
-        <img class="auth-logo" src="/assets/logo-terras-original.png" alt="Terras Alphas Indica" />
-        <p>Profissionais recomendados por quem mora perto de você.</p>
+        <img class="auth-logo" [src]="brand.assets.logoPrimary" [alt]="brand.name" />
+        <p>Encontrar quem resolve ficou fácil.</p>
         <form [formGroup]="form" (ngSubmit)="submit()">
           <label class="auth-field">E-mail
             <span><svg lucideMail /><input type="email" placeholder="seu@email.com" formControlName="email" /></span>
@@ -68,6 +69,7 @@ export class LoginPageComponent {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  protected readonly brand = brand;
 
   protected readonly showPassword = signal(false);
   protected readonly feedback = signal('');
@@ -320,6 +322,14 @@ export class RegisterPageComponent implements OnInit {
           <input name="homeSearch" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" [(ngModel)]="searchText" (keydown.enter)="searchProfessionals(); $event.preventDefault()" placeholder="Buscar profissional ou serviço..." aria-label="Buscar profissional ou serviço" />
           <a class="home-search-filters" routerLink="/app/profissionais" aria-label="Abrir filtros de busca"><svg lucideSlidersHorizontal /></a>
         </form>
+        <section class="home-request-highlight">
+          <strong>Qual problema você precisa resolver?</strong>
+          <textarea [(ngModel)]="problemText" name="problemText" rows="3" placeholder="Buscar profissional ou descrever problema... Ex.: Meu chuveiro não esquenta"></textarea>
+          <div class="home-request-actions">
+            <button type="button" class="secondary-button" (click)="searchProblemProfessionals()">Ver profissionais</button>
+            <button type="button" class="primary-button home-request-primary" (click)="createRequestFromProblem()">Quero receber propostas</button>
+          </div>
+        </section>
         <div class="home-popular" *ngIf="popularCategories(home).length">
           <span>Mais buscados:</span>
           <a *ngFor="let category of popularCategories(home)" routerLink="/app/profissionais" [queryParams]="{ categoria: category.slug }">{{ category.name }}</a>
@@ -360,6 +370,7 @@ export class HomePageComponent implements OnInit {
   private readonly router = inject(Router);
   protected readonly payload = signal<HomePayload | null>(null);
   protected searchText = '';
+  protected problemText = '';
 
   ngOnInit() {
     // The administrative desktop experience is a separate dashboard, not the resident directory.
@@ -383,6 +394,16 @@ export class HomePageComponent implements OnInit {
   protected searchProfessionals() {
     const search = this.searchText.replace(/\s+/g, ' ').trim();
     void this.router.navigate(['/app/profissionais'], { queryParams: search ? { busca: search } : {} });
+  }
+
+  protected searchProblemProfessionals() {
+    const search = this.problemText.replace(/\s+/g, ' ').trim();
+    void this.router.navigate(['/app/profissionais'], { queryParams: search ? { busca: search } : {} });
+  }
+
+  protected createRequestFromProblem() {
+    const problem = this.problemText.replace(/\s+/g, ' ').trim();
+    void this.router.navigate(['/app/solicitacoes/nova'], { queryParams: problem ? { problema: problem } : {} });
   }
 }
 
@@ -631,7 +652,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
         </div>
         <div class="profile-recommendation" *ngIf="professional.recommendationCount">
           <svg lucideUsersRound />
-          <span>{{ professional.recommendationCount }} moradores do Terras Alphas recomendam este profissional</span>
+          <span>{{ professional.recommendationCount }} pessoas recomendam este profissional</span>
         </div>
         <div class="quick-actions">
           <a [href]="whatsappLink(professional)" target="_blank" rel="noopener"><b><svg lucideMessageCircle /></b>WhatsApp</a>
@@ -854,8 +875,8 @@ export class ProfessionalProfilePageComponent implements OnInit {
 
   async shareProfessional(professional: Professional): Promise<void> {
     const shareData = {
-      title: `${professional.name} - Terras Alphas Indica`,
-      text: `Conheça ${professional.name}, profissional de ${professional.category}, no Terras Alphas Indica.`,
+      title: `${professional.name} - IndicaFácil`,
+      text: `Conheça ${professional.name}, profissional de ${professional.category}, no IndicaFácil.`,
       url: `${window.location.origin}/app/profissional/${professional.id}`,
     };
 
@@ -1307,7 +1328,7 @@ export class IndicatePageComponent implements OnInit, OnDestroy {
         <article *ngFor="let review of reviews().slice(0, 2)" class="review-card">
           <div class="review-card-heading">
             <b class="reviewer-avatar">{{ initials(review.userName) }}</b>
-            <div><strong>{{ review.userName }}</strong><span>Morador verificado do Terras Alphas</span></div>
+            <div><strong>{{ review.userName }}</strong><span>Cliente verificado</span></div>
           </div>
           <div class="review-rating-row"><rating-stars /><strong>{{ review.rating | number: '1.1-1' }}</strong><time>{{ review.createdAt | date: 'dd/MM/yyyy' }}</time></div>
           <p>{{ review.comment }}</p>

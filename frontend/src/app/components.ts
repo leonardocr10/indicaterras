@@ -405,7 +405,6 @@ export class BottomNavigationComponent { protected readonly brand = brand; }
       <a *ngIf="isVisible('configuracoes')" routerLink="/admin/configuracoes" routerLinkActive="active"><svg lucideSettings /><span>Configurações</span></a>
       <a *ngIf="isVisible('relatorios')" routerLink="/admin/relatorios" routerLinkActive="active"><svg lucideChartNoAxesColumn /><span>Relatórios</span></a>
 
-      <div class="sidebar-user"><img class="sidebar-avatar" src="/assets/placeholders/default-avatar.svg" alt="Foto do administrador" /><span><b>{{ userName() }}</b><small>{{ roleLabel() }}</small></span><button type="button" (click)="logout()">Sair</button></div>
     </aside>
   `,
 })
@@ -471,23 +470,28 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
           <a routerLink="/admin/pendencias" class="admin-top-notification-footer" (click)="open.set(false)">Ver central de pendências</a>
         </section>
       </div>
-      <div class="admin-top-user"><img src="/assets/placeholders/default-avatar.svg" alt="" /><span><b>{{ userName() }}</b><small>{{ roleLabel() }}</small></span><svg lucideChevronDown /></div>
+      <button type="button" class="admin-top-user" [attr.aria-expanded]="userMenuOpen()" (click)="toggleUserMenu($event)"><img src="/assets/placeholders/default-avatar.svg" alt="" /><span><b>{{ userName() }}</b><small>{{ roleLabel() }}</small></span><svg lucideChevronDown /></button>
+      <section *ngIf="userMenuOpen()" class="admin-user-menu" (click)="$event.stopPropagation()"><a routerLink="/admin/configuracoes" (click)="userMenuOpen.set(false)">Perfil</a><button type="button" (click)="logout()">Sair</button></section>
     </header>
   `,
 })
 export class AdminTopMenuComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
   protected readonly userName = computed(() => this.auth.user()?.name ?? 'Administrador');
   protected readonly roleLabel = computed(() => this.auth.user()?.role === 'SUPER_ADMIN' ? 'Super admin' : 'Administrador');
   protected readonly pending = signal<{ newResidents: number; reports: number }>({ newResidents: 0, reports: 0 });
   protected readonly total = computed(() => this.pending().newResidents + this.pending().reports);
   protected readonly open = signal(false);
+  protected readonly userMenuOpen = signal(false);
   private interval?: ReturnType<typeof setInterval>;
 
   ngOnInit() { this.load(); this.interval = setInterval(() => this.load(), 60_000); }
   ngOnDestroy() { if (this.interval) clearInterval(this.interval); }
-  protected toggle(event: Event) { event.stopPropagation(); this.open.set(!this.open()); }
-  @HostListener('document:click') protected close() { this.open.set(false); }
+  protected toggle(event: Event) { event.stopPropagation(); this.userMenuOpen.set(false); this.open.set(!this.open()); }
+  protected toggleUserMenu(event: Event) { event.stopPropagation(); this.open.set(false); this.userMenuOpen.set(!this.userMenuOpen()); }
+  protected logout() { this.auth.logout(); void this.router.navigateByUrl('/admin/login'); }
+  @HostListener('document:click') protected close() { this.open.set(false); this.userMenuOpen.set(false); }
   private load() { this.api.getDashboard().subscribe({ next: (dashboard) => this.pending.set(dashboard.pending), error: () => undefined }); }
 }

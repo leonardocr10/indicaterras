@@ -185,6 +185,27 @@ export interface ApiResponse<T> {
   data: T;
 }
 
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  link?: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationsPayload {
+  unreadCount: number;
+  items: AppNotification[];
+}
+
+export interface Conversation {
+  id: string;
+  professional: Pick<Professional, 'id' | 'name'>;
+  messages: Array<{ id: string; content: string; createdAt: string; readAt: string | null; sender: { id: string; name: string } }>;
+}
+
 export interface ProblemMatchResult {
   normalizedQuery: string;
   keywords: string[];

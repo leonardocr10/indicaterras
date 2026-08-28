@@ -135,6 +135,9 @@ model User {
   refreshTokens   RefreshToken[]
   passwordResets  PasswordReset[]
   serviceRequests ServiceRequest[]
+  notifications   Notification[]
+  sentMessages    DirectMessage[]    @relation("MessageSender")
+  conversations   Conversation[]     @relation("ResidentConversations")
 
   @@index([role, approvalStatus])
 }
@@ -226,8 +229,53 @@ model Professional {
   reports                Report[]
   images                 ProfessionalImage[]
   actions                ProfessionalAction[]
+  conversations          Conversation[]
 
   @@index([active, city])
+}
+
+model Conversation {
+  id             String          @id @default(cuid())
+  residentId     String
+  professionalId String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  resident       User            @relation("ResidentConversations", fields: [residentId], references: [id], onDelete: Cascade)
+  professional   Professional    @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  messages       DirectMessage[]
+
+  @@unique([residentId, professionalId])
+  @@index([professionalId, updatedAt])
+  @@map("conversations")
+}
+
+model DirectMessage {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String       @db.Text
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("direct_messages")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String   @db.Text
+  type      String   @default("INFO")
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
 }
 
 model ProfessionalService {

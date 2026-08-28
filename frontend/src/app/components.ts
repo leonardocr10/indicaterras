@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { Category, Professional } from './models';
+import { AppNotification, Category, Professional } from './models';
 import { ApiService } from './services/api.service';
 import { ToastService } from './services/toast.service';
 import { AuthService } from './services/auth.service';
@@ -163,7 +163,7 @@ export class CategoryCardComponent {
         <div class="professional-card-icon-actions">
           <button *ngIf="compact" class="card-recommend-button" [class.active]="recommended()" type="button" [attr.aria-pressed]="recommended()" [attr.aria-label]="'Recomendar ' + professional.name" (click)="toggleRecommendation()"><svg lucideThumbsUp [attr.fill]="recommended() ? 'currentColor' : 'none'" /></button>
           <button *ngIf="!compact && mode !== 'favorite'" class="favorite-button" type="button" (click)="toggleFavorite()" [attr.aria-label]="'Favoritar ' + professional.name"><svg lucideHeart [attr.fill]="favorite() ? 'currentColor' : 'none'" /></button>
-          <a [href]="whatsappLink" target="_blank" rel="noopener" class="card-whatsapp" [attr.aria-label]="'Conversar com ' + professional.name + ' no WhatsApp'"><svg lucideMessageCircle /></a>
+          <a [routerLink]="['/app/mensagens', professional.id]" class="card-whatsapp" [attr.aria-label]="'Enviar mensagem para ' + professional.name"><svg lucideMessageCircle /></a>
           <a [href]="phoneLink" class="card-phone" [attr.aria-label]="'Ligar para ' + professional.name"><svg lucidePhone /></a>
           <div *ngIf="mode === 'favorite'" class="card-menu-wrapper">
             <button class="more-button" type="button" [attr.aria-expanded]="menuOpen()" [attr.aria-label]="'Mais opções para ' + professional.name" (click)="menuOpen.set(!menuOpen())"><svg lucideEllipsis /></button>
@@ -261,7 +261,12 @@ export class ProfessionalCardComponent {
     <div class="home-topbar">
       <button type="button" aria-label="Menu" [attr.aria-expanded]="menuOpen()" (click)="openMenu()"><svg lucideMenu /></button>
       <div class="home-topbar-title"><strong>Olá, {{ userName() }}! <span>👋</span></strong><small *ngIf="placeName()"><svg lucideMapPin />{{ placeName() }}</small></div>
-      <button type="button" class="home-topbar-bell" aria-label="Notificações"><svg lucideBell /><i *ngIf="notifications()">{{ notifications() }}</i></button>
+      <button type="button" class="home-topbar-bell" aria-label="Notificações" [attr.aria-expanded]="notificationsOpen()" (click)="toggleNotifications()"><svg lucideBell /><i *ngIf="notifications()">{{ notifications() }}</i></button>
+      <section *ngIf="notificationsOpen()" class="mobile-notifications" aria-label="Notificações">
+        <header><strong>Notificações</strong><button type="button" aria-label="Fechar notificações" (click)="notificationsOpen.set(false)"><svg lucideX /></button></header>
+        <p *ngIf="!notificationItems().length">Você não tem novas notificações.</p>
+        <article *ngFor="let item of notificationItems()" [class.unread]="!item.readAt"><b>{{ item.title }}</b><span>{{ item.body }}</span><small>{{ item.createdAt | date:'dd/MM, HH:mm' }}</small></article>
+      </section>
     </div>
 
     <div class="mobile-menu-backdrop" *ngIf="menuOpen()" (click)="closeMenu()">
@@ -296,6 +301,8 @@ export class MobileTopbarComponent implements OnDestroy, OnInit {
   protected readonly userName = computed(() => this.auth.user()?.name ?? 'Morador');
   protected readonly placeName = signal('');
   protected readonly notifications = signal(0);
+  protected readonly notificationsOpen = signal(false);
+  protected readonly notificationItems = signal<AppNotification[]>([]);
   protected readonly brand = brand;
 
   ngOnInit() {
@@ -306,6 +313,7 @@ export class MobileTopbarComponent implements OnDestroy, OnInit {
       },
       error: () => this.placeName.set(''),
     });
+    this.loadNotifications();
   }
 
   protected openMenu() {
@@ -322,6 +330,22 @@ export class MobileTopbarComponent implements OnDestroy, OnInit {
     this.closeMenu();
     this.auth.logout();
     void this.router.navigateByUrl('/login');
+  }
+
+  protected toggleNotifications() {
+    const open = !this.notificationsOpen();
+    this.notificationsOpen.set(open);
+    if (!open) return;
+    this.api.markNotificationsRead().subscribe({ next: (payload) => this.applyNotifications(payload) });
+  }
+
+  private loadNotifications() {
+    this.api.getNotifications().subscribe({ next: (payload) => this.applyNotifications(payload) });
+  }
+
+  private applyNotifications(payload: { unreadCount: number; items: AppNotification[] }) {
+    this.notifications.set(payload.unreadCount);
+    this.notificationItems.set(payload.items);
   }
 
   @HostListener('window:keydown.escape')

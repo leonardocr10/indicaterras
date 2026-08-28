@@ -5,6 +5,7 @@ import { DataStoreService } from '../data/data-store.service';
 import { FileStorageService } from '../data/file-storage.service';
 import type { ArquivoEnviado } from '../data/file-storage.service';
 import type { ComplaintAction, ComplaintStatus } from '../data/complaints';
+import { CommunicationsService } from './communications.service';
 
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
 const TIPOS_SOLICITACAO = [...TIPOS_ACEITOS, 'video/mp4', 'video/webm', 'video/quicktime'];
@@ -39,6 +40,7 @@ export class ResourcesController {
   constructor(
     private readonly dataStoreService: DataStoreService,
     private readonly fileStorageService: FileStorageService,
+    private readonly communicationsService: CommunicationsService,
   ) {}
 
   @Get('condominiums')
@@ -54,6 +56,26 @@ export class ResourcesController {
   @Get('users')
   getUsers() {
     return { data: this.dataStoreService.getUsers() };
+  }
+
+  @Get('notifications')
+  getNotifications(@Query('userId') userId: string) {
+    return this.communicationsService.getNotifications(userId).then((data) => ({ data }));
+  }
+
+  @Post('notifications/read')
+  markNotificationsRead(@Body('userId') userId: string, @Body('notificationIds') notificationIds?: string[]) {
+    return this.communicationsService.markNotificationsRead(userId, notificationIds).then((data) => ({ data }));
+  }
+
+  @Get('conversations/:professionalId')
+  getConversation(@Param('professionalId') professionalId: string, @Query('userId') userId: string) {
+    return this.communicationsService.getConversation(userId, professionalId).then((data) => ({ data }));
+  }
+
+  @Post('conversations/:professionalId/messages')
+  sendConversationMessage(@Param('professionalId') professionalId: string, @Body('userId') userId: string, @Body('content') content: string) {
+    return this.communicationsService.sendMessage(userId, professionalId, content).then((data) => ({ data }));
   }
 
   @Get('categories')

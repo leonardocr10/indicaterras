@@ -24,6 +24,7 @@ import { AdminReportDetailsPageComponent } from './admin-report-details-page';
 import { AdminPendingPageComponent } from './admin-pending-page';
 import { LandingPageComponent } from './landing-page';
 import { ResetPasswordPageComponent } from './reset-password-page';
+import { MessagesPageComponent } from './messages-page';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -41,6 +42,7 @@ export const routes: Routes = [
       { path: 'profissionais', component: ProfessionalsPageComponent },
       { path: 'profissional/:id/comentarios', component: CommentsPageComponent },
       { path: 'profissional/:id', component: ProfessionalProfilePageComponent },
+      { path: 'mensagens/:professionalId', component: MessagesPageComponent },
       { path: 'indicar', component: IndicatePageComponent },
       { path: 'avaliacoes/:id', component: ReviewsPageComponent },
       { path: 'favoritos', component: FavoritesPageComponent },

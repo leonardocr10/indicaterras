@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
-import { ApiResponse, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, DashboardPayload, HomePayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
+import { ApiResponse, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, HomePayload, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
@@ -36,6 +36,24 @@ export class ApiService {
     return this.http
       .get<ApiResponse<HomePayload>>(`${this.baseUrl}/dashboard/home`)
       .pipe(map((response) => ({ ...response.data, user: this.auth.user() ?? response.data.user })));
+  }
+
+  getNotifications() {
+    const userId = this.auth.user()?.id ?? '';
+    return this.http.get<ApiResponse<NotificationsPayload>>(`${this.baseUrl}/notifications?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+  }
+
+  markNotificationsRead(notificationIds?: string[]) {
+    return this.http.post<ApiResponse<NotificationsPayload>>(`${this.baseUrl}/notifications/read`, { userId: this.auth.user()?.id, notificationIds }).pipe(map((response) => response.data));
+  }
+
+  getConversation(professionalId: string) {
+    const userId = this.auth.user()?.id ?? '';
+    return this.http.get<ApiResponse<Conversation>>(`${this.baseUrl}/conversations/${professionalId}?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+  }
+
+  sendConversationMessage(professionalId: string, content: string) {
+    return this.http.post<ApiResponse<Conversation>>(`${this.baseUrl}/conversations/${professionalId}/messages`, { userId: this.auth.user()?.id, content }).pipe(map((response) => response.data));
   }
 
   getProfessionals(category?: string, service?: string, search?: string) {

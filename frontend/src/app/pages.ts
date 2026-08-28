@@ -967,7 +967,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
           <span>{{ professional.recommendationCount }} pessoas recomendam este profissional</span>
         </div>
         <div class="quick-actions">
-          <a [href]="whatsappLink(professional)" target="_blank" rel="noopener"><b><svg lucideMessageCircle /></b>WhatsApp</a>
+          <a [routerLink]="['/app/mensagens', professional.id]"><b><svg lucideMessageCircle /></b>Mensagem</a>
           <a [href]="phoneLink(professional)"><b><svg lucidePhone /></b>Ligar</a>
           <a [routerLink]="['/app/profissional', professional.id, 'comentarios']" [queryParams]="{ avaliar: 1 }"><b><svg lucideStar /></b>Avaliar</a>
           <button type="button" (click)="shareProfessional(professional)"><b><svg lucideShare2 /></b>Compartilhar</button>
@@ -1006,7 +1006,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
       </div>
       <button *ngIf="workLightbox()" class="comment-lightbox" type="button" (click)="workLightbox.set('')" aria-label="Fechar foto ampliada"><img [src]="workLightbox()" alt="Foto do trabalho ampliada" /></button>
       <div class="profile-cta-bar">
-        <a [href]="'https://wa.me/' + professional.whatsapp" class="primary-button full-width profile-whatsapp"><svg lucideMessageCircle />Chamar no WhatsApp</a>
+        <a [routerLink]="['/app/mensagens', professional.id]" class="primary-button full-width profile-whatsapp"><svg lucideMessageCircle />Enviar mensagem</a>
       </div>
 
       <div class="professional-filter-backdrop" *ngIf="reportOpen()" (click)="closeReport()">

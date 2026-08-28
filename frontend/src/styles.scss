@@ -424,6 +424,19 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .admin-sidebar:before{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.025),transparent 42%)}
 .brand-card{height:126px;margin:0 4px 14px;padding:7px 12px 18px;border-bottom:1px solid rgba(255,255,255,.11)}
 .admin-brand-logo{width:176px;height:106px;border-radius:16px;object-fit:cover;box-shadow:0 12px 28px rgba(0,0,0,.13)}
+.notification-bell-wrapper{position:relative;display:flex;justify-content:flex-end;margin:-4px 2px 10px}
+.notification-bell{position:relative;width:38px;height:38px;padding:0;border:1px solid rgba(255,255,255,.16);border-radius:11px;display:grid;place-items:center;color:#dbeae4;background:rgba(255,255,255,.06);cursor:pointer;transition:background .18s ease,color .18s ease}
+.notification-bell:hover{color:#fff;background:rgba(255,255,255,.12)}
+.notification-bell svg{width:18px;height:18px;stroke-width:1.9}
+.notification-count{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;display:grid;place-items:center;color:#3a2405;background:#e4c56f;font-size:10px;font-weight:700;line-height:1}
+.notification-panel{z-index:31;position:absolute;right:0;top:calc(100% + 8px);width:280px;max-width:calc(100vw - 24px);padding:8px;border:1px solid #dfe6e2;border-radius:13px;display:grid;gap:2px;background:#fff;box-shadow:0 18px 36px rgba(10,40,28,.2)}
+.notification-panel h3{margin:4px 6px 6px;color:#18201c;font-size:13px;font-weight:700}
+.notification-panel a{padding:9px 8px;border-radius:9px;display:flex;align-items:baseline;gap:7px;color:#26332c;text-decoration:none}
+.notification-panel a:hover{background:#f2f6f4}
+.notification-panel a b{color:var(--primary);font-size:15px}
+.notification-panel a span{color:#4a564f;font-size:12px;line-height:16px}
+.notification-empty{margin:4px 6px 6px;color:#66706b;font-size:12px}
+.sidebar-count{margin-left:auto;min-width:19px;height:19px;padding:0 5px;border-radius:999px;display:grid;place-items:center;color:#3a2405;background:#e4c56f;font-size:10px;font-weight:700;line-height:1}
 .admin-sidebar>a{position:relative;min-height:48px;padding:0 13px;border:1px solid transparent;border-radius:12px;gap:12px;color:#dbeae4;font-size:13px;transition:transform .18s ease,background .18s ease,color .18s ease}
 .admin-sidebar>a svg{width:19px;height:19px;padding:1px;stroke-width:1.8}.admin-sidebar>a:hover{transform:translateX(2px);color:#fff;background:rgba(255,255,255,.07)}
 .admin-sidebar>a.active{color:#fff;border-color:rgba(255,255,255,.07);background:linear-gradient(90deg,rgba(53,159,116,.36),rgba(255,255,255,.08));box-shadow:inset 3px 0 0 #d4b25c,0 9px 20px rgba(0,24,18,.12)}.admin-sidebar>a.active svg{color:#e4c56f}
@@ -585,6 +598,9 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
   .admin-sidebar::-webkit-scrollbar{display:none}
   .admin-sidebar>a{flex:0 0 auto;min-height:36px;padding:0 12px;gap:8px;font-size:12px;border-radius:999px}
   .admin-sidebar .brand-card{display:none}
+  .notification-bell-wrapper{order:8;flex:0 0 auto;margin:0}
+  .notification-bell{width:32px;height:32px}
+  .notification-panel{right:auto;left:0}
   .admin-sidebar .sidebar-user{order:9;flex:0 0 auto;margin:0 0 0 6px;padding:0 0 0 10px;border-top:0;border-left:1px solid rgba(255,255,255,.16);grid-template-columns:auto;gap:0}
   .admin-sidebar .sidebar-user .sidebar-avatar,.admin-sidebar .sidebar-user>span{display:none}
   .admin-sidebar .sidebar-user button{width:auto;padding:0 4px;font-size:12px}

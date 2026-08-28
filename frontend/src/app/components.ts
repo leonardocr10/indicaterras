@@ -343,31 +343,83 @@ export class BottomNavigationComponent {}
 @Component({
   selector: 'admin-sidebar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideBuilding2, LucideUsersRound, LucideBriefcaseBusiness, LucideTag, LucideStar, LucideHandshake, LucideTriangleAlert, LucideSettings, LucideChartNoAxesColumn],
+  imports: [CommonModule, RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideBuilding2, LucideUsersRound, LucideBriefcaseBusiness, LucideTag, LucideStar, LucideHandshake, LucideTriangleAlert, LucideSettings, LucideChartNoAxesColumn, LucideBell],
   template: `
     <aside class="admin-sidebar">
       <div class="brand-card">
         <img class="admin-brand-logo" src="/assets/logo-terras.png" alt="Terras Alphas Indica" />
       </div>
+      <div class="notification-bell-wrapper">
+        <button type="button" class="notification-bell" [attr.aria-expanded]="painelAberto()" aria-label="Notificações" (click)="alternarPainel($event)">
+          <svg lucideBell />
+          <span *ngIf="totalNotificacoes() > 0" class="notification-count">{{ totalNotificacoes() }}</span>
+        </button>
+        <div *ngIf="painelAberto()" class="notification-panel" (click)="$event.stopPropagation()">
+          <h3>Notificações</h3>
+          <ng-container *ngIf="totalNotificacoes() > 0; else semNotificacao">
+            <a *ngIf="pendentes().newResidents > 0" routerLink="/admin/usuarios" (click)="painelAberto.set(false)">
+              <b>{{ pendentes().newResidents }}</b>
+              <span>{{ pendentes().newResidents === 1 ? 'novo usuário aguardando aprovação' : 'novos usuários aguardando aprovação' }}</span>
+            </a>
+            <a *ngIf="pendentes().reports > 0" routerLink="/admin/denuncias" (click)="painelAberto.set(false)">
+              <b>{{ pendentes().reports }}</b>
+              <span>{{ pendentes().reports === 1 ? 'denúncia pendente' : 'denúncias pendentes' }}</span>
+            </a>
+          </ng-container>
+          <ng-template #semNotificacao><p class="notification-empty">Nenhuma pendência no momento.</p></ng-template>
+        </div>
+      </div>
       <a routerLink="/admin/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><svg lucideLayoutDashboard /><span>Dashboard</span></a>
       <a routerLink="/admin/condominios" routerLinkActive="active"><svg lucideBuilding2 /><span>Condomínios</span></a>
-      <a routerLink="/admin/usuarios" routerLinkActive="active"><svg lucideUsersRound /><span>Usuários</span></a>
+      <a routerLink="/admin/usuarios" routerLinkActive="active"><svg lucideUsersRound /><span>Usuários</span><b *ngIf="pendentes().newResidents > 0" class="sidebar-count">{{ pendentes().newResidents }}</b></a>
       <a routerLink="/admin/profissionais" routerLinkActive="active"><svg lucideBriefcaseBusiness /><span>Profissionais</span></a>
       <a routerLink="/admin/categorias" routerLinkActive="active"><svg lucideTag /><span>Categorias</span></a>
       <a routerLink="/admin/avaliacoes" routerLinkActive="active"><svg lucideStar /><span>Avaliações</span></a>
       <a routerLink="/admin/indicacoes" routerLinkActive="active"><svg lucideHandshake /><span>Indicações</span></a>
-      <a routerLink="/admin/denuncias" routerLinkActive="active"><svg lucideTriangleAlert /><span>Denúncias</span></a>
+      <a routerLink="/admin/denuncias" routerLinkActive="active"><svg lucideTriangleAlert /><span>Denúncias</span><b *ngIf="pendentes().reports > 0" class="sidebar-count">{{ pendentes().reports }}</b></a>
       <a routerLink="/admin/configuracoes" routerLinkActive="active"><svg lucideSettings /><span>Configurações</span></a>
       <a routerLink="/admin/relatorios" routerLinkActive="active"><svg lucideChartNoAxesColumn /><span>Relatórios</span></a>
       <div class="sidebar-user"><img class="sidebar-avatar" src="/assets/placeholders/default-avatar.svg" alt="Foto do administrador" /><span><b>{{ userName() }}</b><small>{{ roleLabel() }}</small></span><button type="button" (click)="logout()">Sair</button></div>
     </aside>
   `,
 })
-export class AdminSidebarComponent {
+export class AdminSidebarComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
+  private readonly api = inject(ApiService);
   private readonly router = inject(Router);
   protected readonly userName = computed(() => this.auth.user()?.name ?? 'Administrador');
   protected readonly roleLabel = computed(() => (this.auth.user()?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Administrador do condomínio'));
+
+  protected readonly painelAberto = signal(false);
+  protected readonly pendentes = signal<{ newResidents: number; reports: number }>({ newResidents: 0, reports: 0 });
+  protected readonly totalNotificacoes = computed(() => this.pendentes().newResidents + this.pendentes().reports);
+  private intervalo?: ReturnType<typeof setInterval>;
+
+  ngOnInit() {
+    this.carregarPendencias();
+    this.intervalo = setInterval(() => this.carregarPendencias(), 60_000);
+  }
+
+  ngOnDestroy() {
+    if (this.intervalo) clearInterval(this.intervalo);
+  }
+
+  private carregarPendencias() {
+    this.api.getDashboard().subscribe({
+      next: (dashboard) => this.pendentes.set(dashboard.pending),
+      error: () => undefined,
+    });
+  }
+
+  @HostListener('document:click')
+  protected fecharPainel() {
+    if (this.painelAberto()) this.painelAberto.set(false);
+  }
+
+  protected alternarPainel(evento: Event) {
+    evento.stopPropagation();
+    this.painelAberto.set(!this.painelAberto());
+  }
 
   logout() {
     this.auth.logout();

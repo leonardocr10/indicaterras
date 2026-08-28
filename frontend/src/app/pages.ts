@@ -195,7 +195,7 @@ export class LoginPageComponent {
 @Component({
   selector: 'register-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, SearchableSelectComponent, PhoneMaskDirective, LucideArrowLeft, LucideBriefcaseBusiness, LucideChevronLeft, LucideChevronRight, LucideEye, LucideEyeOff, LucideLockKeyhole, LucideMail, LucideMapPin, LucidePhone, LucideSearch],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, SearchableSelectComponent, PhoneMaskDirective, LucideArrowLeft, LucideBriefcaseBusiness, LucideChevronLeft, LucideChevronRight, LucideEye, LucideEyeOff, LucideLockKeyhole, LucideMail, LucideMapPin, LucidePhone, LucideSearch, LucideUserRound],
   template: `
     <section class="auth-page register-page">
       <div class="auth-card wide register-card">

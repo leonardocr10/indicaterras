@@ -21,7 +21,11 @@ async function bootstrap() {
     .map((origin) => origin.trim())
     .filter(Boolean);
   app.enableCors({ origin: allowedOrigins.length ? allowedOrigins : true });
-  app.setGlobalPrefix('api', { exclude: ['docs', 'uploads/(.*)'] });
+  // ServeStaticModule (os arquivos em /uploads) não é um controller, então nunca
+  // ganha o prefixo /api sozinho - não precisa (e não deve) excluir "uploads/*"
+  // aqui, senão os controllers de upload (POST /uploads/comments, /uploads/works)
+  // ficam fora do /api junto, quebrando o link que o front chama.
+  app.setGlobalPrefix('api', { exclude: ['docs'] });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

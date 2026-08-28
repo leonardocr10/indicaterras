@@ -126,6 +126,7 @@ export class SearchableSelectComponent implements ControlValueAccessor, AfterVie
   protected panelTop = 0;
   protected panelLeft = 0;
   protected panelWidth = 240;
+  private openedAt = 0;
 
   private onChange: (value: unknown) => void = () => undefined;
   private onTouched: () => void = () => undefined;
@@ -181,6 +182,7 @@ export class SearchableSelectComponent implements ControlValueAccessor, AfterVie
     this.query = '';
     this.positionPanel();
     this.open = true;
+    this.openedAt = Date.now();
     this.focusSearch();
   }
 
@@ -218,7 +220,10 @@ export class SearchableSelectComponent implements ControlValueAccessor, AfterVie
   @HostListener('window:resize')
   @HostListener('window:scroll')
   protected handleViewportChange() {
-    if (this.open) this.close();
+    // Focar o campo de busca abre o teclado virtual no celular, o que por si só
+    // já dispara resize/scroll — ignora esses eventos logo após abrir para não
+    // fechar o painel na hora que ele acabou de aparecer.
+    if (this.open && Date.now() - this.openedAt > 400) this.close();
   }
 
   private positionPanel() {

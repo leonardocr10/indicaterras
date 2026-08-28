@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { demoCategoryServices } from '../src/data/demo-data';
+import { CATEGORY_CATALOG, catalogSlug } from '../src/data/category-catalog';
 
 const prisma = new PrismaClient();
 
@@ -116,6 +117,36 @@ async function main() {
     const group = servicesByCategory.get(category.name) ?? [];
     group.push({ id: saved.id, name: saved.name });
     servicesByCategory.set(category.name, group);
+  }
+
+  // Complementa o catálogo existente sem apagar categorias, serviços ou aliases cadastrados.
+  for (const [groupOrder, groupSeed] of CATEGORY_CATALOG.entries()) {
+    const group = await prisma.categoryGroup.upsert({
+      where: { slug: groupSeed.slug },
+      update: { name: groupSeed.name, icon: groupSeed.icon, displayOrder: groupOrder + 1, active: true },
+      create: { name: groupSeed.name, slug: groupSeed.slug, icon: groupSeed.icon, displayOrder: groupOrder + 1, active: true },
+    });
+    for (const [categoryOrder, categorySeed] of groupSeed.categories.entries()) {
+      const category = await prisma.category.upsert({
+        where: { slug: categorySeed.slug },
+        update: { name: categorySeed.name, icon: categorySeed.icon, groupId: group.id, active: true },
+        create: { name: categorySeed.name, slug: categorySeed.slug, icon: categorySeed.icon, groupId: group.id, displayOrder: categoryOrder + 1, active: true },
+      });
+      for (const [serviceOrder, serviceSeed] of categorySeed.services.entries()) {
+        const service = await prisma.categoryService.upsert({
+          where: { categoryId_slug: { categoryId: category.id, slug: catalogSlug(serviceSeed.name) } },
+          update: { name: serviceSeed.name, icon: categorySeed.icon, displayOrder: serviceOrder + 1, active: true },
+          create: { categoryId: category.id, name: serviceSeed.name, slug: catalogSlug(serviceSeed.name), icon: categorySeed.icon, displayOrder: serviceOrder + 1, active: true },
+        });
+        for (const alias of serviceSeed.aliases ?? []) {
+          await prisma.categoryServiceAlias.upsert({
+            where: { categoryServiceId_normalizedAlias: { categoryServiceId: service.id, normalizedAlias: alias.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim() } },
+            update: { alias },
+            create: { categoryServiceId: service.id, alias, normalizedAlias: alias.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim() },
+          });
+        }
+      }
+    }
   }
 
   const professionalSeeds = [

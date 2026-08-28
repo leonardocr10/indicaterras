@@ -1,0 +1,58 @@
+export type CatalogService = { name: string; icon?: string; aliases?: string[] };
+export type CatalogCategory = { name: string; slug: string; icon: string; services: CatalogService[] };
+export type CatalogGroup = { name: string; slug: string; icon: string; categories: CatalogCategory[] };
+
+const services = (...items: Array<string | [string, string[]]>): CatalogService[] => items.map((item) =>
+  Array.isArray(item) ? { name: item[0], aliases: item[1] } : { name: item },
+);
+
+// Catálogo inicial, idempotente no seed. Os aliases descrevem problemas reais, não só nomes de categorias.
+export const CATEGORY_CATALOG: CatalogGroup[] = [
+  { name: 'Casa e manutenção', slug: 'casa-manutencao', icon: 'House', categories: [
+    { name: 'Eletricista', slug: 'eletricista', icon: 'Zap', services: services(['Chuveiro', ['chuveiro queimou', 'chuveiro nao esquenta', 'agua fria', 'resistencia queimou', 'chuveiro desarma']], ['Resistência de chuveiro', ['resistencia do chuveiro', 'trocar resistencia']], ['Tomadas', ['tomada queimou', 'tomada sem energia', 'tomada nao funciona']], ['Iluminação', ['lampada piscando', 'luz nao acende']], ['Disjuntores', ['caiu o disjuntor', 'disjuntor desarma']], 'Fiação', 'Quadro elétrico', 'Ventilador de teto', 'Instalação elétrica', 'Manutenção elétrica', 'Curto-circuito') },
+    { name: 'Encanador', slug: 'encanador', icon: 'Wrench', services: services(['Vazamento', ['pia vazando', 'torneira pingando', 'cano furado', 'agua no chao', 'parede molhada']], 'Torneira', 'Pia', 'Sifão', 'Vaso sanitário', "Caixa d'água", 'Registro', 'Tubulação', 'Desentupimento', 'Pressurizador') },
+    { name: 'Gás', slug: 'gas', icon: 'Flame', services: services(['Instalação de cooktop', ['cooktop', 'instalar cooktop']], 'Instalação de fogão', 'Ponto de gás', 'Mangueira de gás', 'Regulador de gás', ['Teste de vazamento', ['cheiro de gas', 'gas vazando', 'vazamento de gas']], 'Conversão GLP para GN', 'Manutenção de gás') },
+    { name: 'Ar-condicionado', slug: 'ar-condicionado', icon: 'AirVent', services: services('Instalação', ['Manutenção', ['ar nao gela', 'ar condicionado nao gela', 'ar nao liga']], 'Limpeza', 'Higienização', 'Carga de gás', ['Vazando água', ['ar pingando', 'ar vazando agua']], 'Barulho', 'Desinstalação') },
+    { name: 'Chaveiro', slug: 'chaveiro', icon: 'KeyRound', services: services(['Abertura de porta', ['perdi a chave', 'porta trancada', 'nao consigo abrir a porta']], 'Troca de fechadura', 'Fechadura eletrônica', 'Cópia de chave') },
+    { name: 'Portões e automação', slug: 'portoes-automacao', icon: 'Fence', services: services(['Manutenção de portão', ['portao nao abre', 'portao parou', 'portao nao fecha']], 'Motor de portão', 'Controle remoto', 'Sensor', 'Automação de portão') },
+    { name: 'Câmeras e segurança', slug: 'cameras-seguranca', icon: 'Cctv', services: services('Instalação de câmeras', 'Câmera IP', 'DVR', 'NVR', 'Alarme', 'Cerca elétrica', 'Interfone', 'Vídeo porteiro') },
+    { name: 'Montador de móveis', slug: 'montador-moveis', icon: 'Armchair', services: services(['Montagem de guarda-roupa', ['montar guarda roupa', 'montar guarda-roupa']], 'Montagem de armário', 'Montagem de cama', 'Montagem de mesa', 'Montagem de painel', 'Montagem de móveis', 'Desmontagem de móveis') },
+    { name: 'Jardineiro', slug: 'jardineiro', icon: 'Sprout', services: services('Corte de grama', 'Poda', 'Plantio', 'Paisagismo', 'Manutenção de jardim') },
+    { name: 'Dedetização', slug: 'dedetizacao', icon: 'Bug', services: services(['Cupins', ['cupim', 'cupins']], 'Baratas', 'Formigas', 'Escorpiões', 'Roedores', 'Dedetização geral') },
+  ] },
+  { name: 'Construção e reformas', slug: 'construcao-reformas', icon: 'HardHat', categories: [
+    { name: 'Pedreiro', slug: 'pedreiro', icon: 'BrickWall', services: services('Alvenaria', 'Reboco', 'Contrapiso', 'Piso', 'Revestimento', 'Muro', 'Reforma', 'Demolição') },
+    { name: 'Pintor', slug: 'pintor', icon: 'PaintRoller', services: services('Pintura interna', 'Pintura externa', 'Massa corrida', 'Textura', 'Pintura de muro') },
+    { name: 'Gesseiro', slug: 'gesseiro', icon: 'Layers', services: services('Forro de gesso', 'Drywall', 'Sanca', 'Rebaixamento de teto') },
+    { name: 'Impermeabilização', slug: 'impermeabilizacao', icon: 'Droplets', services: services('Laje', 'Parede', 'Telhado', 'Piscina', 'Infiltração') },
+  ] },
+  { name: 'Limpeza e organização', slug: 'limpeza-organizacao', icon: 'Sparkles', categories: [
+    { name: 'Diarista', slug: 'diarista', icon: 'Sparkles', services: services('Faxina residencial', 'Limpeza pesada', 'Limpeza pós-obra', 'Limpeza de vidros', 'Organização') },
+    { name: 'Limpeza de estofados', slug: 'limpeza-estofados', icon: 'Sofa', services: services('Sofá', 'Colchão', 'Poltrona', 'Tapete', 'Impermeabilização de sofá') },
+    { name: 'Personal organizer', slug: 'personal-organizer', icon: 'Boxes', services: services('Organização de armário', 'Organização de closet', 'Organização de cozinha', 'Mudança') },
+  ] },
+  { name: 'Saúde e bem-estar', slug: 'saude-bem-estar', icon: 'HeartPulse', categories: [
+    { name: 'Psicólogo', slug: 'psicologo', icon: 'Brain', services: services(['Psicoterapia individual', ['psicologo', 'psicologa', 'terapia', 'psicoterapia', 'ansiedade']], ['Terapia de casal', ['terapia de casal']], 'Psicoterapia infantil', 'Atendimento online', 'Atendimento presencial') },
+    { name: 'Nutricionista', slug: 'nutricionista', icon: 'Apple', services: services('Consulta nutricional', 'Plano alimentar', 'Reeducação alimentar', 'Nutrição esportiva') },
+    { name: 'Fisioterapeuta', slug: 'fisioterapeuta', icon: 'Accessibility', services: services('Fisioterapia ortopédica', 'Fisioterapia domiciliar', 'Reabilitação', 'Pilates') },
+    { name: 'Personal trainer', slug: 'personal-trainer', icon: 'Dumbbell', services: services('Musculação', 'Treino funcional', 'Treino personalizado') },
+  ] },
+  { name: 'Beleza e cuidados', slug: 'beleza-cuidados', icon: 'Scissors', categories: [
+    { name: 'Cabeleireiro', slug: 'cabeleireiro', icon: 'Scissors', services: services('Corte', 'Escova', 'Coloração', 'Penteado') }, { name: 'Barbeiro', slug: 'barbeiro', icon: 'Scissors', services: services('Corte masculino', 'Barba', 'Acabamento') }, { name: 'Manicure e pedicure', slug: 'manicure-pedicure', icon: 'Hand', services: services('Manicure', 'Pedicure', 'Esmaltação') },
+  ] },
+  { name: 'Automóveis', slug: 'automoveis', icon: 'Car', categories: [
+    { name: 'Mecânico', slug: 'mecanico', icon: 'Wrench', services: services(['Diagnóstico', ['carro nao pega', 'motor fazendo barulho', 'carro falhando']], 'Revisão', 'Freios', 'Suspensão', 'Motor', 'Troca de óleo') }, { name: 'Autoelétrica', slug: 'autoeletrica', icon: 'BatteryCharging', services: services(['Bateria', ['bateria descarregada']], 'Alternador', 'Motor de partida', 'Faróis') }, { name: 'Guincho', slug: 'guincho', icon: 'Truck', services: services('Pane', 'Reboque', 'Socorro') },
+  ] },
+  { name: 'Tecnologia', slug: 'tecnologia', icon: 'Laptop', categories: [
+    { name: 'Informática', slug: 'informatica', icon: 'Monitor', services: services('Formatação', ['Notebook lento', ['notebook lento', 'pc lento', 'computador travando']], 'Computador não liga', 'Instalação de programas', 'Backup', 'Impressora', 'Remoção de vírus', 'Suporte remoto') }, { name: 'Redes e Wi-Fi', slug: 'redes-wifi', icon: 'Wifi', services: services(['Wi-Fi sem sinal', ['internet cai', 'wifi cai', 'wifi fraco', 'sem sinal']], 'Instalação de roteador', 'Configuração de roteador', 'Mesh Wi-Fi') }, { name: 'Celulares', slug: 'celulares', icon: 'Smartphone', services: services('Troca de tela', 'Troca de bateria', 'Celular não liga') },
+  ] },
+  { name: 'Pets', slug: 'pets', icon: 'PawPrint', categories: [{ name: 'Veterinário', slug: 'veterinario', icon: 'Stethoscope', services: services('Consulta', 'Vacinação', 'Exames') }, { name: 'Pet sitter', slug: 'pet-sitter', icon: 'PawPrint', services: services('Visitas', 'Alimentação', 'Cuidados em viagem') }, { name: 'Passeador de cães', slug: 'passeador-caes', icon: 'Dog', services: services('Passeio diário', 'Passeio eventual') }, { name: 'Banho e tosa', slug: 'banho-tosa', icon: 'PawPrint', services: services('Banho', 'Tosa') }] },
+  { name: 'Educação', slug: 'educacao', icon: 'GraduationCap', categories: [{ name: 'Professor particular', slug: 'professor-particular', icon: 'BookOpen', services: services('Matemática', 'Português', 'Física', 'Reforço escolar') }, { name: 'Professor de idiomas', slug: 'professor-idiomas', icon: 'Languages', services: services('Inglês', 'Espanhol', 'Aulas particulares') }] },
+  { name: 'Eventos', slug: 'eventos', icon: 'PartyPopper', categories: [{ name: 'Fotógrafo', slug: 'fotografo', icon: 'Camera', services: services('Casamento', 'Aniversário', 'Ensaio') }, { name: 'Videomaker', slug: 'videomaker', icon: 'Video', services: services('Eventos', 'Vídeos comerciais') }, { name: 'DJ', slug: 'dj', icon: 'Music', services: services('Casamento', 'Festa', 'Som') }, { name: 'Buffet', slug: 'buffet', icon: 'Utensils', services: services('Casamento', 'Festa', 'Coffee break') }] },
+  { name: 'Transporte e entregas', slug: 'transporte-entregas', icon: 'Truck', categories: [{ name: 'Fretes', slug: 'fretes', icon: 'Truck', services: services('Pequeno frete', 'Transporte de móveis', 'Carreto') }, { name: 'Mudanças', slug: 'mudancas', icon: 'PackageOpen', services: services('Mudança residencial', 'Mudança comercial', 'Embalagem') }, { name: 'Motoboy', slug: 'motoboy', icon: 'Bike', services: services('Documentos', 'Encomendas', 'Entregas rápidas') }] },
+  { name: 'Serviços profissionais', slug: 'servicos-profissionais', icon: 'BriefcaseBusiness', categories: [{ name: 'Contador', slug: 'contador', icon: 'Calculator', services: services('Imposto de renda', 'MEI', 'Abertura de empresa') }, { name: 'Advogado', slug: 'advogado', icon: 'Scale', services: services('Direito civil', 'Família', 'Trabalhista') }, { name: 'Designer gráfico', slug: 'designer-grafico', icon: 'Palette', services: services('Logo', 'Identidade visual', 'Redes sociais') }, { name: 'Marketing digital', slug: 'marketing-digital', icon: 'Megaphone', services: services('Tráfego pago', 'Google Ads', 'SEO') }] },
+];
+
+export function catalogSlug(value: string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}

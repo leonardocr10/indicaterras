@@ -549,9 +549,14 @@ export class RegisterPageComponent implements OnInit {
         </div>
         <form class="home-search" role="search" (ngSubmit)="searchProfessionals()">
           <svg lucideSearch aria-hidden="true" />
-          <input name="homeSearch" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" [(ngModel)]="searchText" (keydown.enter)="searchProfessionals(); $event.preventDefault()" placeholder="Buscar profissional ou serviço..." aria-label="Buscar profissional ou serviço" />
+          <input name="homeSearch" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" [(ngModel)]="searchText" (ngModelChange)="suggestProblem($event)" (keydown.enter)="searchProfessionals(); $event.preventDefault()" placeholder="Conte o que aconteceu. Ex.: meu chuveiro queimou" aria-label="Descreva o problema" />
           <a class="home-search-filters" routerLink="/app/profissionais" aria-label="Abrir filtros de busca"><svg lucideSlidersHorizontal /></a>
         </form>
+        <aside class="home-problem-suggestion" *ngIf="problemSuggestion() as match">
+          <p *ngIf="match.category; else noMatch">Parece que você precisa de <b>{{ match.category.name }}</b><span *ngIf="match.services[0]">: {{ match.services[0].name }}</span>.</p>
+          <ng-template #noMatch><p>Não identificamos o serviço com segurança. Você pode escolher manualmente.</p></ng-template>
+          <div *ngIf="match.category"><button type="button" (click)="searchProfessionals()">Ver profissionais</button><button type="button" (click)="createRequest()">Quero receber propostas</button></div>
+        </aside>
         <section class="home-decision-grid">
           <article class="home-decision-card request">
             <span><svg lucideMessageCircle /></span><h2>Descreva seu problema</h2>
@@ -594,7 +599,9 @@ export class HomePageComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly payload = signal<HomePayload | null>(null);
+  protected readonly problemSuggestion = signal<ProblemMatchResult | null>(null);
   protected searchText = '';
+  private suggestionTimer?: ReturnType<typeof setTimeout>;
 
   ngOnInit() {
     // The administrative desktop experience is a separate dashboard, not the resident directory.
@@ -620,7 +627,16 @@ export class HomePageComponent implements OnInit {
   }
 
   protected createRequest() {
-    void this.router.navigate(['/app/solicitacoes/nova']);
+    const problem = this.searchText.trim();
+    void this.router.navigate(['/app/solicitacoes/nova'], { queryParams: problem ? { problema: problem } : {} });
+  }
+
+  protected suggestProblem(value: string) {
+    if (this.suggestionTimer) clearTimeout(this.suggestionTimer);
+    this.problemSuggestion.set(null);
+    const query = value.trim();
+    if (query.length < 4) return;
+    this.suggestionTimer = setTimeout(() => this.api.matchProblem(query).subscribe({ next: (match) => this.problemSuggestion.set(match) }), 280);
   }
 
   private findProfessionalsForProblem(value: string) {

@@ -6,6 +6,7 @@ import { FileStorageService } from '../data/file-storage.service';
 import type { ArquivoEnviado } from '../data/file-storage.service';
 import type { ComplaintAction, ComplaintStatus } from '../data/complaints';
 import { CommunicationsService } from './communications.service';
+import { CatalogService } from '../data/catalog.service';
 
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
 const TIPOS_SOLICITACAO = [...TIPOS_ACEITOS, 'video/mp4', 'video/webm', 'video/quicktime'];
@@ -41,6 +42,7 @@ export class ResourcesController {
     private readonly dataStoreService: DataStoreService,
     private readonly fileStorageService: FileStorageService,
     private readonly communicationsService: CommunicationsService,
+    private readonly catalogService: CatalogService,
   ) {}
 
   @Get('condominiums')
@@ -83,6 +85,11 @@ export class ResourcesController {
     return { data: this.dataStoreService.getCategories() };
   }
 
+  @Get('category-groups')
+  getCategoryGroups() {
+    return this.catalogService.groups().then((data) => ({ data }));
+  }
+
   @Get('categories/:id/services')
   async getCategoryServices(@Param('id') id: string, @Query('includeInactive') includeInactive?: string) {
     return { data: this.dataStoreService.getCategoryServices(id, includeInactive === 'true') };
@@ -90,7 +97,7 @@ export class ResourcesController {
 
   @Post('service-requests/match-problem')
   matchProblem(@Body('query') query: string) {
-    return { data: this.dataStoreService.matchProblem(query) };
+    return this.catalogService.match(String(query ?? '')).then((data) => ({ data }));
   }
 
   @Get('service-requests')

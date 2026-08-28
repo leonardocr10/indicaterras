@@ -207,11 +207,14 @@ export interface Conversation {
 }
 
 export interface ProblemMatchResult {
+  query?: string;
   normalizedQuery: string;
   keywords: string[];
   confidence: number;
+  group: { id: string; name: string; slug: string } | null;
   category: Pick<Category, 'id' | 'name' | 'slug'> | null;
-  services: Array<Pick<CategoryService, 'id' | 'categoryId' | 'name' | 'slug'>>;
+  services: Array<Pick<CategoryService, 'id' | 'categoryId' | 'name' | 'slug'> & { score?: number }>;
+  alternativeServices?: Array<Pick<CategoryService, 'id' | 'categoryId' | 'name' | 'slug'> & { score?: number }>;
   professionals: Professional[];
 }
 

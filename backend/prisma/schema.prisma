@@ -156,8 +156,25 @@ model PasswordReset {
   @@map("password_resets")
 }
 
+model CategoryGroup {
+  id           String     @id @default(cuid())
+  name         String     @unique
+  slug         String     @unique
+  icon         String?    @db.Text
+  description  String?    @db.Text
+  displayOrder Int        @default(0)
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  categories   Category[]
+
+  @@index([active, displayOrder])
+  @@map("category_groups")
+}
+
 model Category {
   id                     String                 @id @default(cuid())
+  groupId                String?
   name                   String                 @unique
   slug                   String                 @unique
   icon                   String?                @db.Text
@@ -166,9 +183,12 @@ model Category {
   active                 Boolean                @default(true)
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
+  group                  CategoryGroup?         @relation(fields: [groupId], references: [id], onDelete: SetNull)
   professionalCategories ProfessionalCategory[]
   services               CategoryService[]
   serviceRequests        ServiceRequest[]
+
+  @@index([groupId, active, displayOrder])
 }
 
 model CategoryService {

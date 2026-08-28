@@ -582,6 +582,33 @@ export class DataStoreService implements OnModuleInit {
     return user ? this.safeUser(user) : undefined;
   }
 
+  /** Guarda o token de redefinicao (valido por 1 hora) e invalida os anteriores. */
+  async createPasswordReset(userId: string, token: string) {
+    this.ensureDatabase('gerar o link de redefinição de senha');
+    await this.prisma.passwordReset.updateMany({
+      where: { userId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    await this.prisma.passwordReset.create({
+      data: { userId, token, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+    });
+  }
+
+  /** Troca a senha se o token existir, nao tiver sido usado e nao estiver vencido. */
+  async consumePasswordReset(token: string, novaSenha: string) {
+    this.ensureDatabase('redefinir a senha');
+    const registro = await this.prisma.passwordReset.findUnique({ where: { token } });
+    if (!registro || registro.usedAt || registro.expiresAt.getTime() < Date.now()) {
+      throw new ConflictException('Este link de redefinição expirou ou já foi usado. Peça um novo.');
+    }
+    await this.prisma.user.update({
+      where: { id: registro.userId },
+      data: { passwordHash: await bcrypt.hash(novaSenha, 10) },
+    });
+    await this.prisma.passwordReset.update({ where: { id: registro.id }, data: { usedAt: new Date() } });
+    await this.loadDatabaseData();
+  }
+
   ensureUserCanAccess(user: Omit<DemoUser, 'password'>) {
     this.assertUserAccess(user);
     return user;

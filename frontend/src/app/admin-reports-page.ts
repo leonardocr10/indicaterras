@@ -35,7 +35,7 @@ import { ToastService } from './services/toast.service';
         <div class="admin-table-wrap">
           <table>
             <thead>
-              <tr><th>Morador</th><th>Profissional</th><th>Motivo</th><th>Descrição</th><th>Data</th><th>Status</th><th>Ações</th></tr>
+              <tr><th>Cliente</th><th>Profissional</th><th>Motivo</th><th>Descrição</th><th>Data</th><th>Status</th><th>Ações</th></tr>
             </thead>
             <tbody>
               <tr *ngFor="let linha of paginadas()">

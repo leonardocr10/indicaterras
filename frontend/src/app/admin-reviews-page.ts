@@ -26,7 +26,7 @@ type ReviewDetail = {
   imports: [CommonModule, FormsModule, RouterLink, SearchableSelectComponent, LucideChevronLeft, LucideChevronRight, LucideEye, LucideSearch, LucideStar],
   template: `
     <main class="admin-content admin-reviews-content">
-      <header class="admin-topbar admin-reviews-header"><div><p class="admin-eyebrow">Gestão IndicaFácil</p><h1>Avaliações</h1><p>Modere avaliações publicadas pelos moradores.</p></div></header>
+      <header class="admin-topbar admin-reviews-header"><div><p class="admin-eyebrow">Gestão IndicaFácil</p><h1>Avaliações</h1><p>Modere avaliações publicadas pelos clientes.</p></div></header>
       <section class="admin-reviews-toolbar">
         <label class="admin-search-field"><svg lucideSearch /><input [ngModel]="searchTerm()" (ngModelChange)="setSearch($event)" placeholder="Buscar registros..." /></label>
         <app-searchable-select [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)" [items]="statusOptions" emptyLabel="Todos os status" searchPlaceholder="Pesquisar status..." />
@@ -34,7 +34,7 @@ type ReviewDetail = {
       <section class="admin-review-list-card">
         <header><h2>Moderação de avaliações</h2><span>{{ filteredRows().length }} registros</span></header>
         <div class="admin-review-table-wrap">
-          <table class="admin-review-table"><thead><tr><th>Morador</th><th>Profissional</th><th>Nota</th><th>Comentário</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+          <table class="admin-review-table"><thead><tr><th>Cliente</th><th>Profissional</th><th>Nota</th><th>Comentário</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody>
             <tr *ngFor="let row of pagedRows()">
               <td><div class="review-person"><span class="review-initials">{{ row['residentInitials'] }}</span><strong>{{ row['resident'] }}</strong></div></td>
               <td><div class="review-person"><img *ngIf="row['professionalAvatar']; else professionalFallback" [src]="api.assetUrl(row['professionalAvatar'])" [alt]="row['professional']" /><ng-template #professionalFallback><span class="review-initials professional"><svg lucideStar /></span></ng-template><div><strong>{{ row['professional'] }}</strong><small>{{ row['category'] }}</small></div></div></td>
@@ -87,13 +87,13 @@ export class AdminReviewsPageComponent implements OnInit {
   imports: [CommonModule, FormsModule, RouterLink, LucideArrowLeft, LucideBriefcaseBusiness, LucideBuilding2, LucideClock3, LucideGlobe2, LucideImage, LucideInfo, LucideMessageSquare, LucideThumbsUp, LucideUserRound, LucideX],
   template: `
     <main class="admin-content admin-review-detail-content" *ngIf="review() as item; else loading">
-      <header class="admin-review-detail-header"><div><small>Avaliações&nbsp; / &nbsp;Ver avaliação</small><h1>Detalhes da avaliação</h1><p>Visualize e modere a avaliação enviada pelo morador.</p></div><nav><a routerLink="/admin/avaliacoes"><svg lucideArrowLeft />Voltar</a><button type="button" class="publish" (click)="setStatus('Publicado')">Publicar</button><button type="button" class="hide" (click)="setStatus('Oculto')">Ocultar</button></nav></header>
+      <header class="admin-review-detail-header"><div><small>Avaliações&nbsp; / &nbsp;Ver avaliação</small><h1>Detalhes da avaliação</h1><p>Visualize e modere a avaliação enviada pelo cliente.</p></div><nav><a routerLink="/admin/avaliacoes"><svg lucideArrowLeft />Voltar</a><button type="button" class="publish" (click)="setStatus('Publicado')">Publicar</button><button type="button" class="hide" (click)="setStatus('Oculto')">Ocultar</button></nav></header>
       <div class="admin-review-detail-grid">
         <div class="admin-review-detail-main">
           <section class="review-detail-card review-overview"><h2>Detalhes da avaliação</h2>
-            <div class="review-people-row"><div class="review-detail-person"><span>{{ item.resident.initials }}</span><div><small>Morador</small><strong>{{ item.resident.name }}</strong><em>Morador verificado ✓</em></div></div><div class="review-detail-person professional"><img *ngIf="item.professional.avatar; else detailFallback" [src]="api.assetUrl(item.professional.avatar)" [alt]="item.professional.name" /><ng-template #detailFallback><span><svg lucideBriefcaseBusiness /></span></ng-template><div><small>Profissional avaliado</small><strong>{{ item.professional.name }}</strong><em>{{ item.professional.category }}</em></div></div></div>
+            <div class="review-people-row"><div class="review-detail-person"><span>{{ item.resident.initials }}</span><div><small>Cliente</small><strong>{{ item.resident.name }}</strong><em>Cliente verificado ✓</em></div></div><div class="review-detail-person professional"><img *ngIf="item.professional.avatar; else detailFallback" [src]="api.assetUrl(item.professional.avatar)" [alt]="item.professional.name" /><ng-template #detailFallback><span><svg lucideBriefcaseBusiness /></span></ng-template><div><small>Profissional avaliado</small><strong>{{ item.professional.name }}</strong><em>{{ item.professional.category }}</em></div></div></div>
             <div class="review-metrics"><div><small>Avaliação</small><strong class="detail-stars">★★★★★ <b>{{ item.rating | number:'1.1-1' }}</b></strong></div><div><small>Status</small><span class="review-status" [ngClass]="statusClass(item.status)">{{ item.status }}</span></div><div><small>Data da avaliação</small><strong>{{ formatDate(item.createdAt) }}</strong></div><div><small>Recomenda</small><span class="review-recommends" [class.no]="!item.recommends"><svg lucideThumbsUp />{{ item.recommends ? 'Recomenda' : 'Não recomenda' }}</span></div></div>
-            <div class="review-full-comment"><small>Comentário do morador</small><blockquote>“{{ item.comment }}”</blockquote></div>
+            <div class="review-full-comment"><small>Comentário do cliente</small><blockquote>“{{ item.comment }}”</blockquote></div>
             <div class="review-facts">
               <div class="review-facts-row">
                 <div class="review-fact"><span class="review-fact-icon"><svg lucideUserRound /></span><div><small>Categoria</small><strong>{{ item.professional.category }}</strong></div></div>

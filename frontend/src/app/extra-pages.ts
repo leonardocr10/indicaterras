@@ -15,8 +15,7 @@ import { brand } from './brand';
 const ADMIN_MODULES: Array<{ key: string; label: string }> = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'pendencias', label: 'Central de pendências' },
-  { key: 'condominios', label: 'Condomínios' },
-  { key: 'moradores', label: 'Moradores' },
+  { key: 'moradores', label: 'Clientes' },
   { key: 'usuarios', label: 'Usuários' },
   { key: 'profissionais', label: 'Profissionais' },
   { key: 'categorias', label: 'Categorias' },
@@ -132,21 +131,21 @@ type AdminSection = 'reviews' | 'recommendations' | 'reports' | 'settings' | 're
 
       <section class="admin-table-panel" *ngIf="section() === 'reviews'">
         <div class="admin-panel-header"><h2>Moderação de avaliações</h2></div>
-        <div class="admin-table-wrap"><table><thead><tr><th>Morador</th><th>Profissional</th><th>Nota</th><th>Comentário</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+        <div class="admin-table-wrap"><table><thead><tr><th>Cliente</th><th>Profissional</th><th>Nota</th><th>Comentário</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody>
           <tr *ngFor="let row of pagedRows()"><td>{{ row['resident'] }}</td><td>{{ row['professional'] }}</td><td class="rating-cell">★ {{ row['rating'] }}</td><td>{{ row['comment'] }}</td><td>{{ row['date'] }}</td><td><span class="status-badge">{{ row['status'] }}</span></td><td class="admin-actions"><button (click)="setStatus('reviews', row['id'], 'Publicado')">Publicar</button><button class="danger-action" (click)="setStatus('reviews', row['id'], 'Oculto')">Ocultar</button></td></tr>
         </tbody></table></div>
       </section>
 
       <section class="admin-table-panel" *ngIf="section() === 'recommendations'">
         <div class="admin-panel-header"><h2>Indicações recebidas</h2></div>
-        <div class="admin-table-wrap"><table><thead><tr><th>Morador</th><th>Profissional</th><th>Categoria</th><th>Nota</th><th>Condomínio</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody>
-          <tr *ngFor="let row of pagedRows()"><td>{{ row['resident'] }}</td><td>{{ row['professional'] }}</td><td>{{ row['category'] }}</td><td class="rating-cell">{{ row['rating'] }}</td><td>IndicaFácil</td><td>{{ row['date'] }}</td><td><span class="status-badge">{{ row['status'] }}</span></td><td class="admin-actions"><button (click)="setStatus('recommendations', row['id'], 'Aprovada')">Aprovar</button><button class="danger-action" (click)="setStatus('recommendations', row['id'], 'Removida')">Remover</button></td></tr>
+        <div class="admin-table-wrap"><table><thead><tr><th>Cliente</th><th>Profissional</th><th>Categoria</th><th>Nota</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+          <tr *ngFor="let row of pagedRows()"><td>{{ row['resident'] }}</td><td>{{ row['professional'] }}</td><td>{{ row['category'] }}</td><td class="rating-cell">{{ row['rating'] }}</td><td>{{ row['date'] }}</td><td><span class="status-badge">{{ row['status'] }}</span></td><td class="admin-actions"><button (click)="setStatus('recommendations', row['id'], 'Aprovada')">Aprovar</button><button class="danger-action" (click)="setStatus('recommendations', row['id'], 'Removida')">Remover</button></td></tr>
         </tbody></table></div>
       </section>
 
       <section class="admin-table-panel" *ngIf="section() === 'reports'">
         <div class="admin-panel-header"><h2>Denúncias de profissionais</h2></div>
-        <div class="admin-table-wrap"><table><thead><tr><th>Morador</th><th>Profissional</th><th>Motivo</th><th>Descrição</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+        <div class="admin-table-wrap"><table><thead><tr><th>Cliente</th><th>Profissional</th><th>Motivo</th><th>Descrição</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead><tbody>
           <tr *ngFor="let row of pagedRows()"><td>{{ row['resident'] }}</td><td>{{ row['professional'] }}</td><td>{{ row['reason'] }}</td><td>{{ row['description'] }}</td><td>{{ row['date'] }}</td><td><span class="status-badge">{{ row['status'] }}</span></td><td class="admin-actions"><button (click)="setStatus('reports', row['id'], 'Em análise')">Analisar</button><button (click)="setStatus('reports', row['id'], 'Resolvido')">Resolver</button><button class="danger-action" (click)="setStatus('reports', row['id'], 'Ignorado')">Ignorar</button></td></tr>
         </tbody></table></div>
       </section>
@@ -184,11 +183,11 @@ type AdminSection = 'reviews' | 'recommendations' | 'reports' | 'settings' | 're
       </div>
 
       <section class="reports-dashboard" *ngIf="section() === 'reports-dashboard'">
-        <div class="report-summary"><article><span>Novos moradores</span><strong>38</strong><em>+12% no período</em></article><article><span>Indicações aprovadas</span><strong>124</strong><em>+18% no período</em></article><article><span>Avaliação média</span><strong>4,8</strong><em>Excelente</em></article></div>
+        <div class="report-summary"><article><span>Novos clientes</span><strong>38</strong><em>+12% no período</em></article><article><span>Indicações aprovadas</span><strong>124</strong><em>+18% no período</em></article><article><span>Avaliação média</span><strong>4,8</strong><em>Excelente</em></article></div>
         <div class="admin-table-panel">
           <div class="admin-panel-header"><h2>Relatórios disponíveis</h2><button class="primary-button" type="button" (click)="exportAllReports()">Exportar relatório</button></div>
           <div class="report-list">
-            <button type="button" (click)="exportResidentsReport()">Moradores por condomínio <b>Baixar planilha</b></button>
+            <button type="button" (click)="exportResidentsReport()">Clientes <b>Baixar planilha</b></button>
             <button type="button" (click)="exportProfessionalsReport()">Profissionais mais indicados <b>Baixar planilha</b></button>
             <button type="button" (click)="exportReviewsReport()">Avaliações por período <b>Baixar planilha</b></button>
           </div>

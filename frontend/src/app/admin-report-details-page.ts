@@ -69,7 +69,7 @@ import { SearchableSelectComponent } from './searchable-select';
           </section>
 
           <section class="review-detail-card report-block">
-            <h2>Descrição do morador</h2>
+            <h2>Descrição do cliente</h2>
             <blockquote>{{ denuncia.description }}</blockquote>
           </section>
 
@@ -82,7 +82,7 @@ import { SearchableSelectComponent } from './searchable-select';
               </figure>
               <button *ngIf="denuncia.images.length > 4" type="button" class="secondary-button report-ver-todas" (click)="lightbox.set(assetUrl(denuncia.images[0]))">Ver todas</button>
             </div>
-            <ng-template #semEvidencia><p class="review-no-images">O morador não anexou fotos a esta denúncia.</p></ng-template>
+            <ng-template #semEvidencia><p class="review-no-images">O cliente não anexou fotos a esta denúncia.</p></ng-template>
           </section>
 
           <section class="review-detail-card report-block">
@@ -144,7 +144,7 @@ import { SearchableSelectComponent } from './searchable-select';
           <section class="review-detail-card report-block">
             <h2>Parecer administrativo</h2>
             <textarea [(ngModel)]="parecer" rows="5" placeholder="Registre seu parecer sobre esta denúncia. Descreva as análises, conclusões e providências adotadas."></textarea>
-            <label class="report-notify"><input type="checkbox" [(ngModel)]="notificar" /> Notificar morador e prestador</label>
+            <label class="report-notify"><input type="checkbox" [(ngModel)]="notificar" /> Notificar cliente e prestador</label>
             <button type="button" class="primary-button full-width" [disabled]="salvando()" (click)="salvarParecer()"><svg lucideCheckCircle2 />{{ salvando() ? 'Salvando...' : 'Salvar parecer' }}</button>
           </section>
         </aside>

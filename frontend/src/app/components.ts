@@ -12,7 +12,6 @@ import {
   LucideBell,
   LucideBadgeCheck,
   LucideBriefcaseBusiness,
-  LucideBuilding2,
   LucideCirclePlus,
   LucideClipboardCheck,
   LucideEllipsis,
@@ -379,7 +378,7 @@ export class BottomNavigationComponent { protected readonly brand = brand; }
 @Component({
   selector: 'admin-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideClipboardCheck, LucideBuilding2, LucideUserRound, LucideUsersRound, LucideBriefcaseBusiness, LucideTag, LucideStar, LucideHandshake, LucideTriangleAlert, LucideSettings, LucideChartNoAxesColumn],
+  imports: [CommonModule, RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideClipboardCheck, LucideUserRound, LucideUsersRound, LucideBriefcaseBusiness, LucideTag, LucideStar, LucideHandshake, LucideTriangleAlert, LucideSettings, LucideChartNoAxesColumn],
   template: `
     <aside class="admin-sidebar">
       <div class="brand-card">
@@ -390,8 +389,7 @@ export class BottomNavigationComponent { protected readonly brand = brand; }
       <a *ngIf="isVisible('pendencias')" routerLink="/admin/pendencias" routerLinkActive="active"><svg lucideClipboardCheck /><span>Central de pendências</span><b *ngIf="totalNotificacoes() > 0" class="sidebar-count">{{ totalNotificacoes() }}</b></a>
 
       <span class="sidebar-group-label">Cadastros</span>
-      <a *ngIf="isVisible('condominios')" routerLink="/admin/condominios" routerLinkActive="active"><svg lucideBuilding2 /><span>Condomínios</span></a>
-      <a *ngIf="isVisible('moradores')" routerLink="/admin/moradores" routerLinkActive="active"><svg lucideUserRound /><span>Moradores</span><b *ngIf="pendentes().newResidents > 0" class="sidebar-count">{{ pendentes().newResidents }}</b></a>
+      <a *ngIf="isVisible('moradores')" routerLink="/admin/clientes" routerLinkActive="active"><svg lucideUserRound /><span>Clientes</span><b *ngIf="pendentes().newResidents > 0" class="sidebar-count">{{ pendentes().newResidents }}</b></a>
       <a *ngIf="isVisible('usuarios')" routerLink="/admin/usuarios" routerLinkActive="active"><svg lucideUsersRound /><span>Usuários</span></a>
       <a *ngIf="isVisible('profissionais')" routerLink="/admin/profissionais" routerLinkActive="active"><svg lucideBriefcaseBusiness /><span>Profissionais</span></a>
       <a *ngIf="isVisible('categorias')" routerLink="/admin/categorias" routerLinkActive="active"><svg lucideTag /><span>Categorias</span></a>
@@ -464,7 +462,7 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
         <button type="button" class="admin-top-bell" aria-label="Notificações" [attr.aria-expanded]="open()" (click)="toggle($event)"><svg lucideBell /><i *ngIf="total()">{{ total() }}</i></button>
         <section *ngIf="open()" class="admin-top-notification-panel" (click)="$event.stopPropagation()">
           <header><strong>Notificações</strong><span *ngIf="total()">{{ total() }} pendente{{ total() === 1 ? '' : 's' }}</span></header>
-          <a *ngIf="pending().newResidents" routerLink="/admin/moradores" (click)="open.set(false)"><b>{{ pending().newResidents }}</b><span>{{ pending().newResidents === 1 ? 'morador aguardando aprovação' : 'moradores aguardando aprovação' }}</span></a>
+          <a *ngIf="pending().newResidents" routerLink="/admin/clientes" (click)="open.set(false)"><b>{{ pending().newResidents }}</b><span>{{ pending().newResidents === 1 ? 'cliente aguardando aprovação' : 'clientes aguardando aprovação' }}</span></a>
           <a *ngIf="pending().reports" routerLink="/admin/denuncias" (click)="open.set(false)"><b>{{ pending().reports }}</b><span>{{ pending().reports === 1 ? 'denúncia pendente' : 'denúncias pendentes' }}</span></a>
           <p *ngIf="!total()">Nenhuma pendência no momento.</p>
           <a routerLink="/admin/pendencias" class="admin-top-notification-footer" (click)="open.set(false)">Ver central de pendências</a>

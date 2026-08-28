@@ -106,7 +106,7 @@ type IconTarget = 'category' | 'service';
               </label>
               <label class="category-field compact"><span>Status <i>*</i></span>
                 <app-searchable-select [(ngModel)]="draft.active" [items]="activeOptions" valueKey="value" labelKey="label" searchPlaceholder="Pesquisar status..." />
-                <small>Categoria visível para moradores</small>
+                <small>Categoria visível para clientes</small>
               </label>
               <label class="category-field full">Descrição curta <span>(opcional)</span>
                 <textarea maxlength="160" [(ngModel)]="draft.description" placeholder="Descreva os profissionais e serviços desta categoria"></textarea>
@@ -117,7 +117,7 @@ type IconTarget = 'category' | 'service';
 
           <article class="category-admin-panel category-services-panel">
             <div class="category-services-heading">
-              <div><h2><span>2.</span> Serviços e palavras-chave</h2><p>Os serviços e palavras-chave definem o que o profissional pode fazer e melhoram a busca dos moradores.</p></div>
+              <div><h2><span>2.</span> Serviços e palavras-chave</h2><p>Os serviços e palavras-chave definem o que o profissional pode fazer e melhoram a busca dos clientes.</p></div>
               <button class="primary-button" type="button" (click)="openServiceEditor()"><svg lucidePlus /> Adicionar serviço</button>
             </div>
             <div class="category-services-table-wrap">

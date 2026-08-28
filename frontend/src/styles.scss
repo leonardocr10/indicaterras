@@ -1054,6 +1054,37 @@ label>span{display:block}
 .sidebar-avatar{border-color:var(--if-primary-light)}
 .sidebar-user button{color:#d1fae5}
 
+/* Navegação administrativa: marca oficial, rolagem discreta e item ativo em alto contraste. */
+@media (min-width: 821px) {
+  .admin-sidebar {
+    padding:18px 14px 18px;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(209,250,229,.42) transparent;
+  }
+
+  .admin-sidebar::-webkit-scrollbar { width:6px; }
+  .admin-sidebar::-webkit-scrollbar-track { background:transparent; }
+  .admin-sidebar::-webkit-scrollbar-thumb { border:2px solid var(--if-primary-dark); border-radius:999px; background:rgba(209,250,229,.42); }
+  .admin-sidebar::-webkit-scrollbar-thumb:hover { background:rgba(209,250,229,.68); }
+}
+
+.brand-card{height:104px;margin:0 4px 12px;padding:4px 10px 16px}
+.admin-brand-logo{width:190px;height:58px;object-fit:contain;object-position:center;mix-blend-mode:normal}
+.admin-sidebar>a.active{min-height:46px;border-color:rgba(74,222,128,.25);border-radius:10px;background:#087b52;box-shadow:inset 4px 0 0 var(--if-primary),0 8px 18px rgba(0,40,28,.15)}
+.admin-sidebar>a.active svg{color:var(--if-primary-light)}
+
+/* Grids administrativos compactos, com toolbar e tabela no mesmo bloco visual. */
+.admin-table-panel{padding:12px;border:1px solid #dfe9e4;border-radius:14px;background:#fff;box-shadow:0 8px 22px rgba(15,23,42,.045)}
+.admin-data-toolbar,.moderation-toolbar{min-height:60px;margin:0 0 12px;padding:8px 10px;border-color:#e2ebe6;border-radius:11px;background:#f8fbf9}
+.admin-search-field{min-height:42px;border-color:#d8e5de!important;border-radius:10px!important}
+.admin-table-wrap{border-color:#dfe9e4;border-radius:11px}
+.admin-table-wrap th{padding:11px 12px;color:#5d7167;background:#f3f7f5;font-size:10px;font-weight:700;letter-spacing:.55px}
+.admin-table-wrap td{padding:12px;color:#294238;font-size:12px}
+.admin-table-wrap tbody tr:hover{background:#f6fbf8}
+.admin-pagination{min-height:54px;margin:0;padding:12px 4px 2px;color:#647a70}
+.admin-pagination button{width:32px;height:32px;border-color:#dce8e2;border-radius:9px;color:var(--if-primary-dark)}
+.admin-pagination>div b{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#fff;background:var(--if-primary-dark)}
+
 
 @media (max-width: 420px) {
   .request-grid-2,.request-media-grid{grid-template-columns:1fr}

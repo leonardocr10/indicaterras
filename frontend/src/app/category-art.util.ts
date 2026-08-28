@@ -21,6 +21,10 @@ const SLUG_POR_NOME: Record<string, string> = {
   dedetizacao: 'dedetizacao',
   'energia-solar': 'energia-solar',
   'cameras-seguranca': 'cameras-seguranca',
+  gas: 'gas',
+  'portoes-automacao': 'portoes-automacao',
+  montador: 'montador',
+  churrasqueiro: 'churrasqueiro',
   outros: 'outros',
 };
 

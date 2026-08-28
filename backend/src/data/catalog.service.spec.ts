@@ -17,6 +17,20 @@ describe('CatalogService', () => {
   ];
   const service = new CatalogService({ category: { findMany: jest.fn().mockResolvedValue(categories) }, professional: { findMany: jest.fn().mockResolvedValue([]) } } as never);
 
+  it('pré-seleciona poucas categorias para a IA, priorizando a mais provável', async () => {
+    const candidatas = await service.candidateCategories('meu chuveiro queimou', 3);
+
+    expect(candidatas).toHaveLength(3);
+    expect(candidatas[0].name).toBe('Eletricista');
+    expect(candidatas.length).toBeLessThan(categories.length);
+  });
+
+  it('devolve categorias mesmo quando o texto não pontua, para a IA ter contexto', async () => {
+    const candidatas = await service.candidateCategories('xyzabc sem sentido nenhum', 4);
+
+    expect(candidatas).toHaveLength(4);
+  });
+
   it.each([
     ['meu chuveiro queimou', 'Eletricista', 'Chuveiro'],
     ['minha pia esta vazando', 'Encanador', 'Vazamento'],

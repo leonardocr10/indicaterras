@@ -52,6 +52,7 @@ const build = (options: { settings?: Record<string, unknown>; analyze?: jest.Moc
   const currentSettings = settings(options.settings);
   const catalogService = {
     activeCategories: jest.fn().mockResolvedValue(categories),
+    candidateCategories: jest.fn().mockResolvedValue(categories),
     professionalsForCategory: jest.fn().mockResolvedValue([{ id: 'pro-1', name: 'João Elétrica' }]),
     match: jest.fn().mockResolvedValue({
       confidence: 0.9,
@@ -255,6 +256,23 @@ describe('ProblemAnalysisService', () => {
     expect(analyze).not.toHaveBeenCalled();
     expect(catalogService.match).not.toHaveBeenCalled();
     expect(result.category).toBeNull();
+  });
+
+  it('envia à IA apenas os candidatos locais, nunca o catálogo inteiro', async () => {
+    const analyze = jest.fn().mockResolvedValue({
+      categoryId: 'electrician',
+      serviceIds: ['service-shower'],
+      normalizedProblem: 'x',
+      confidence: 0.9,
+      needsClarification: false,
+      clarificationQuestion: null,
+    });
+    const { service, catalogService } = build({ analyze });
+
+    await service.analyze('meu chuveiro queimou');
+
+    expect(catalogService.candidateCategories).toHaveBeenCalledWith('meu chuveiro queimou');
+    expect(catalogService.activeCategories).not.toHaveBeenCalled();
   });
 
   it('trunca a entrada no limite configurado antes de enviar à IA', async () => {

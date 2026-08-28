@@ -77,7 +77,9 @@ export class ProblemAnalysisService {
   }
 
   private async tryAi(text: string, settings: Awaited<ReturnType<AiSettingsService['getRaw']>>) {
-    const categories = await this.catalogService.activeCategories();
+    // Só os candidatos locais vão no prompt: mandar o catálogo inteiro custa
+    // milhares de tokens por chamada e ainda aumenta o risco de alucinação.
+    const categories = await this.catalogService.candidateCategories(text);
     const apiKey = (await this.settingsService.getResolvedApiKey(settings))!;
     const provider = this.providerFactory.getProvider(settings.provider);
 

@@ -26,6 +26,29 @@ export class CatalogService {
     }) as Promise<CategoryRecord[]>;
   }
 
+  /**
+   * Pré-seleção local: as categorias mais prováveis para o texto, já com seus
+   * serviços. A camada de IA envia só estas ao provedor em vez do catálogo
+   * inteiro, o que reduz tokens, custo e risco de alucinação.
+   *
+   * Devolve sempre até `limit` categorias, as que pontuaram primeiro. Mandar
+   * apenas a melhor tiraria da IA a chance de discordar do matcher — e é
+   * justamente para os casos ambíguos que ela existe.
+   */
+  async candidateCategories(query: string, limit = 5): Promise<CategoryRecord[]> {
+    const categories = await this.activeCategories();
+    const normalizedQuery = this.normalize(query);
+    const tokens = this.tokens(normalizedQuery);
+    return categories
+      .map((category) => ({
+        category,
+        score: category.services.reduce((melhor, service) => Math.max(melhor, this.score(normalizedQuery, tokens, category, service)), 0),
+      }))
+      .sort((left, right) => right.score - left.score)
+      .slice(0, limit)
+      .map((item) => item.category);
+  }
+
   /** Profissionais compatíveis com uma categoria (e, se informados, com prioridade para os serviços exatos). Reaproveitada pelo matcher local e pela camada de IA. */
   async professionalsForCategory(category: GroupedCategory, serviceIds: string[]) {
     const professionals = await this.prisma.professional.findMany({

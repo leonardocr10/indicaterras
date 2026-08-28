@@ -11,7 +11,7 @@ import { AuthService } from './services/auth.service';
   imports: [CommonModule, FormsModule, LucideKeyRound, LucideSave, LucideUserRound],
   template: `
     <main class="admin-content admin-profile-content">
-      <header class="admin-topbar"><div><h1>Meu perfil</h1><p>Gerencie seus dados de cadastro e a segurança da sua conta.</p></div></header>
+      <header class="admin-topbar"><div><p class="admin-eyebrow">Gestão IndicaFácil</p><h1>Meu perfil</h1><p>Gerencie seus dados de cadastro e a segurança da sua conta.</p></div></header>
       <div class="admin-profile-grid">
         <section class="admin-profile-card">
           <header><span><svg lucideUserRound /></span><div><h2>Dados de cadastro</h2><p>Estas informações identificam seu acesso à plataforma.</p></div></header>

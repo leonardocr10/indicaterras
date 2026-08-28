@@ -13,6 +13,7 @@ import { ApiService } from './services/api.service';
     <main class="admin-content admin-crud-content">
       <header class="admin-topbar">
         <div>
+          <p class="admin-eyebrow">Gestão IndicaFácil</p>
           <h1>Central de pendências</h1>
           <p>Tudo que precisa da sua atenção, reunido em um só lugar.</p>
         </div>

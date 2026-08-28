@@ -1862,12 +1862,13 @@ export class IndicationsPageComponent implements OnInit {
     <main class="admin-content" *ngIf="dashboard() as dashboard">
         <header class="admin-topbar">
           <div>
+            <p class="admin-eyebrow">Gestão IndicaFácil</p>
             <h1>Dashboard</h1>
           </div>
           <div class="dashboard-controls"><button class="date-filter"><svg lucideCalendarDays /> 01/05/2024 - 31/05/2024 <span>⌄</span></button><div class="admin-user"><img src="/assets/placeholders/default-avatar.svg" alt="Foto do administrador" /><span><b>{{ userName() }}</b><small>{{ roleLabel() }}</small></span></div></div>
         </header>
         <div class="stats-grid">
-          <article class="stat-card"><i><svg lucideUsersRound /></i><span>Moradores</span><strong>{{ dashboard.stats.residents }}</strong><em>↑ 8 este mês</em></article>
+          <article class="stat-card"><i><svg lucideUsersRound /></i><span>Clientes</span><strong>{{ dashboard.stats.residents }}</strong><em>↑ 8 este mês</em></article>
           <article class="stat-card"><i><svg lucideBriefcaseBusiness /></i><span>Profissionais</span><strong>{{ dashboard.stats.professionals }}</strong><em>↑ 8 este mês</em></article>
           <article class="stat-card"><i><svg lucideThumbsUp /></i><span>Indicações</span><strong>{{ dashboard.stats.recommendations }}</strong><em>↑ 23 este mês</em></article>
           <article class="stat-card"><i><svg lucideStar /></i><span>Avaliações</span><strong>{{ dashboard.stats.reviews }}</strong><em>↑ 19 este mês</em></article>
@@ -1902,7 +1903,7 @@ export class IndicationsPageComponent implements OnInit {
           </section>
         </div>
         <div class="admin-bottom-cards">
-          <section class="admin-bottom-card"><i><svg lucideUserRoundPlus /></i><div><h2>Novos moradores</h2><strong>{{ dashboard.pending.newResidents }}</strong><p>Aguardando aprovação</p></div><a routerLink="/admin/moradores">Ver todos</a></section>
+          <section class="admin-bottom-card"><i><svg lucideUserRoundPlus /></i><div><h2>Novos clientes</h2><strong>{{ dashboard.pending.newResidents }}</strong><p>Aguardando aprovação</p></div><a routerLink="/admin/clientes">Ver todos</a></section>
           <section class="admin-bottom-card danger"><i><svg lucideCircleAlert /></i><div><h2>Denúncias</h2><strong>{{ dashboard.pending.reports }}</strong><p>Aguardando análise</p></div><a routerLink="/admin/denuncias">Ver todos</a></section>
         </div>
     </main>
@@ -1955,7 +1956,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
   imports: [CommonModule, FormsModule, ReactiveFormsModule, SearchableSelectComponent, PhoneMaskDirective, LucideSearch, LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucidePencil, LucideTrash2, LucideX],
   template: `
     <main class="admin-content admin-crud-content">
-        <header class="admin-topbar"><div><h1>{{ config.title }}</h1><p>Consulte, filtre, exporte e gerencie os registros.</p></div></header>
+        <header class="admin-topbar"><div><p class="admin-eyebrow">Gestão IndicaFácil</p><h1>{{ config.title }}</h1><p>Consulte, filtre, exporte e gerencie os registros.</p></div></header>
         <section class="admin-table-panel admin-data-panel">
           <header class="admin-grid-header">
             <div><h2>{{ config.title }}</h2><span>{{ filteredRecords().length }} registros</span></div>
@@ -2045,12 +2046,12 @@ export class AdminCrudPageComponent implements OnInit {
   });
   private readonly configs: Record<AdminResource, { title: string; fields: AdminField[]; columns: string[]; columnKeys: string[] }> = {
     condominiums: { title: 'Condomínios', fields: [{ key: 'name', label: 'Nome' }, { key: 'slug', label: 'Slug' }, { key: 'address', label: 'Endereço' }, { key: 'city', label: 'Cidade' }, { key: 'state', label: 'Estado' }, { key: 'neighborhood', label: 'Bairro' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'email', label: 'E-mail', type: 'email' }], columns: ['Foto', 'Nome', 'Cidade', 'Estado', 'E-mail'], columnKeys: ['coverImage', 'name', 'city', 'state', 'email'] },
-    residents: { title: 'Moradores', fields: [{ key: 'name', label: 'Nome' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'condominiumId', label: 'Condomínio', select: 'condominium' }, { key: 'password', label: 'Senha', type: 'password' }], columns: ['Nome', 'E-mail', 'Telefone', 'Perfil'], columnKeys: ['name', 'email', 'phone', 'role'] },
+    residents: { title: 'Clientes', fields: [{ key: 'name', label: 'Nome' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'password', label: 'Senha', type: 'password' }], columns: ['Nome', 'E-mail', 'Telefone', 'Perfil'], columnKeys: ['name', 'email', 'phone', 'role'] },
     users: { title: 'Usuários do sistema', fields: [
       { key: 'name', label: 'Nome completo' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone', type: 'tel' },
       { key: 'condominiumId', label: 'Condomínio', select: 'condominium' },
       { key: 'block', label: 'Bloco', hideForRoles: ['PROFESSIONAL', 'SUPER_ADMIN'] }, { key: 'unit', label: 'Unidade', hideForRoles: ['PROFESSIONAL', 'SUPER_ADMIN'] },
-      { key: 'role', label: 'Perfil de acesso', select: 'options', options: [{ value: 'RESIDENT', label: 'Morador' }, { value: 'PROFESSIONAL', label: 'Profissional' }, { value: 'CONDO_ADMIN', label: 'Administrador do condomínio' }, { value: 'SUPER_ADMIN', label: 'Super administrador' }] },
+      { key: 'role', label: 'Perfil de acesso', select: 'options', options: [{ value: 'RESIDENT', label: 'Cliente' }, { value: 'PROFESSIONAL', label: 'Profissional' }, { value: 'CONDO_ADMIN', label: 'Administrador' }, { value: 'SUPER_ADMIN', label: 'Super administrador' }] },
       { key: 'approvalStatus', label: 'Aprovação', select: 'options', options: [{ value: 'PENDING', label: 'Pendente' }, { value: 'APPROVED', label: 'Aprovado' }, { value: 'REJECTED', label: 'Recusado' }] },
       { key: 'emailVerified', label: 'E-mail verificado', type: 'checkbox' }, { key: 'active', label: 'Usuário ativo', type: 'checkbox' },
       { key: 'password', label: 'Senha (deixe em branco para manter)', type: 'password' },
@@ -2099,7 +2100,7 @@ export class AdminCrudPageComponent implements OnInit {
 
   value(record: Record<string, unknown>, key: string) {
     const value = record[key];
-    if (key === 'role') return ({ RESIDENT: 'Morador', CONDO_ADMIN: 'Administrador', SUPER_ADMIN: 'Super administrador' } as Record<string, string>)[String(value)] ?? String(value ?? '-');
+    if (key === 'role') return ({ RESIDENT: 'Cliente', CONDO_ADMIN: 'Administrador', SUPER_ADMIN: 'Super administrador' } as Record<string, string>)[String(value)] ?? String(value ?? '-');
     if (key === 'approvalStatus') return ({ PENDING: 'Pendente', APPROVED: 'Aprovado', REJECTED: 'Recusado' } as Record<string, string>)[String(value)] ?? String(value ?? '-');
     if (key === 'emailVerified' || key === 'active') return value ? 'Sim' : 'Não';
     return String(value ?? '-');
@@ -2271,6 +2272,7 @@ export class AdminCrudPageComponent implements OnInit {
     <main class="admin-content admin-detail-content">
         <header class="admin-topbar">
           <div>
+            <p class="admin-eyebrow">Gestão IndicaFácil</p>
             <h1>Cadastro de condomínio</h1>
             <p>Stepper 1 Dados • 2 Identidade visual • 3 Confirmar</p>
           </div>

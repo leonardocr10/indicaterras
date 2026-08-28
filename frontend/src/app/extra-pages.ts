@@ -123,7 +123,7 @@ type AdminSection = 'reviews' | 'recommendations' | 'reports' | 'settings' | 're
   imports: [CommonModule, FormsModule, ReactiveFormsModule, SearchableSelectComponent, PhoneMaskDirective, LucideChevronLeft, LucideChevronRight, LucideSearch, LucideX],
   template: `
     <main class="admin-content admin-section-content">
-      <header class="admin-topbar"><div><h1>{{ title() }}</h1><p>{{ description() }}</p></div></header>
+      <header class="admin-topbar"><div><p class="admin-eyebrow">Gestão IndicaFácil</p><h1>{{ title() }}</h1><p>{{ description() }}</p></div></header>
 
       <div class="admin-data-toolbar moderation-toolbar" *ngIf="isTableSection()">
         <label class="admin-search-field"><svg lucideSearch /><input [ngModel]="searchTerm()" (ngModelChange)="setSearch($event)" placeholder="Buscar registros..." /></label>

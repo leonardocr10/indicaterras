@@ -26,7 +26,7 @@ type ReviewDetail = {
   imports: [CommonModule, FormsModule, RouterLink, SearchableSelectComponent, LucideChevronLeft, LucideChevronRight, LucideEye, LucideSearch, LucideStar],
   template: `
     <main class="admin-content admin-reviews-content">
-      <header class="admin-topbar admin-reviews-header"><div><h1>Avaliações</h1><p>Modere avaliações publicadas pelos moradores.</p></div></header>
+      <header class="admin-topbar admin-reviews-header"><div><p class="admin-eyebrow">Gestão IndicaFácil</p><h1>Avaliações</h1><p>Modere avaliações publicadas pelos moradores.</p></div></header>
       <section class="admin-reviews-toolbar">
         <label class="admin-search-field"><svg lucideSearch /><input [ngModel]="searchTerm()" (ngModelChange)="setSearch($event)" placeholder="Buscar registros..." /></label>
         <app-searchable-select [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)" [items]="statusOptions" emptyLabel="Todos os status" searchPlaceholder="Pesquisar status..." />

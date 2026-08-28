@@ -13,6 +13,7 @@ import {
   LucideTrash2,
 } from '@lucide/angular';
 import { AppHeaderComponent } from './components';
+import { SearchableSelectComponent } from './searchable-select';
 import { Category, CategoryService, ProblemMatchResult, ServiceRequestRecord } from './models';
 import { ServiceRequestDraft, ServiceRequestDraftStore } from './service-request-draft.store';
 import { ApiService } from './services/api.service';
@@ -23,7 +24,7 @@ const STEP_LABELS = ['Problema', 'Fotos', 'Preferências', 'Local', 'Confirmar']
 @Component({
   selector: 'request-problem-step',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideSparkles],
+  imports: [CommonModule, FormsModule, LucideSparkles, SearchableSelectComponent],
   template: `
     <section class="request-step-card">
       <div class="request-step-intro">
@@ -51,10 +52,7 @@ const STEP_LABELS = ['Problema', 'Fotos', 'Preferências', 'Local', 'Confirmar']
 
       <div class="request-field">
         <span>Categoria</span>
-        <select [ngModel]="draft.categoryId" (ngModelChange)="patch.emit({ categoryId: $event })">
-          <option value="">Selecione uma categoria</option>
-          <option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</option>
-        </select>
+        <app-searchable-select [ngModel]="draft.categoryId" (ngModelChange)="patch.emit({ categoryId: $event })" [items]="categories" valueKey="id" labelKey="name" emptyLabel="Selecione uma categoria" searchPlaceholder="Pesquisar categoria..." />
       </div>
 
       <div class="request-field">
@@ -142,7 +140,7 @@ export class RequestMediaStepComponent {
 @Component({
   selector: 'request-preferences-step',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideCalendarDays],
+  imports: [CommonModule, FormsModule, LucideCalendarDays, SearchableSelectComponent],
   template: `
     <section class="request-step-card">
       <div class="request-step-intro">
@@ -168,9 +166,7 @@ export class RequestMediaStepComponent {
 
         <div class="request-field">
           <span>Período</span>
-          <select [ngModel]="draft.preferredPeriod" (ngModelChange)="patch.emit({ preferredPeriod: $event })">
-            <option *ngFor="let item of periodOptions" [value]="item.value">{{ item.label }}</option>
-          </select>
+          <app-searchable-select [ngModel]="draft.preferredPeriod" (ngModelChange)="patch.emit({ preferredPeriod: $event })" [items]="periodOptions" valueKey="value" labelKey="label" searchPlaceholder="Pesquisar período..." />
         </div>
       </div>
 

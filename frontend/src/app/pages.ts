@@ -625,7 +625,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'professional-profile-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, RatingStarsComponent, LucideArrowLeft, LucideShare2, LucideHeart, LucideMessageCircle, LucidePhone, LucideStar, LucideUsersRound, LucideCheckCircle2, LucideCircleAlert, LucideCamera, LucideX],
+  imports: [CommonModule, FormsModule, RouterLink, RatingStarsComponent, SearchableSelectComponent, LucideArrowLeft, LucideShare2, LucideHeart, LucideMessageCircle, LucidePhone, LucideStar, LucideUsersRound, LucideCheckCircle2, LucideCircleAlert, LucideCamera, LucideX],
   template: `
     <section class="mobile-page profile-page" *ngIf="professional() as professional">
       <header class="profile-topbar">
@@ -705,10 +705,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
           </header>
           <label class="report-form-field">
             <span>Motivo</span>
-            <select [(ngModel)]="reportReason">
-              <option value="" disabled>Selecione o motivo</option>
-              <option *ngFor="let motivo of reportReasons" [value]="motivo">{{ motivo }}</option>
-            </select>
+            <app-searchable-select [(ngModel)]="reportReason" [items]="reportReasons" emptyLabel="Selecione o motivo" searchPlaceholder="Pesquisar motivo..." />
           </label>
           <label class="report-form-field">
             <span>Descreva o que aconteceu</span>

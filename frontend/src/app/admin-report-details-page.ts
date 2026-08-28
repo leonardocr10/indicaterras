@@ -18,12 +18,13 @@ import {
 import { ComplaintDetails } from './models';
 import { ApiService } from './services/api.service';
 import { ToastService } from './services/toast.service';
+import { SearchableSelectComponent } from './searchable-select';
 
 @Component({
   selector: 'admin-report-details-page',
   standalone: true,
   imports: [
-    CommonModule, FormsModule, RouterLink,
+    CommonModule, FormsModule, RouterLink, SearchableSelectComponent,
     LucideArrowLeft, LucideCalendarDays, LucideCheckCircle2, LucideClock, LucideEye, LucideEyeOff,
     LucideLockKeyhole, LucideMessageCircle, LucidePhone, LucideStar, LucideTriangleAlert,
   ],
@@ -110,10 +111,7 @@ import { ToastService } from './services/toast.service';
               <button type="button" class="report-action warn" (click)="aplicar('warn')"><svg lucideTriangleAlert />Advertir profissional</button>
               <button type="button" class="report-action hide" (click)="aplicar('hide')"><svg lucideEyeOff />Ocultar do app</button>
               <div class="report-action-suspend">
-                <select [(ngModel)]="diasSuspensao" aria-label="Duração da suspensão">
-                  <option [ngValue]="7">7 dias</option>
-                  <option [ngValue]="30">30 dias</option>
-                </select>
+                <app-searchable-select [(ngModel)]="diasSuspensao" [items]="suspensionOptions" valueKey="value" labelKey="label" searchPlaceholder="Pesquisar duração..." />
                 <button type="button" class="report-action suspend" (click)="suspender()"><svg lucideCalendarDays />Suspender prestador</button>
               </div>
               <button type="button" class="report-action block" (click)="aplicar('block')"><svg lucideLockKeyhole />Bloquear permanentemente</button>
@@ -178,6 +176,7 @@ export class AdminReportDetailsPageComponent implements OnInit {
   protected parecer = '';
   protected notificar = true;
   protected diasSuspensao = 7;
+  protected readonly suspensionOptions = [{ value: 7, label: '7 dias' }, { value: 30, label: '30 dias' }];
 
   ngOnInit() {
     this.carregar();

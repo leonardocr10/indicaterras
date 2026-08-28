@@ -147,7 +147,8 @@ export class CategoryCardComponent {
           <h3><a *ngIf="mode === 'favorite'" [routerLink]="['/app/profissional', professional.id]">{{ professional.name }}</a><ng-container *ngIf="mode !== 'favorite'">{{ professional.name }}</ng-container></h3>
           <p>{{ professional.category }}</p>
         </div>
-        <span *ngIf="professional.matchesLocation" class="location-badge"><svg lucideMapPin />Atende sua região</span>
+        <span *ngIf="distanceLabel" class="location-badge distance-badge"><svg lucideMapPin />{{ distanceLabel }}</span>
+        <span *ngIf="!distanceLabel && professional.matchesLocation" class="location-badge"><svg lucideMapPin />Atende sua região</span>
         <div *ngIf="professional.rating > 0 && professional.reviewCount > 0; else noReviews" class="rating-line">
           <rating-stars [rating]="professional.rating" />
           <strong>{{ professional.rating | number: '1.1-1' }}</strong>
@@ -186,6 +187,8 @@ export class ProfessionalCardComponent {
   @Input() highlight = false;
   @Input() mode: 'default' | 'favorite' = 'default';
   @Input() condominiumName = '';
+  /** Distância aproximada em km; null quando o profissional não tem coordenada. */
+  @Input() distanceKm: number | null = null;
   @Output() removed = new EventEmitter<string>();
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
@@ -193,6 +196,16 @@ export class ProfessionalCardComponent {
   protected readonly favorite = signal(false);
   protected readonly recommended = signal(false);
   protected readonly menuOpen = signal(false);
+
+  /**
+   * A coordenada do profissional é o centro do bairro, não o endereço dele.
+   * Por isso o "~": prometer "450 m" seria uma precisão que não temos.
+   */
+  protected get distanceLabel(): string {
+    if (this.distanceKm === null || this.distanceKm === undefined) return '';
+    if (this.distanceKm < 1) return `~${Math.round(this.distanceKm * 1000)} m`;
+    return `~${this.distanceKm.toFixed(1).replace('.', ',')} km`;
+  }
   private readonly recommendationCount = signal<number | null>(null);
 
   get initials(): string {

@@ -27,18 +27,34 @@ export interface AddressByZipCode {
   neighborhood: string;
   city: string;
   state: string;
+  /** A v2 devolve o ponto do CEP quando conhece; usado na busca por proximidade. */
+  coordinates?: { latitude: number; longitude: number } | null;
+}
+
+interface RespostaCep {
+  street?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  location?: { coordinates?: { latitude?: string | number; longitude?: string | number } };
 }
 
 /** Consulta o CEP na BrasilAPI (publica e gratuita) para preencher o endereco. */
 export function fetchAddressByZipCode(http: HttpClient, zipCode: string) {
   const digits = String(zipCode ?? '').replace(/\D/g, '');
-  return http.get<AddressByZipCode>(`https://brasilapi.com.br/api/cep/v2/${digits}`).pipe(
-    map((address) => ({
-      street: address.street ?? '',
-      neighborhood: address.neighborhood ?? '',
-      city: address.city ?? '',
-      state: address.state ?? '',
-    })),
+  return http.get<RespostaCep>(`https://brasilapi.com.br/api/cep/v2/${digits}`).pipe(
+    map((address): AddressByZipCode => {
+      const ponto = address.location?.coordinates;
+      const latitude = Number(ponto?.latitude);
+      const longitude = Number(ponto?.longitude);
+      return {
+        street: address.street ?? '',
+        neighborhood: address.neighborhood ?? '',
+        city: address.city ?? '',
+        state: address.state ?? '',
+        coordinates: Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null,
+      };
+    }),
   );
 }
 

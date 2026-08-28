@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
-import { AiAnalysisLogRow, AiProblemAnalysisResult, AiPublicConfig, AiSettings, AiUsageSummary, ApiResponse, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, HomePayload, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
+import { AiAnalysisLogRow, AiProblemAnalysisResult, AiPublicConfig, AiSettings, AiUsageSummary, ApiResponse, NearbyResult, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, HomePayload, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
@@ -83,6 +83,29 @@ export class ApiService {
     return this.http
       .get<ApiResponse<Professional[]>>(`${this.baseUrl}/professionals${query}`)
       .pipe(map((response) => response.data));
+  }
+
+  /** Busca por proximidade. Sem lat/lng o backend ordena por reputação. */
+  getNearbyProfessionals(params: {
+    lat?: number | null;
+    lng?: number | null;
+    radius?: number | null;
+    categorySlug?: string;
+    serviceSlug?: string;
+    minRating?: number;
+    recommended?: boolean;
+    sort?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const query = new URLSearchParams();
+    for (const [chave, valor] of Object.entries(params)) {
+      if (valor === undefined || valor === null || valor === '' || valor === false) continue;
+      query.set(chave, String(valor));
+    }
+    const sufixo = query.size ? `?${query.toString()}` : '';
+    return this.http.get<ApiResponse<NearbyResult>>(`${this.baseUrl}/professionals/nearby${sufixo}`).pipe(map((response) => response.data));
   }
 
   getProfessional(id: string) {
@@ -312,7 +335,7 @@ export class ApiService {
 
   getPublicSettings() {
     return this.http
-      .get<ApiResponse<{ systemName: string; selfRegistration: boolean; professionalSelfRegistration: boolean; showBlock: boolean; ai: AiPublicConfig }>>(`${this.baseUrl}/public-settings`)
+      .get<ApiResponse<{ systemName: string; selfRegistration: boolean; professionalSelfRegistration: boolean; showBlock: boolean; ai: AiPublicConfig; maps: { apiKey: string } }>>(`${this.baseUrl}/public-settings`)
       .pipe(map((response) => response.data));
   }
 

@@ -27,13 +27,14 @@ import {
   LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideShieldCheck,
   LucideBadgeCheck, LucideClipboardList, LucidePencil, LucideTrash2, LucideCheck,
 } from '@lucide/angular';
-import { AiProblemAnalysisResult, AiPublicConfig, Category, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
+import { AiProblemAnalysisResult, AiPublicConfig, Category, NearbyResult, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { matchesSearch } from './search.util';
 import { fetchAddressByZipCode, fetchBrazilianCities, neighborhoodsForCity } from './brazil-locations';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import { categoryAvatar, categoryCover } from './category-art.util';
 import { SearchableSelectComponent } from './searchable-select';
+import { LocationService, RADIUS_OPTIONS } from './services/location.service';
 import { PhoneMaskDirective } from './phone-mask.directive';
 import { brand } from './brand';
 
@@ -784,14 +785,54 @@ export class HomePageComponent implements OnInit {
 @Component({
   selector: 'professionals-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ProfessionalCardComponent, SearchableSelectComponent, LucideArrowLeft, LucideChevronDown, LucideSearch, LucideSlidersHorizontal, LucideThumbsUp, LucideX],
+  imports: [CommonModule, FormsModule, RouterLink, ProfessionalCardComponent, SearchableSelectComponent, LucideArrowLeft, LucideChevronDown, LucideSearch, LucideSlidersHorizontal, LucideThumbsUp, LucideX, LucideMapPin, LucideSparkles, LucideArrowRight],
   template: `
     <section class="mobile-page professionals-page">
       <div class="professionals-heading">
         <a class="professionals-back" routerLink="/app/home" aria-label="Voltar"><svg lucideArrowLeft /></a>
-        <div><h1>{{ pageTitle() }}</h1><p>{{ filteredProfessionals().length }} {{ filteredProfessionals().length === 1 ? 'profissional encontrado' : 'profissionais encontrados' }}</p></div>
+        <div>
+          <h1>{{ pageTitle() }}</h1>
+          <p *ngIf="!nearbyMode()">{{ filteredProfessionals().length }} {{ filteredProfessionals().length === 1 ? 'profissional encontrado' : 'profissionais encontrados' }}</p>
+          <p *ngIf="nearbyMode()">Veja quem atende próximo da sua localização.</p>
+        </div>
       </div>
       <div class="professionals-content">
+        <ng-container *ngIf="nearbyMode()">
+          <section class="nearby-location-bar">
+            <div>
+              <svg lucideMapPin aria-hidden="true" />
+              <div>
+                <strong>Raio de busca: {{ radius() }} km</strong>
+                <small>{{ location()?.label || 'Localização não definida' }}</small>
+              </div>
+            </div>
+            <button type="button" (click)="locationSheetOpen.set(true)">Alterar localização</button>
+          </section>
+
+          <div class="nearby-radius-row" *ngIf="location()">
+            <button *ngFor="let option of radiusOptions" type="button" [class.active]="radius() === option" (click)="setRadius(option)">{{ option }} km</button>
+          </div>
+
+          <section class="nearby-no-location" *ngIf="!location()">
+            <h2>Para encontrar profissionais perto de você, precisamos da sua localização.</h2>
+            <p>Você também pode continuar navegando por categoria, sem informar onde está.</p>
+            <div>
+              <button type="button" class="primary-button" (click)="useDeviceLocation()" [disabled]="locating()">{{ locating() ? 'Localizando...' : 'Usar minha localização' }}</button>
+              <button type="button" class="secondary-button" (click)="locationSheetOpen.set(true)">Informar endereço</button>
+            </div>
+          </section>
+
+          <div class="nearby-quick-categories">
+            <button *ngFor="let category of quickCategories()" type="button" [class.active]="selectedCategory() === category.slug" (click)="toggleQuickCategory(category.slug)">{{ category.name }}</button>
+          </div>
+
+          <button class="nearby-ai-cta" type="button" *ngIf="aiEnabled()" (click)="openAiFlow()">
+            <svg lucideSparkles aria-hidden="true" />
+            <span><strong>Não sabe qual profissional procurar?</strong><small>Conte seu problema para a IA</small></span>
+            <svg lucideArrowRight aria-hidden="true" />
+          </button>
+        </ng-container>
+
         <div class="filter-row category-filter-row">
           <button class="filter-chip recommended-filter" type="button" [class.active]="sortMode() === 'recommended'" (click)="setSort('recommended')"><svg lucideThumbsUp />Mais indicados</button>
           <div class="sort-menu">
@@ -802,20 +843,75 @@ export class HomePageComponent implements OnInit {
           </div>
           <button class="filter-chip filter-open-button" type="button" [class.has-filters]="activeFilterCount() > 0" (click)="openFilters()"><svg lucideSlidersHorizontal /><span>Filtros</span><b *ngIf="activeFilterCount()">{{ activeFilterCount() }}</b></button>
         </div>
-        <section class="recommended-professionals-section" *ngIf="recommendedProfessionals().length">
-          <header><div><h2>Recomendados para você</h2><p>Os mais bem avaliados e indicados da sua região.</p></div></header>
-          <professional-card *ngFor="let professional of recommendedProfessionals()" [professional]="professional" [highlight]="true" />
+        <ng-container *ngIf="nearbyMode() && location(); else listaPadrao">
+          <section class="other-professionals-section" *ngIf="nearbyItems().length">
+            <header>
+              <div>
+                <h2>Mais próximos</h2>
+                <p>Distância aproximada pelo bairro do profissional.</p>
+              </div>
+            </header>
+            <professional-card *ngFor="let professional of nearbyItems()" [professional]="professional" [distanceKm]="professional.distanceKm" />
+          </section>
+
+          <div class="professionals-empty" *ngIf="!nearbyItems().length && !loadingNearby()">
+            <svg lucideSearch />
+            <h2>Não encontramos profissionais neste raio.</h2>
+            <p>Aumente a distância para encontrar mais opções.</p>
+            <div class="nearby-empty-actions">
+              <button type="button" class="secondary-button" (click)="setRadius(10)">Buscar em 10 km</button>
+              <button type="button" class="secondary-button" (click)="setRadius(20)">Buscar em 20 km</button>
+            </div>
+            <button class="primary-button" type="button" (click)="requestProposals()">Quero receber propostas</button>
+          </div>
+
+          <p class="nearby-without-location" *ngIf="nearbyWithoutLocation() > 0">
+            {{ nearbyWithoutLocation() }} {{ nearbyWithoutLocation() === 1 ? 'profissional ainda não tem' : 'profissionais ainda não têm' }} localização cadastrada e não {{ nearbyWithoutLocation() === 1 ? 'aparece' : 'aparecem' }} na busca por raio.
+          </p>
+        </ng-container>
+
+        <ng-template #listaPadrao>
+          <section class="recommended-professionals-section" *ngIf="recommendedProfessionals().length">
+            <header><div><h2>Recomendados para você</h2><p>Os mais bem avaliados e indicados da sua região.</p></div></header>
+            <professional-card *ngFor="let professional of recommendedProfessionals()" [professional]="professional" [highlight]="true" />
+          </section>
+          <section class="other-professionals-section" *ngIf="otherProfessionals().length">
+            <header><div><h2>Outros profissionais</h2><p>Confira mais opções disponíveis.</p></div></header>
+            <professional-card *ngFor="let professional of otherProfessionals()" [professional]="professional" />
+          </section>
+          <div class="professionals-empty" *ngIf="!filteredProfessionals().length">
+            <svg lucideSearch />
+            <h2>Nenhum profissional encontrado</h2>
+            <p>Ainda não encontramos profissionais desta categoria na sua região.</p>
+            <button class="secondary-button" type="button" (click)="requestProposals()">Quero receber propostas</button>
+          </div>
+        </ng-template>
+      </div>
+
+      <div class="professional-filter-backdrop" *ngIf="locationSheetOpen()" (click)="locationSheetOpen.set(false)">
+        <section class="professional-filter-sheet" role="dialog" aria-modal="true" aria-label="Alterar localização" (click)="$event.stopPropagation()">
+          <header>
+            <div><span>Onde você precisa do serviço</span><h2>Alterar localização</h2></div>
+            <button type="button" aria-label="Fechar" (click)="locationSheetOpen.set(false)"><svg lucideX /></button>
+          </header>
+
+          <button type="button" class="primary-button full-width" (click)="useDeviceLocation()" [disabled]="locating()">
+            <svg lucideMapPin />{{ locating() ? 'Localizando...' : 'Usar minha localização atual' }}
+          </button>
+
+          <label>CEP
+            <span class="filter-search-field"><svg lucideMapPin /><input [(ngModel)]="zipInput" inputmode="numeric" maxlength="9" placeholder="00000-000" /></span>
+          </label>
+          <button type="button" class="secondary-button full-width" (click)="useZipCode()" [disabled]="locating()">Usar este CEP</button>
+
+          <p class="location-sheet-hint" *ngIf="locationError()">{{ locationError() }}</p>
+          <p class="location-sheet-hint">Guardamos apenas a região aproximada. Seu endereço completo não é exibido aos profissionais.</p>
+
+          <footer>
+            <button type="button" class="ghost-button" (click)="clearLocation()">Remover localização</button>
+            <button type="button" class="primary-button" (click)="locationSheetOpen.set(false)">Concluir</button>
+          </footer>
         </section>
-        <section class="other-professionals-section" *ngIf="otherProfessionals().length">
-          <header><div><h2>Outros profissionais</h2><p>Confira mais opções disponíveis.</p></div></header>
-          <professional-card *ngFor="let professional of otherProfessionals()" [professional]="professional" />
-        </section>
-        <div class="professionals-empty" *ngIf="!filteredProfessionals().length">
-          <svg lucideSearch />
-          <h2>Nenhum profissional encontrado</h2>
-          <p>Ainda não encontramos profissionais desta categoria na sua região.</p>
-          <button class="secondary-button" type="button" (click)="requestProposals()">Quero receber propostas</button>
-        </div>
       </div>
 
       <div class="professional-filter-backdrop" *ngIf="filtersOpen()" (click)="closeFilters()">
@@ -882,6 +978,27 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     { value: 4.5, label: '4,5 ou mais' },
     { value: 4.8, label: '4,8 ou mais' },
   ];
+  private readonly locationService = inject(LocationService);
+  /** A tela "perto de você" é a experiência do botão Buscar da navegação. */
+  protected readonly nearbyMode = signal(false);
+  protected readonly location = this.locationService.location;
+  protected readonly radius = this.locationService.radius;
+  protected readonly locating = this.locationService.requesting;
+  protected readonly locationSheetOpen = signal(false);
+  protected readonly locationError = signal('');
+  protected readonly nearby = signal<NearbyResult | null>(null);
+  protected readonly loadingNearby = signal(false);
+  protected readonly aiEnabled = signal(false);
+  protected readonly radiusOptions = RADIUS_OPTIONS;
+  protected zipInput = '';
+  protected readonly nearbyItems = computed(() => this.nearby()?.items ?? []);
+  protected readonly nearbyWithoutLocation = computed(() => this.nearby()?.withoutLocation ?? 0);
+  protected readonly quickCategories = computed(() => {
+    const preferidas = ['eletricista', 'encanador', 'gas', 'diarista', 'ar-condicionado', 'mecanico', 'informatica', 'montador'];
+    const ativas = this.categories();
+    const escolhidas = preferidas.map((slug) => ativas.find((item) => item.slug === slug)).filter(Boolean) as Category[];
+    return escolhidas.length ? escolhidas : ativas.slice(0, 8);
+  });
   protected readonly sortOptions: Array<{ value: 'recommended' | 'rating' | 'reviews' | 'az'; label: string }> = [
     { value: 'recommended', label: 'Mais indicados' },
     { value: 'rating', label: 'Melhor avaliados' },
@@ -891,7 +1008,8 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 
   protected readonly pageTitle = computed(() => {
     const slug = this.selectedCategory();
-    if (!slug) return 'Profissionais';
+    // Na aba Buscar sem categoria escolhida, o titulo anuncia a proximidade.
+    if (!slug) return this.nearbyMode() ? 'Profissionais perto de você' : 'Profissionais';
     const category = this.categories().find((item) => item.slug === slug);
     if (!category) return 'Profissionais';
     const titles: Record<string, string> = {
@@ -961,13 +1079,94 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.api.getProfessionals().subscribe((professionals) => this.professionals.set(professionals));
     this.api.getCategories().subscribe((categories) => this.categories.set(categories.filter((category) => category.slug !== 'mais')));
+    // O item Buscar da navegação abre /app/buscar, que é a central de descoberta.
+    this.nearbyMode.set(this.router.url.split('?')[0].endsWith('/buscar'));
+    if (this.nearbyMode()) {
+      this.api.getPublicSettings().subscribe({ next: (settings) => this.aiEnabled.set(settings.ai?.enabled === true), error: () => undefined });
+    }
     this.route.queryParamMap.subscribe((params) => {
       this.selectedCategory.set(params.get('categoria') ?? '');
       this.setSearchText(params.get('busca') ?? '');
       this.serviceFilter.set(params.get('servico') ?? '');
       const sort = params.get('ordem');
       if (sort && this.sortOptions.some((option) => option.value === sort)) this.sortMode.set(sort as 'recommended' | 'rating' | 'reviews' | 'az');
+      if (this.nearbyMode()) this.loadNearby();
     });
+  }
+
+  /** Busca por proximidade no servidor: o raio e a distância dependem do banco. */
+  protected loadNearby() {
+    const local = this.location();
+    if (!local) {
+      this.nearby.set(null);
+      return;
+    }
+    this.loadingNearby.set(true);
+    this.api
+      .getNearbyProfessionals({
+        lat: local.latitude,
+        lng: local.longitude,
+        radius: this.radius(),
+        categorySlug: this.selectedCategory() || undefined,
+        serviceSlug: this.serviceFilter() || undefined,
+        minRating: this.minimumRating() || undefined,
+        search: this.searchText() || undefined,
+        sort: 'distance',
+        limit: 50,
+      })
+      .subscribe({
+        next: (resultado) => {
+          this.nearby.set(resultado);
+          this.loadingNearby.set(false);
+        },
+        error: () => {
+          this.nearby.set(null);
+          this.loadingNearby.set(false);
+        },
+      });
+  }
+
+  protected setRadius(valor: number) {
+    this.locationService.setRadius(valor);
+    this.loadNearby();
+  }
+
+  protected async useDeviceLocation() {
+    this.locationError.set('');
+    try {
+      await this.locationService.useDeviceLocation();
+      this.locationSheetOpen.set(false);
+      this.loadNearby();
+    } catch (erro) {
+      this.locationError.set(erro instanceof Error ? erro.message : 'Não foi possível obter sua localização.');
+    }
+  }
+
+  protected async useZipCode() {
+    this.locationError.set('');
+    try {
+      await this.locationService.useZipCode(this.zipInput);
+      this.locationSheetOpen.set(false);
+      this.loadNearby();
+    } catch (erro) {
+      this.locationError.set(erro instanceof Error ? erro.message : 'Não encontramos esse CEP.');
+    }
+  }
+
+  protected clearLocation() {
+    this.locationService.clear();
+    this.nearby.set(null);
+    this.locationSheetOpen.set(false);
+  }
+
+  protected toggleQuickCategory(slug: string) {
+    this.selectedCategory.set(this.selectedCategory() === slug ? '' : slug);
+    this.applyFilters();
+  }
+
+  /** Leva ao fluxo de IA da Home, que devolve categoria e serviço já filtrados. */
+  protected openAiFlow() {
+    void this.router.navigate(['/app/home'], { queryParams: { ia: 1 } });
   }
 
   protected openFilters() {

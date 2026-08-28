@@ -1300,3 +1300,34 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
    O rodape de acoes do fluxo de propostas se apoia nesse valor. */
 @media(max-width:980px){:root{--if-bottom-nav-height:76px}}
 @media(max-width:760px){:root{--if-bottom-nav-height:84px}}
+
+/* Tela Buscar: profissionais perto de voce. Segue a paleta verde do app. */
+.nearby-location-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border:1px solid #dce7e1;border-radius:12px;background:#fff}
+.nearby-location-bar>div{display:flex;align-items:center;gap:10px;min-width:0}
+.nearby-location-bar svg{width:20px;height:20px;flex:0 0 auto;color:var(--if-primary-dark)}
+.nearby-location-bar strong{display:block;color:#13283d;font-size:13px}
+.nearby-location-bar small{display:block;color:#5b7183;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nearby-location-bar button{flex:0 0 auto;min-height:36px;padding:8px 12px;border:1px solid var(--if-primary-dark);border-radius:8px;color:var(--if-primary-dark);background:#fff;font:600 12px var(--font-family)}
+.nearby-radius-row{display:flex;gap:7px;overflow-x:auto;padding:2px 0;scrollbar-width:none}
+.nearby-radius-row::-webkit-scrollbar{display:none}
+.nearby-radius-row button{flex:0 0 auto;min-height:33px;padding:7px 13px;border:1px solid #d8e3de;border-radius:999px;color:#283a4a;background:#fff;font:600 12px var(--font-family)}
+.nearby-radius-row button.active{border-color:var(--if-primary-dark);color:#fff;background:var(--if-primary-dark)}
+.nearby-no-location{padding:16px 14px;border:1px solid #cde9d9;border-radius:12px;background:#f4fbf7}
+.nearby-no-location h2{margin:0;color:#13283d;font-size:14px;line-height:20px}
+.nearby-no-location p{margin:6px 0 0;color:#38566a;font-size:12px;line-height:17px}
+.nearby-no-location>div{margin-top:12px;display:grid;gap:8px}
+.nearby-no-location button{width:100%;min-height:42px;font-size:13px}
+.nearby-quick-categories{display:flex;gap:7px;overflow-x:auto;padding:2px 0;scrollbar-width:none}
+.nearby-quick-categories::-webkit-scrollbar{display:none}
+.nearby-quick-categories button{flex:0 0 auto;min-height:33px;padding:7px 13px;border:1px solid #d8e3de;border-radius:999px;color:#283a4a;background:#fff;font:600 12px var(--font-family)}
+.nearby-quick-categories button.active{border-color:var(--if-primary-dark);color:#fff;background:var(--if-primary-dark)}
+.nearby-ai-cta{width:100%;display:flex;align-items:center;gap:10px;padding:12px 13px;border:1px solid #cde9d9;border-radius:12px;background:linear-gradient(145deg,#f4fbf7,#fff);text-align:left}
+.nearby-ai-cta svg{width:18px;height:18px;flex:0 0 auto;color:var(--if-primary-dark)}
+.nearby-ai-cta span{flex:1;min-width:0}
+.nearby-ai-cta strong{display:block;color:#13283d;font-size:13px}
+.nearby-ai-cta small{display:block;color:#38566a;font-size:11px}
+.nearby-empty-actions{display:flex;gap:8px;margin:10px 0}
+.nearby-empty-actions button{flex:1;min-height:40px;font-size:12px}
+.nearby-without-location{margin:14px 3px 0;color:#5b7183;font-size:11px;line-height:16px}
+.location-sheet-hint{margin:2px 0 0;color:#5b7183;font-size:11px;line-height:16px}
+.professional-card .distance-badge{color:var(--if-primary-dark)}

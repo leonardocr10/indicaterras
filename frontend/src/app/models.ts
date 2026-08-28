@@ -218,6 +218,25 @@ export interface ProblemMatchResult {
   professionals: Professional[];
 }
 
+export interface NearbyProfessional extends Professional {
+  /** Distância aproximada em km, ou null quando o profissional não tem coordenada. */
+  distanceKm: number | null;
+  /** Sempre true: a coordenada vem do centroide do bairro, não do endereço. */
+  approximateDistance: boolean;
+}
+
+export interface NearbyResult {
+  items: NearbyProfessional[];
+  total: number;
+  page: number;
+  limit: number;
+  hasLocation: boolean;
+  radius: number | null;
+  /** Quantos ficaram de fora por não ter coordenada cadastrada. */
+  withoutLocation: number;
+  outsideRadius: number;
+}
+
 export interface AiProblemAnalysisResult {
   usedAi: boolean;
   usedFallback: boolean;

@@ -1632,13 +1632,15 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
     <main class="admin-content admin-crud-content">
         <header class="admin-topbar"><div><h1>{{ config.title }}</h1><p>Consulte, filtre, exporte e gerencie os registros.</p></div></header>
         <section class="admin-table-panel admin-data-panel">
-          <div class="admin-data-toolbar">
-            <label class="admin-search-field"><svg lucideSearch /><input [ngModel]="searchTerm()" (ngModelChange)="setSearch($event)" placeholder="Buscar em {{ config.title.toLowerCase() }}..." /></label>
-            <app-searchable-select class="admin-toolbar-select" [ngModel]="filterValue()" (ngModelChange)="setFilter($event)" [items]="filterOptions()" emptyLabel="Todos os registros" searchPlaceholder="Pesquisar filtro..." />
-            <span class="toolbar-spacer"></span>
-            <button class="admin-export-button admin-toolbar-action" type="button" (click)="exportExcel()"><svg lucideDownload /> Exportar Excel</button>
-            <button class="primary-button admin-toolbar-action" type="button" (click)="newRecord()"><svg lucidePlus /> Adicionar</button>
-          </div>
+          <header class="admin-grid-header">
+            <div><h2>{{ config.title }}</h2><span>{{ filteredRecords().length }} registros</span></div>
+            <div class="admin-data-toolbar">
+              <label class="admin-search-field"><svg lucideSearch /><input [ngModel]="searchTerm()" (ngModelChange)="setSearch($event)" placeholder="Buscar em {{ config.title.toLowerCase() }}..." /></label>
+              <app-searchable-select class="admin-toolbar-select" [ngModel]="filterValue()" (ngModelChange)="setFilter($event)" [items]="filterOptions()" emptyLabel="Todos os registros" searchPlaceholder="Pesquisar filtro..." />
+              <button class="admin-export-button admin-toolbar-action" type="button" (click)="exportExcel()"><svg lucideDownload /> Exportar Excel</button>
+              <button class="primary-button admin-toolbar-action" type="button" (click)="newRecord()"><svg lucidePlus /> Adicionar</button>
+            </div>
+          </header>
           <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
           <div class="admin-table-wrap"><table><thead><tr><th *ngFor="let column of config.columns">{{ column }}</th><th>Ações</th></tr></thead><tbody>
               <tr *ngFor="let record of pagedRecords()"><td *ngFor="let key of config.columnKeys" [class.photo-cell]="isPhotoKey(key)" [class.cover-photo-cell]="key === 'coverImage'">

@@ -71,13 +71,15 @@ type IconTarget = 'category' | 'service';
       <p *ngIf="feedback()" class="category-feedback" [class.error]="hasError()">{{ feedback() }}</p>
 
       <section class="admin-table-panel admin-data-panel category-list-panel">
-        <div class="admin-data-toolbar">
-          <label class="admin-search-field"><svg lucideSearch /><input [ngModel]="searchTerm()" (ngModelChange)="setSearch($event)" placeholder="Buscar categoria..." /></label>
-          <app-searchable-select class="admin-toolbar-select" [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)" [items]="categoryStatusOptions" valueKey="value" labelKey="label" emptyLabel="Todos os status" searchPlaceholder="Pesquisar status..." />
-          <span class="toolbar-spacer"></span>
-          <label class="admin-file-button"><svg lucideUpload /> Importar Excel<input type="file" accept=".xlsx,.xls,.csv" (change)="importExcel($event)" /></label>
-          <button class="primary-button" type="button" (click)="newCategory(true)"><svg lucidePlus /> Nova categoria</button>
-        </div>
+        <header class="admin-grid-header">
+          <div><h2>Categorias</h2><span>{{ filteredCategories().length }} registros</span></div>
+          <div class="admin-data-toolbar">
+            <label class="admin-search-field"><svg lucideSearch /><input [ngModel]="searchTerm()" (ngModelChange)="setSearch($event)" placeholder="Buscar categoria..." /></label>
+            <app-searchable-select class="admin-toolbar-select" [ngModel]="statusFilter()" (ngModelChange)="setStatusFilter($event)" [items]="categoryStatusOptions" valueKey="value" labelKey="label" emptyLabel="Todos os status" searchPlaceholder="Pesquisar status..." />
+            <label class="admin-file-button"><svg lucideUpload /> Importar Excel<input type="file" accept=".xlsx,.xls,.csv" (change)="importExcel($event)" /></label>
+            <button class="primary-button" type="button" (click)="newCategory(true)"><svg lucidePlus /> Nova categoria</button>
+          </div>
+        </header>
         <div class="admin-table-wrap"><table><thead><tr><th>Categoria</th><th>Slug</th><th>Ícone</th><th>Serviços</th><th>Ordem</th><th>Status</th><th>Ações</th></tr></thead><tbody>
           <tr *ngFor="let category of pagedCategories()"><td><strong>{{ category.name }}</strong></td><td>{{ category.slug }}</td><td><span class="taxonomy-icon"><img *ngIf="iconImage(category.icon) as iconUrl; else listGlyph" [src]="iconUrl" alt="" /><ng-template #listGlyph>{{ iconGlyph(category.icon) }}</ng-template></span></td><td>{{ category.services.length || 0 }}</td><td>{{ category.displayOrder }}</td><td><span class="category-status" [class.inactive]="category.active === false"><i></i>{{ category.active === false ? 'Inativa' : 'Ativa' }}</span></td><td class="admin-actions"><button type="button" (click)="editCategory(category.id)">Editar</button><button type="button" class="danger-action" (click)="deleteCategory(category.id)">Excluir</button></td></tr>
           <tr *ngIf="!pagedCategories().length"><td colspan="7" class="admin-empty-row">Nenhuma categoria encontrada.</td></tr>

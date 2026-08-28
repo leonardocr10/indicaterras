@@ -1076,17 +1076,39 @@ label>span{display:block}
 .admin-sidebar>a.active{min-height:46px;border-color:rgba(74,222,128,.25);border-radius:10px;background:#087b52;box-shadow:inset 4px 0 0 var(--if-primary),0 8px 18px rgba(0,40,28,.15)}
 .admin-sidebar>a.active svg{color:var(--if-primary-light)}
 
-/* Grids administrativos compactos, com toolbar e tabela no mesmo bloco visual. */
-.admin-table-panel{padding:12px;border:1px solid #dfe9e4;border-radius:14px;background:#fff;box-shadow:0 8px 22px rgba(15,23,42,.045)}
-.admin-data-toolbar,.moderation-toolbar{min-height:60px;margin:0 0 12px;padding:8px 10px;border-color:#e2ebe6;border-radius:11px;background:#f8fbf9}
-.admin-search-field{min-height:42px;border-color:#d8e5de!important;border-radius:10px!important}
-.admin-table-wrap{border-color:#dfe9e4;border-radius:11px}
-.admin-table-wrap th{padding:11px 12px;color:#5d7167;background:#f3f7f5;font-size:10px;font-weight:700;letter-spacing:.55px}
-.admin-table-wrap td{padding:12px;color:#294238;font-size:12px}
-.admin-table-wrap tbody tr:hover{background:#f6fbf8}
-.admin-pagination{min-height:54px;margin:0;padding:12px 4px 2px;color:#647a70}
-.admin-pagination button{width:32px;height:32px;border-color:#dce8e2;border-radius:9px;color:var(--if-primary-dark)}
-.admin-pagination>div b{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#fff;background:var(--if-primary-dark)}
+/* Padrão compartilhado dos grids: cabeçalho, filtros, linhas e paginação. */
+.admin-table-panel:has(.admin-table-wrap){padding:0;overflow:hidden}
+.admin-grid-header{min-height:66px;padding:10px 14px;border-bottom:1px solid #e3ece7;display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff}
+.admin-grid-header>div:first-child{display:flex;align-items:baseline;gap:9px;min-width:max-content}
+.admin-grid-header h2{margin:0;color:var(--if-text);font-size:14px;font-weight:800}
+.admin-grid-header>div:first-child span{color:var(--if-text-secondary);font-size:11px}
+.admin-grid-header .admin-data-toolbar{min-height:0;margin:0;padding:0;border:0;background:transparent;justify-content:flex-end}
+.admin-grid-header .admin-search-field{width:300px;min-width:220px;flex:0 1 300px}
+.admin-grid-header .admin-toolbar-select{width:165px;flex:0 0 165px}
+.admin-grid-header .admin-toolbar-action,.admin-grid-header .admin-file-button,.admin-grid-header .primary-button{width:auto!important;min-width:auto!important;height:40px;min-height:40px;border-radius:10px!important;box-shadow:none}
+.admin-table-panel>.form-feedback{margin:10px 14px 0}
+.admin-table-panel .admin-table-wrap{border:0;border-radius:0}
+.admin-table-wrap table{min-width:720px}
+.admin-table-wrap th{height:40px;padding:8px 12px;color:#5f746a;background:#f5f8f6;border-bottom:1px solid #dfe9e4;font-size:10px;font-weight:700;letter-spacing:.45px}
+.admin-table-wrap td{height:44px;padding:9px 12px;border-bottom:1px solid #e7eeea;color:#314a3f;font-size:12px}
+.admin-table-wrap tbody tr:hover{background:#f5faf7}
+.admin-table-panel .admin-pagination{min-height:56px;margin:0;padding:10px 14px;border-top:1px solid #e3ece7;background:#fff}
+
+@media (max-width: 1100px) {
+  .admin-grid-header{align-items:stretch;flex-direction:column}
+  .admin-grid-header .admin-data-toolbar{width:100%;justify-content:stretch}
+  .admin-grid-header .admin-search-field{width:auto;flex:1}
+}
+
+@media (max-width: 760px) {
+  .admin-grid-header{padding:12px}
+  .admin-grid-header>div:first-child{width:100%}
+  .admin-grid-header .admin-data-toolbar{flex-wrap:wrap}
+  .admin-grid-header .admin-search-field{min-width:100%;flex-basis:100%}
+  .admin-grid-header .admin-toolbar-select{flex:1;width:auto}
+  .admin-grid-header .admin-toolbar-action,.admin-grid-header .admin-file-button,.admin-grid-header .primary-button{flex:1}
+  .admin-table-panel .admin-pagination{padding:12px}
+}
 
 
 @media (max-width: 420px) {

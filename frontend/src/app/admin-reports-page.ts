@@ -24,12 +24,13 @@ import { ToastService } from './services/toast.service';
       </header>
 
       <section class="admin-table-panel admin-data-panel">
-        <div class="admin-data-toolbar">
-          <label class="admin-search-field"><svg lucideSearch /><input [(ngModel)]="busca" placeholder="Buscar registros..." /></label>
-          <app-searchable-select class="admin-toolbar-select" [ngModel]="filtroStatus()" (ngModelChange)="setFiltro($event)" [items]="opcoesStatus" emptyLabel="Todos os status" searchPlaceholder="Pesquisar status..." />
-        </div>
-
-        <div class="admin-panel-header"><h2>Denúncias de profissionais</h2></div>
+        <header class="admin-grid-header">
+          <div><h2>Denúncias de profissionais</h2><span>{{ filtradas().length }} registros</span></div>
+          <div class="admin-data-toolbar">
+            <label class="admin-search-field"><svg lucideSearch /><input [(ngModel)]="busca" placeholder="Buscar registros..." /></label>
+            <app-searchable-select class="admin-toolbar-select" [ngModel]="filtroStatus()" (ngModelChange)="setFiltro($event)" [items]="opcoesStatus" emptyLabel="Todos os status" searchPlaceholder="Pesquisar status..." />
+          </div>
+        </header>
 
         <div class="admin-table-wrap">
           <table>

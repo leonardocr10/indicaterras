@@ -12,7 +12,6 @@ import {
   LucideLockKeyhole,
   LucideMessageCircle,
   LucidePhone,
-  LucideShieldAlert,
   LucideStar,
   LucideTriangleAlert,
 } from '@lucide/angular';
@@ -26,7 +25,7 @@ import { ToastService } from './services/toast.service';
   imports: [
     CommonModule, FormsModule, RouterLink,
     LucideArrowLeft, LucideCalendarDays, LucideCheckCircle2, LucideClock, LucideEye, LucideEyeOff,
-    LucideLockKeyhole, LucideMessageCircle, LucidePhone, LucideShieldAlert, LucideStar, LucideTriangleAlert,
+    LucideLockKeyhole, LucideMessageCircle, LucidePhone, LucideStar, LucideTriangleAlert,
   ],
   template: `
     <main class="admin-content admin-detail-content" *ngIf="detalhe() as denuncia; else carregando">
@@ -41,13 +40,12 @@ import { ToastService } from './services/toast.service';
           <a class="secondary-button" routerLink="/admin/denuncias"><svg lucideArrowLeft />Voltar</a>
           <button type="button" class="secondary-button report-button-analise" (click)="mudarStatus('Em análise')"><svg lucideClock />Marcar em análise</button>
           <button type="button" class="primary-button" (click)="mudarStatus('Resolvida')"><svg lucideCheckCircle2 />Resolver denúncia</button>
-          <button type="button" class="report-button-suspender" (click)="aplicar('suspend7')"><svg lucideShieldAlert />Suspender prestador</button>
         </div>
       </header>
 
       <div class="report-detail-grid">
         <div class="report-detail-main">
-          <section class="review-detail-card report-summary">
+          <section class="review-detail-card report-detail-summary">
             <h2>Resumo da denúncia</h2>
             <div class="report-people">
               <div class="report-person">
@@ -111,8 +109,13 @@ import { ToastService } from './services/toast.service';
             <div class="report-action-list">
               <button type="button" class="report-action warn" (click)="aplicar('warn')"><svg lucideTriangleAlert />Advertir profissional</button>
               <button type="button" class="report-action hide" (click)="aplicar('hide')"><svg lucideEyeOff />Ocultar do app</button>
-              <button type="button" class="report-action suspend" (click)="aplicar('suspend7')"><svg lucideCalendarDays />Suspender por 7 dias</button>
-              <button type="button" class="report-action suspend-strong" (click)="aplicar('suspend30')"><svg lucideCalendarDays />Suspender por 30 dias</button>
+              <div class="report-action-suspend">
+                <select [(ngModel)]="diasSuspensao" aria-label="Duração da suspensão">
+                  <option [ngValue]="7">7 dias</option>
+                  <option [ngValue]="30">30 dias</option>
+                </select>
+                <button type="button" class="report-action suspend" (click)="suspender()"><svg lucideCalendarDays />Suspender prestador</button>
+              </div>
               <button type="button" class="report-action block" (click)="aplicar('block')"><svg lucideLockKeyhole />Bloquear permanentemente</button>
               <button *ngIf="denuncia.professionalSummary.status !== 'Ativo no condomínio'" type="button" class="report-action restore" (click)="aplicar('restore')"><svg lucideCheckCircle2 />Reativar prestador no app</button>
             </div>
@@ -174,6 +177,7 @@ export class AdminReportDetailsPageComponent implements OnInit {
   protected readonly lightbox = signal('');
   protected parecer = '';
   protected notificar = true;
+  protected diasSuspensao = 7;
 
   ngOnInit() {
     this.carregar();
@@ -213,6 +217,10 @@ export class AdminReportDetailsPageComponent implements OnInit {
       },
       error: () => this.toast.error('Não foi possível atualizar a denúncia.'),
     });
+  }
+
+  protected suspender() {
+    this.aplicar(this.diasSuspensao === 30 ? 'suspend30' : 'suspend7');
   }
 
   protected aplicar(acao: string) {

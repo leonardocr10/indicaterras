@@ -50,18 +50,17 @@ import { ToastService } from './services/toast.service';
                 <td><strong>{{ linha.date }}</strong><small>{{ linha.time }}</small></td>
                 <td><span class="report-status" [class]="'report-status ' + classeDoStatus(linha.status)">{{ linha.status }}</span></td>
                 <td class="admin-actions report-actions">
-                  <button type="button" (click)="mudarStatus(linha, 'Em análise')">Analisar</button>
                   <a [routerLink]="['/admin/denuncias', linha.id]">Ver detalhes</a>
-                  <button type="button" (click)="mudarStatus(linha, 'Resolvida')">Resolver</button>
-                  <button type="button" class="danger-action" (click)="mudarStatus(linha, 'Ignorada')">Ignorar</button>
                   <div class="card-menu-wrapper">
                     <button type="button" class="more-button" [attr.aria-expanded]="menuAberto() === linha.id" aria-label="Mais ações" (click)="alternarMenu(linha.id, $event)"><svg lucideEllipsis /></button>
                     <div *ngIf="menuAberto() === linha.id" class="card-menu" role="menu">
+                      <button type="button" role="menuitem" (click)="mudarStatus(linha, 'Em análise')">Marcar em análise</button>
+                      <button type="button" role="menuitem" (click)="mudarStatus(linha, 'Resolvida')">Resolver denúncia</button>
+                      <button type="button" role="menuitem" (click)="mudarStatus(linha, 'Ignorada')">Ignorar denúncia</button>
                       <button type="button" role="menuitem" (click)="aplicar(linha, 'warn')">Advertir profissional</button>
                       <button type="button" role="menuitem" (click)="aplicar(linha, 'suspend7')">Suspender por 7 dias</button>
                       <button type="button" role="menuitem" (click)="aplicar(linha, 'suspend30')">Suspender por 30 dias</button>
                       <button type="button" role="menuitem" class="card-menu-danger" (click)="aplicar(linha, 'block')">Bloquear prestador</button>
-                      <a role="menuitem" [routerLink]="['/admin/denuncias', linha.id]">Histórico do prestador</a>
                     </div>
                   </div>
                 </td>

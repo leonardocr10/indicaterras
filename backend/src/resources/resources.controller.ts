@@ -150,13 +150,13 @@ export class ResourcesController {
   }
 
   @Post('me/professional/works')
-  addOwnProfessionalWorks(@Body('userId') userId: string, @Body('images') images: string[] = [], @Body('title') title = '') {
-    return { data: this.dataStoreService.addOwnProfessionalWorks(userId, images, title) };
+  async addOwnProfessionalWorks(@Body('userId') userId: string, @Body('images') images: string[] = [], @Body('title') title = '') {
+    return { data: await this.dataStoreService.addOwnProfessionalWorks(userId, images, title) };
   }
 
   @Delete('me/professional/works/:workId')
-  removeOwnProfessionalWork(@Param('workId') workId: string, @Query('userId') userId: string) {
-    return { data: this.dataStoreService.removeOwnProfessionalWork(userId, workId) };
+  async removeOwnProfessionalWork(@Param('workId') workId: string, @Query('userId') userId: string) {
+    return { data: await this.dataStoreService.removeOwnProfessionalWork(userId, workId) };
   }
 
   @Get('recommendations')

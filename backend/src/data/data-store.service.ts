@@ -34,7 +34,6 @@ export class DataStoreService implements OnModuleInit {
   private readonly reviewModerationHistory = new Map<string, Array<{ action: string; status: string; note: string; createdAt: string }>>();
   private readonly reviewImages = new Map<string, string[]>();
   private readonly professionalByUserId = new Map<string, string>();
-  private readonly professionalCovers = new Map<string, string>();
   private readonly professionalWorks = new Map<string, Array<{ id: string; image: string; title: string; createdAt: string }>>();
   private readonly reviewLikes = new Map<string, Set<string>>();
   private readonly reviewReplies = new Map<string, Array<{ id: string; userId: string; userName: string; comment: string; createdAt: string }>>();
@@ -83,7 +82,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   private async loadDatabaseData(): Promise<void> {
-    const [condominiums, categories, professionals, users, reviews, recommendations, favorites, reports, reviewImages, reviewLikes, reviewReplies] = await Promise.all([
+    const [condominiums, categories, professionals, users, reviews, recommendations, favorites, reports, reviewImages, reviewLikes, reviewReplies, professionalWorks] = await Promise.all([
       this.prisma.condominium.findMany({ orderBy: { name: 'asc' } }),
       this.prisma.category.findMany({ include: { services: { include: { aliases: true }, orderBy: { displayOrder: 'asc' } } }, orderBy: { displayOrder: 'asc' } }),
       this.prisma.professional.findMany({
@@ -103,14 +102,28 @@ export class DataStoreService implements OnModuleInit {
       this.prisma.reviewImage.findMany(),
       this.prisma.reviewLike.findMany(),
       this.prisma.reviewReply.findMany({ include: { user: true }, orderBy: { createdAt: 'asc' } }),
+      this.prisma.professionalImage.findMany({ where: { isCover: false }, orderBy: { displayOrder: 'asc' } }),
     ]);
 
     const condominiumSettings = await this.prisma.condominiumSettings.findFirst();
     if (condominiumSettings) {
       this.settings = {
         ...this.settings,
-        residentApproval: condominiumSettings.requireUserApproval,
+        systemName: condominiumSettings.systemName,
+        condominiumName: condominiumSettings.condominiumName,
+        phone: condominiumSettings.phone ?? '',
+        email: condominiumSettings.email ?? '',
+        primaryColor: condominiumSettings.primaryColor,
+        secondaryColor: condominiumSettings.secondaryColor,
+        selfRegistration: condominiumSettings.selfRegistration,
         requireUserApproval: condominiumSettings.requireUserApproval,
+        residentApproval: condominiumSettings.requireUserApproval,
+        professionalSelfRegistration: condominiumSettings.professionalSelfRegistration,
+        showBlock: condominiumSettings.showBlock,
+        allowRecommendations: condominiumSettings.allowRecommendations,
+        recommendationApproval: condominiumSettings.recommendationApproval,
+        allowReviews: condominiumSettings.allowReviews,
+        requireComment: condominiumSettings.requireComment,
       };
     }
 
@@ -271,6 +284,18 @@ export class DataStoreService implements OnModuleInit {
         createdAt: reply.createdAt.toISOString(),
       });
       this.reviewReplies.set(reply.reviewId, list);
+    }
+
+    this.professionalWorks.clear();
+    for (const work of professionalWorks) {
+      const list = this.professionalWorks.get(work.professionalId) ?? [];
+      list.push({
+        id: work.id,
+        image: work.url,
+        title: work.title ?? '',
+        createdAt: work.createdAt.toISOString(),
+      });
+      this.professionalWorks.set(work.professionalId, list);
     }
 
     this.reports.splice(
@@ -470,8 +495,6 @@ export class DataStoreService implements OnModuleInit {
     const allowed = Object.fromEntries(Object.entries(payload).filter(([key]) => editable.includes(key)));
     if (typeof allowed['coverImage'] === 'string') {
       const cover = String(allowed['coverImage']);
-      if (cover) this.professionalCovers.set(professionalId, cover);
-      else this.professionalCovers.delete(professionalId);
       const current = this.getProfessionalById(professionalId);
       if (current) current.coverImage = cover;
     }
@@ -484,27 +507,57 @@ export class DataStoreService implements OnModuleInit {
     return this.professionalWorks.get(professionalId) ?? [];
   }
 
-  addOwnProfessionalWorks(userId: string, images: string[], title = '') {
+  async addOwnProfessionalWorks(userId: string, images: string[], title = '') {
     const professionalId = this.professionalByUserId.get(userId);
     if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
     const clean = images.map((image) => String(image).trim()).filter(Boolean);
     if (!clean.length) throw new ConflictException('Envie ao menos uma foto do trabalho');
     const works = this.professionalWorks.get(professionalId) ?? [];
-    const created = clean.slice(0, 20).map((image, index) => ({
-      id: `work-${Date.now()}-${works.length + index + 1}`,
-      image,
-      title: String(title ?? '').trim(),
-      createdAt: new Date().toISOString(),
-    }));
+    const trimmedTitle = String(title ?? '').trim();
+    const toCreate = clean.slice(0, 20);
+
+    let created: Array<{ id: string; image: string; title: string; createdAt: string }>;
+    if (this.databaseAvailable) {
+      created = await Promise.all(
+        toCreate.map(async (image, index) => {
+          const record = await this.prisma.professionalImage.create({
+            data: {
+              professionalId,
+              url: image,
+              title: trimmedTitle || null,
+              isCover: false,
+              displayOrder: works.length + index + 1,
+            },
+          });
+          return {
+            id: record.id,
+            image: record.url,
+            title: record.title ?? '',
+            createdAt: record.createdAt.toISOString(),
+          };
+        }),
+      );
+    } else {
+      created = toCreate.map((image, index) => ({
+        id: `work-${Date.now()}-${works.length + index + 1}`,
+        image,
+        title: trimmedTitle,
+        createdAt: new Date().toISOString(),
+      }));
+    }
+
     this.professionalWorks.set(professionalId, [...created, ...works].slice(0, 60));
     return this.getProfessionalWorks(professionalId);
   }
 
-  removeOwnProfessionalWork(userId: string, workId: string) {
+  async removeOwnProfessionalWork(userId: string, workId: string) {
     const professionalId = this.professionalByUserId.get(userId);
     if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
     const works = this.professionalWorks.get(professionalId) ?? [];
     if (!works.some((work) => work.id === workId)) throw new NotFoundException('Trabalho não encontrado');
+    if (this.databaseAvailable) {
+      await this.prisma.professionalImage.delete({ where: { id: workId } }).catch(() => undefined);
+    }
     this.professionalWorks.set(professionalId, works.filter((work) => work.id !== workId));
     return this.getProfessionalWorks(professionalId);
   }
@@ -674,10 +727,26 @@ export class DataStoreService implements OnModuleInit {
     if (this.databaseAvailable) {
       const condominiumId = this.condominiums[0]?.id;
       if (condominiumId) {
+        const data = {
+          systemName: String(this.settings['systemName'] ?? 'Terras Alphas Indica'),
+          condominiumName: String(this.settings['condominiumName'] ?? 'Terras Alphas'),
+          phone: this.settings['phone'] === undefined || this.settings['phone'] === null ? null : String(this.settings['phone']) || null,
+          email: this.settings['email'] === undefined || this.settings['email'] === null ? null : String(this.settings['email']) || null,
+          primaryColor: String(this.settings['primaryColor'] ?? '#006538'),
+          secondaryColor: String(this.settings['secondaryColor'] ?? '#ffad00'),
+          selfRegistration: Boolean(this.settings['selfRegistration']),
+          requireUserApproval,
+          professionalSelfRegistration: Boolean(this.settings['professionalSelfRegistration']),
+          showBlock: Boolean(this.settings['showBlock']),
+          allowRecommendations: Boolean(this.settings['allowRecommendations']),
+          recommendationApproval: Boolean(this.settings['recommendationApproval']),
+          allowReviews: Boolean(this.settings['allowReviews']),
+          requireComment: Boolean(this.settings['requireComment']),
+        };
         await this.prisma.condominiumSettings.upsert({
           where: { condominiumId },
-          update: { requireUserApproval },
-          create: { condominiumId, requireUserApproval },
+          update: data,
+          create: { condominiumId, ...data },
         });
       }
     }

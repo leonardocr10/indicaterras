@@ -580,7 +580,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'professional-profile-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideArrowLeft, LucideShare2, LucideHeart, LucideMessageCircle, LucidePhone, LucideStar, LucideUsersRound, LucideCheckCircle2],
+  imports: [CommonModule, FormsModule, RouterLink, RatingStarsComponent, LucideArrowLeft, LucideShare2, LucideHeart, LucideMessageCircle, LucidePhone, LucideStar, LucideUsersRound, LucideCheckCircle2, LucideCircleAlert, LucideCamera, LucideX],
   template: `
     <section class="mobile-page profile-page" *ngIf="professional() as professional">
       <header class="profile-topbar">
@@ -645,10 +645,40 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
           <ng-template #noCommentPhotos><p class="profile-comments-empty">{{ commentCount() ? 'Os comentários deste profissional ainda não têm fotos.' : 'Este profissional ainda não recebeu comentários.' }}</p></ng-template>
           <a class="profile-rate-button" [routerLink]="['/app/profissional', professional.id, 'comentarios']" [queryParams]="{ avaliar: 1 }"><svg lucideStar />{{ commentCount() ? 'Avaliar este profissional' : 'Seja o primeiro a avaliar' }}</a>
         </section>
+        <button type="button" class="profile-report-link" (click)="openReport()"><svg lucideCircleAlert />Denunciar este profissional</button>
       </div>
       <button *ngIf="workLightbox()" class="comment-lightbox" type="button" (click)="workLightbox.set('')" aria-label="Fechar foto ampliada"><img [src]="workLightbox()" alt="Foto do trabalho ampliada" /></button>
       <div class="profile-cta-bar">
         <a [href]="'https://wa.me/' + professional.whatsapp" class="primary-button full-width profile-whatsapp"><svg lucideMessageCircle />Chamar no WhatsApp</a>
+      </div>
+
+      <div class="professional-filter-backdrop" *ngIf="reportOpen()" (click)="closeReport()">
+        <section class="professional-filter-sheet report-form-sheet" role="dialog" aria-modal="true" aria-label="Denunciar profissional" (click)="$event.stopPropagation()">
+          <header>
+            <div><span>Denúncia</span><h2>Denunciar {{ professional.name }}</h2></div>
+            <button type="button" aria-label="Fechar" (click)="closeReport()"><svg lucideX /></button>
+          </header>
+          <label class="report-form-field">
+            <span>Motivo</span>
+            <select [(ngModel)]="reportReason">
+              <option value="" disabled>Selecione o motivo</option>
+              <option *ngFor="let motivo of reportReasons" [value]="motivo">{{ motivo }}</option>
+            </select>
+          </label>
+          <label class="report-form-field">
+            <span>Descreva o que aconteceu</span>
+            <textarea [(ngModel)]="reportDescription" rows="4" maxlength="700" placeholder="Conte com detalhes o que aconteceu..."></textarea>
+          </label>
+          <label class="report-photo-button" aria-label="Anexar fotos">
+            <svg lucideCamera />Anexar fotos (opcional)
+            <input type="file" multiple accept="image/png,image/jpeg,image/webp" (change)="selectReportPhotos($event)" />
+          </label>
+          <div *ngIf="reportPhotoPreviews().length" class="comment-selected-photos">
+            <figure *ngFor="let preview of reportPhotoPreviews(); let index = index"><img [src]="preview" alt="Foto selecionada" /><button type="button" (click)="removeReportPhoto(index)" aria-label="Remover foto"><svg lucideX /></button></figure>
+          </div>
+          <button type="button" class="primary-button full-width" [disabled]="reportSubmitting() || !reportReason || !reportDescription.trim()" (click)="submitReport(professional.id)">{{ reportSubmitting() ? 'Enviando...' : 'Enviar denúncia' }}</button>
+          <p class="report-form-note">A administração do condomínio vai analisar sua denúncia. Ela não é pública.</p>
+        </section>
       </div>
     </section>
   `,
@@ -687,6 +717,14 @@ export class ProfessionalProfilePageComponent implements OnInit {
     const services = this.professional()?.services ?? [];
     return this.showAllServices() ? services : services.slice(0, this.serviceLimit);
   });
+
+  protected readonly reportOpen = signal(false);
+  protected readonly reportSubmitting = signal(false);
+  protected readonly reportPhotoPreviews = signal<string[]>([]);
+  protected reportReason = '';
+  protected reportDescription = '';
+  protected reportReasons = ['Atraso', 'Não compareceu', 'Serviço mal executado', 'Orçamento', 'Má conduta', 'Outro'];
+  private reportPhotos: File[] = [];
 
   protected assetUrl(path: string) {
     return this.api.assetUrl(path);
@@ -744,6 +782,50 @@ export class ProfessionalProfilePageComponent implements OnInit {
       },
       error: () => this.toast.error('Não foi possível atualizar os favoritos.'),
     });
+  }
+
+  protected openReport() {
+    this.reportReason = '';
+    this.reportDescription = '';
+    this.reportPhotos = [];
+    this.reportPhotoPreviews.set([]);
+    this.reportOpen.set(true);
+  }
+
+  protected closeReport() {
+    this.reportOpen.set(false);
+  }
+
+  protected selectReportPhotos(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const accepted = Array.from(input.files ?? []).filter((file) => file.type.startsWith('image/')).slice(0, 6 - this.reportPhotos.length);
+    this.reportPhotos = [...this.reportPhotos, ...accepted].slice(0, 6);
+    this.reportPhotoPreviews.set(this.reportPhotos.map((file) => URL.createObjectURL(file)));
+    input.value = '';
+  }
+
+  protected removeReportPhoto(index: number) {
+    this.reportPhotos = this.reportPhotos.filter((_file, position) => position !== index);
+    this.reportPhotoPreviews.set(this.reportPhotos.map((file) => URL.createObjectURL(file)));
+  }
+
+  protected submitReport(professionalId: string) {
+    if (!this.reportReason || !this.reportDescription.trim()) return;
+    this.reportSubmitting.set(true);
+    const upload$ = this.reportPhotos.length ? this.api.uploadReportPhotos(this.reportPhotos) : of([] as string[]);
+    upload$
+      .pipe(switchMap((images) => this.api.submitReport(professionalId, { reason: this.reportReason, description: this.reportDescription.trim(), images })))
+      .subscribe({
+        next: () => {
+          this.reportSubmitting.set(false);
+          this.reportOpen.set(false);
+          this.toast.success('Denúncia enviada para a administração do condomínio.');
+        },
+        error: () => {
+          this.reportSubmitting.set(false);
+          this.toast.error('Não foi possível enviar a denúncia. Tente novamente.');
+        },
+      });
   }
 
   async shareProfessional(professional: Professional): Promise<void> {

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
-import { ApiResponse, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, DashboardPayload, HomePayload, Professional, ProfessionalComment, ProfessionalWork, Review } from '../models';
+import { ApiResponse, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, DashboardPayload, HomePayload, PendingItem, Professional, ProfessionalComment, ProfessionalWork, Review } from '../models';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
@@ -90,6 +90,12 @@ export class ApiService {
   getDashboard() {
     return this.http
       .get<ApiResponse<DashboardPayload>>(`${this.baseUrl}/dashboard`)
+      .pipe(map((response) => response.data));
+  }
+
+  getPendingItems() {
+    return this.http
+      .get<ApiResponse<PendingItem[]>>(`${this.baseUrl}/admin-pending`)
       .pipe(map((response) => response.data));
   }
 
@@ -285,5 +291,20 @@ export class ApiService {
       userId: this.auth.user()?.id,
       condominiumId: this.auth.user()?.condominiumId,
     });
+  }
+
+  uploadReportPhotos(files: File[]) {
+    const body = new FormData();
+    files.forEach((file) => body.append('files', file));
+    return this.http.post<ApiResponse<string[]>>(`${this.baseUrl}/uploads/reports`, body).pipe(map((response) => response.data));
+  }
+
+  submitReport(professionalId: string, payload: { reason: string; description: string; images?: string[] }) {
+    return this.http
+      .post<ApiResponse<{ id: string }>>(`${this.baseUrl}/professionals/${professionalId}/reports`, {
+        ...payload,
+        userId: this.auth.user()?.id,
+      })
+      .pipe(map((response) => response.data));
   }
 }

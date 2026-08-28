@@ -923,3 +923,13 @@ label>span{display:block}
   .professional-filter-sheet app-searchable-select .select-trigger{font-size:16px}
   .auth-field input{line-height:24px}
 }
+
+.profile-report-link{margin:18px 0 4px;padding:11px 4px;border:0;display:flex;align-items:center;justify-content:center;gap:7px;color:#8a6516;background:transparent;font-size:12px;font-weight:600}
+.profile-report-link svg{width:16px;height:16px}
+.report-form-field{margin:0}
+.report-form-field select,.report-form-field textarea{width:100%;box-sizing:border-box}
+.report-form-field textarea{min-height:90px;padding:10px 12px;border:1px solid #d9dee6;border-radius:10px;color:#182235;font:500 13px/19px Inter,sans-serif;resize:vertical}
+.report-photo-button{min-height:44px;padding:0 14px;border:1px dashed #ccd6d1;border-radius:11px;display:flex;align-items:center;gap:8px;color:#425249;font-size:13px;font-weight:600;cursor:pointer}
+.report-photo-button svg{width:17px;height:17px;flex:0 0 auto}
+.report-photo-button input{display:none}
+.report-form-note{margin:0;color:#66706b;font-size:11px;line-height:16px;text-align:center}

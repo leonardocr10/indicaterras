@@ -173,6 +173,14 @@ export interface DashboardPayload {
   };
 }
 
+export interface PendingItem {
+  id: string;
+  type: 'NEW_RESIDENT' | 'REPORT';
+  title: string;
+  subtitle: string;
+  link: string;
+}
+
 export interface ApiResponse<T> {
   data: T;
 }

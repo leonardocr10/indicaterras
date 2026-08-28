@@ -1948,7 +1948,7 @@ export class AdminDashboardPageComponent implements OnInit {
 }
 
 type AdminResource = 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories';
-type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'password' | 'textarea' | 'checkbox'; select?: 'category' | 'condominium' | 'options'; options?: Array<{ value: string; label: string }>; hideForRoles?: string[] };
+type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' | 'password' | 'textarea' | 'checkbox'; select?: 'category' | 'condominium' | 'options'; options?: Array<{ value: string; label: string }>; hideForRoles?: string[]; wide?: boolean };
 
 @Component({
   selector: 'admin-crud-page',
@@ -1981,8 +1981,8 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
         <div *ngIf="editorOpen()" class="admin-modal-backdrop" (click)="closeEditor()">
           <form class="admin-editor admin-crud-modal" [formGroup]="form" (click)="$event.stopPropagation()" (ngSubmit)="save()">
             <header class="admin-modal-header"><div><h2>{{ editingId() ? 'Editar cadastro' : 'Novo cadastro' }}</h2><p>{{ editingId() ? 'Atualize os dados abaixo.' : 'Preencha os dados para criar um registro.' }}</p></div><button type="button" aria-label="Fechar" (click)="closeEditor()"><svg lucideX /></button></header>
-            <div class="admin-modal-fields">
-            <label *ngFor="let field of visibleFields()">{{ field.label }}
+            <div class="admin-modal-fields" [class.client-modal-fields]="resource() === 'residents'">
+            <label *ngFor="let field of visibleFields()" [class.field-wide]="field.wide">{{ field.label }}
               <textarea *ngIf="field.type === 'textarea'" [formControlName]="field.key"></textarea>
               <app-searchable-select *ngIf="field.select === 'category'" [formControlName]="field.key" [items]="categories()" valueKey="id" labelKey="name" emptyLabel="Selecione" searchPlaceholder="Pesquisar categoria..." />
               <app-searchable-select *ngIf="field.select === 'condominium'" [formControlName]="field.key" [items]="condominiums()" valueKey="id" labelKey="name" emptyLabel="Selecione" searchPlaceholder="Pesquisar condomínio..." />
@@ -2040,13 +2040,18 @@ export class AdminCrudPageComponent implements OnInit {
   protected serviceDraft: Partial<CategoryService> & { id?: string } = {};
   private selectedPhoto: File | null = null;
   protected readonly form = this.fb.nonNullable.group({
-    name: '', email: '', phone: '', address: '', city: '', state: 'MG', slug: '', icon: 'grid', categoryId: '', condominiumId: '', neighborhood: '',
+    name: '', email: '', phone: '', address: '', city: '', state: 'MG', slug: '', icon: 'grid', categoryId: '', condominiumId: '', neighborhood: '', zipCode: '', street: '', number: '', complement: '', passwordConfirmation: '',
     password: '', companyName: '', whatsapp: '', instagram: '', bio: '', avatar: '', coverImage: '', description: '', displayOrder: 0,
     role: 'RESIDENT', approvalStatus: 'APPROVED', emailVerified: true, active: true, block: '', unit: '',
   });
   private readonly configs: Record<AdminResource, { title: string; fields: AdminField[]; columns: string[]; columnKeys: string[] }> = {
     condominiums: { title: 'Condomínios', fields: [{ key: 'name', label: 'Nome' }, { key: 'slug', label: 'Slug' }, { key: 'address', label: 'Endereço' }, { key: 'city', label: 'Cidade' }, { key: 'state', label: 'Estado' }, { key: 'neighborhood', label: 'Bairro' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'email', label: 'E-mail', type: 'email' }], columns: ['Foto', 'Nome', 'Cidade', 'Estado', 'E-mail'], columnKeys: ['coverImage', 'name', 'city', 'state', 'email'] },
-    residents: { title: 'Clientes', fields: [{ key: 'name', label: 'Nome' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'password', label: 'Senha', type: 'password' }], columns: ['Nome', 'E-mail', 'Telefone', 'Perfil'], columnKeys: ['name', 'email', 'phone', 'role'] },
+    residents: { title: 'Clientes', fields: [
+      { key: 'name', label: 'Nome completo' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone (WhatsApp)', type: 'tel' },
+      { key: 'password', label: 'Senha', type: 'password' }, { key: 'passwordConfirmation', label: 'Confirmar senha', type: 'password' },
+      { key: 'zipCode', label: 'CEP' }, { key: 'street', label: 'Rua', wide: true }, { key: 'number', label: 'Número' }, { key: 'complement', label: 'Complemento' },
+      { key: 'neighborhood', label: 'Bairro', wide: true }, { key: 'city', label: 'Cidade' }, { key: 'state', label: 'Estado' },
+    ], columns: ['Nome', 'E-mail', 'Telefone', 'Perfil'], columnKeys: ['name', 'email', 'phone', 'role'] },
     users: { title: 'Usuários do sistema', fields: [
       { key: 'name', label: 'Nome completo' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone', type: 'tel' },
       { key: 'condominiumId', label: 'Condomínio', select: 'condominium' },
@@ -2124,7 +2129,7 @@ export class AdminCrudPageComponent implements OnInit {
     this.categoryServices.set([]);
     this.form.reset({
       name: '', email: '', phone: '', address: '', city: '', state: 'MG', slug: '', icon: 'grid', categoryId: '', condominiumId: this.condominiums()[0]?.id ?? '',
-      neighborhood: '', password: '', companyName: '', whatsapp: '', instagram: '', bio: '', avatar: '', coverImage: '', description: '', displayOrder: 0,
+      neighborhood: '', zipCode: '', street: '', number: '', complement: '', password: '', passwordConfirmation: '', companyName: '', whatsapp: '', instagram: '', bio: '', avatar: '', coverImage: '', description: '', displayOrder: 0,
       role: 'RESIDENT', approvalStatus: 'APPROVED', emailVerified: true, active: true, block: '', unit: '',
     });
     this.feedback.set('');
@@ -2166,6 +2171,16 @@ export class AdminCrudPageComponent implements OnInit {
     const rawRecord = raw as unknown as Record<string, unknown>;
     if (!raw.name.trim() || (this.resource() === 'professionals' && !this.selectedCategoryIds().length) || ((this.resource() === 'residents' || this.resource() === 'users') && !raw.email.trim())) {
       this.feedback.set('Preencha os campos obrigatórios antes de salvar.');
+      this.hasError.set(true);
+      return;
+    }
+    if (this.resource() === 'residents' && raw.password !== raw.passwordConfirmation) {
+      this.feedback.set('A confirmação da senha não confere.');
+      this.hasError.set(true);
+      return;
+    }
+    if (this.resource() === 'residents' && !this.editingId() && (!raw.password || !raw.zipCode.trim() || !raw.street.trim() || !raw.number.trim() || !raw.neighborhood.trim() || !raw.city.trim() || !raw.state.trim())) {
+      this.feedback.set('Preencha senha e todos os dados obrigatórios do endereço.');
       this.hasError.set(true);
       return;
     }

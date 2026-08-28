@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { of, switchMap } from 'rxjs';
+import { forkJoin, map, of, switchMap } from 'rxjs';
 import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
@@ -1999,12 +1999,34 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
               <p>São exibidos somente os serviços compatíveis com as categorias selecionadas.</p>
               <div *ngFor="let category of selectedCategories()" class="admin-service-group"><strong>{{ category.name }}</strong><div class="admin-check-grid"><label *ngFor="let service of category.services"><input type="checkbox" [checked]="selectedServiceIds().includes(service.id)" (change)="toggleService(service.id)" />{{ service.name }}</label></div></div>
             </section>
-            <section *ngIf="resource() === 'professionals' || resource() === 'condominiums'" class="professional-photo-field" [class.condominium-photo-field]="resource() === 'condominiums'">
-              <span>{{ resource() === 'condominiums' ? 'Foto do condomínio' : 'Foto do profissional' }}</span>
+            <section *ngIf="resource() === 'condominiums'" class="professional-photo-field condominium-photo-field">
+              <span>Foto do condomínio</span>
               <div class="professional-photo-preview" [class.empty]="!photoPreview()"><img [src]="photoPreview() || currentPhotoPlaceholder()" alt="Pré-visualização da foto" /></div>
               <label class="photo-upload-button">Selecionar foto<input type="file" accept="image/png,image/jpeg,image/webp" (change)="selectPhoto($event)" /></label>
               <button *ngIf="photoPreview()" type="button" class="photo-remove-button" (click)="removePhoto()">Remover foto</button>
               <small>PNG, JPG ou WebP. Tamanho máximo de 5 MB.</small>
+            </section>
+            <section *ngIf="resource() === 'professionals'" class="professional-media-fields">
+              <div class="professional-photo-field">
+                <span>Foto de perfil</span>
+                <div class="professional-photo-preview" [class.empty]="!photoPreview()"><img [src]="photoPreview() || photoPlaceholder('avatar')" alt="Pré-visualização da foto de perfil" /></div>
+                <label class="photo-upload-button">Selecionar foto<input type="file" accept="image/png,image/jpeg,image/webp" (change)="selectPhoto($event)" /></label>
+                <button *ngIf="photoPreview()" type="button" class="photo-remove-button" (click)="removePhoto()">Remover foto</button>
+                <small>PNG, JPG ou WebP. Máximo de 5 MB.</small>
+              </div>
+              <div class="professional-photo-field professional-cover-field">
+                <span>Foto de capa do aplicativo</span>
+                <div class="professional-photo-preview" [class.empty]="!coverPreview()"><img [src]="coverPreview() || photoPlaceholder('coverImage')" alt="Pré-visualização da foto de capa" /></div>
+                <label class="photo-upload-button">Selecionar capa<input type="file" accept="image/png,image/jpeg,image/webp" (change)="selectCover($event)" /></label>
+                <button *ngIf="coverPreview()" type="button" class="photo-remove-button" (click)="removeCover()">Remover capa</button>
+                <small>Exibida no topo do perfil. PNG, JPG ou WebP, até 5 MB.</small>
+              </div>
+              <div class="professional-portfolio-field">
+                <div><strong>Portfólio de trabalhos</strong><small>Adicione até 10 fotos que serão exibidas no perfil do profissional.</small></div>
+                <div *ngIf="portfolioPreviews().length" class="professional-portfolio-previews"><figure *ngFor="let preview of portfolioPreviews(); let index = index"><img [src]="preview" [alt]="'Foto do portfólio ' + (index + 1)" /><button type="button" (click)="removePortfolioPhoto(index)" [attr.aria-label]="'Remover foto ' + (index + 1)"><svg lucideX /></button></figure></div>
+                <label class="photo-upload-button">Adicionar fotos<input type="file" multiple accept="image/png,image/jpeg,image/webp" (change)="selectPortfolioPhotos($event)" /></label>
+                <small>PNG, JPG ou WebP. Até 10 MB por foto.</small>
+              </div>
             </section>
             <div class="admin-editor-actions"><button type="button" class="secondary-button" (click)="closeEditor()">Cancelar</button><button type="submit" class="primary-button" [disabled]="saving()">{{ saving() ? 'Salvando...' : editingId() ? 'Salvar alterações' : 'Criar cadastro' }}</button></div>
           </form>
@@ -2026,6 +2048,8 @@ export class AdminCrudPageComponent implements OnInit {
   protected readonly hasError = signal(false);
   protected readonly saving = signal(false);
   protected readonly photoPreview = signal('');
+  protected readonly coverPreview = signal('');
+  protected readonly portfolioPreviews = signal<string[]>([]);
   protected readonly selectedCategoryIds = signal<string[]>([]);
   protected readonly selectedServiceIds = signal<string[]>([]);
   protected readonly categoryServices = signal<CategoryService[]>([]);
@@ -2039,6 +2063,8 @@ export class AdminCrudPageComponent implements OnInit {
   protected serviceAliasesText = '';
   protected serviceDraft: Partial<CategoryService> & { id?: string } = {};
   private selectedPhoto: File | null = null;
+  private selectedCover: File | null = null;
+  private selectedPortfolioPhotos: File[] = [];
   protected readonly form = this.fb.nonNullable.group({
     name: '', email: '', phone: '', address: '', city: '', state: 'MG', slug: '', icon: 'grid', categoryId: '', condominiumId: '', neighborhood: '', zipCode: '', street: '', number: '', complement: '', passwordConfirmation: '',
     password: '', companyName: '', whatsapp: '', instagram: '', bio: '', avatar: '', coverImage: '', description: '', displayOrder: 0,
@@ -2123,7 +2149,11 @@ export class AdminCrudPageComponent implements OnInit {
   newRecord(openEditor = true) {
     this.editingId.set('');
     this.selectedPhoto = null;
+    this.selectedCover = null;
+    this.selectedPortfolioPhotos = [];
     this.photoPreview.set('');
+    this.coverPreview.set('');
+    this.portfolioPreviews.set([]);
     this.selectedCategoryIds.set([]);
     this.selectedServiceIds.set([]);
     this.categoryServices.set([]);
@@ -2141,8 +2171,12 @@ export class AdminCrudPageComponent implements OnInit {
     this.editingId.set(String(record['id']));
     this.form.patchValue(record as never);
     this.selectedPhoto = null;
+    this.selectedCover = null;
+    this.selectedPortfolioPhotos = [];
     const photoKey = this.resource() === 'condominiums' ? 'coverImage' : 'avatar';
     this.photoPreview.set(this.api.assetUrl(String(record[photoKey] ?? '')));
+    this.coverPreview.set(this.resource() === 'professionals' ? this.api.assetUrl(String(record['coverImage'] ?? '')) : '');
+    this.portfolioPreviews.set([]);
     const categoryIds = Array.isArray(record['categoryIds']) ? record['categoryIds'].map(String) : record['categoryId'] ? [String(record['categoryId'])] : [];
     const serviceIds = Array.isArray(record['serviceIds']) ? record['serviceIds'].map(String) : [];
     this.selectedCategoryIds.set(categoryIds);
@@ -2185,10 +2219,20 @@ export class AdminCrudPageComponent implements OnInit {
       return;
     }
     const payload: Record<string, unknown> = Object.fromEntries(this.visibleFields().map((field) => [field.key, rawRecord[field.key]]));
-    if (this.resource() === 'professionals') payload['avatar'] = raw.avatar;
+    if (this.resource() === 'professionals') { payload['avatar'] = raw.avatar; payload['coverImage'] = raw.coverImage; }
     if (this.resource() === 'condominiums') payload['coverImage'] = raw.coverImage;
     if (this.resource() === 'professionals') { payload['categoryIds'] = this.selectedCategoryIds(); payload['serviceIds'] = this.selectedServiceIds(); }
     this.saving.set(true);
+    if (this.resource() === 'professionals') {
+      const avatar$ = this.selectedPhoto ? this.api.uploadProfessionalPhoto(this.selectedPhoto).pipe(map(({ url }) => url)) : of(String(raw.avatar ?? ''));
+      const cover$ = this.selectedCover ? this.api.uploadProfessionalPhoto(this.selectedCover).pipe(map(({ url }) => url)) : of(String(raw.coverImage ?? ''));
+      const portfolio$ = this.selectedPortfolioPhotos.length ? this.api.uploadWorkPhotos(this.selectedPortfolioPhotos).pipe(map((images) => images)) : of([] as string[]);
+      forkJoin({ avatar: avatar$, cover: cover$, portfolio: portfolio$ }).subscribe({
+        next: ({ avatar, cover, portfolio }) => { payload['avatar'] = avatar; payload['coverImage'] = cover; payload['portfolioImages'] = portfolio; this.persist(payload); },
+        error: () => { this.saving.set(false); this.feedback.set('Não foi possível enviar as imagens. Verifique o formato e o tamanho dos arquivos.'); this.hasError.set(true); },
+      });
+      return;
+    }
     if (this.selectedPhoto) {
       const upload = this.resource() === 'condominiums' ? this.api.uploadCondominiumPhoto(this.selectedPhoto) : this.api.uploadProfessionalPhoto(this.selectedPhoto);
       upload.subscribe({
@@ -2221,6 +2265,49 @@ export class AdminCrudPageComponent implements OnInit {
     this.photoPreview.set('');
     if (this.resource() === 'condominiums') this.form.controls.coverImage.setValue('');
     else this.form.controls.avatar.setValue('');
+  }
+
+  selectCover(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      this.feedback.set('A capa deve ser PNG, JPG ou WebP e ter no máximo 5 MB.');
+      this.hasError.set(true);
+      return;
+    }
+    this.selectedCover = file;
+    this.coverPreview.set(URL.createObjectURL(file));
+    this.feedback.set('');
+    this.hasError.set(false);
+  }
+
+  removeCover() {
+    this.selectedCover = null;
+    this.coverPreview.set('');
+    this.form.controls.coverImage.setValue('');
+  }
+
+  selectPortfolioPhotos(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    const valid = files.filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type) && file.size <= 10 * 1024 * 1024);
+    if (!valid.length) {
+      this.feedback.set('Selecione fotos PNG, JPG ou WebP de até 10 MB.');
+      this.hasError.set(true);
+      return;
+    }
+    this.selectedPortfolioPhotos = [...this.selectedPortfolioPhotos, ...valid].slice(0, 10);
+    this.portfolioPreviews.set(this.selectedPortfolioPhotos.map((file) => URL.createObjectURL(file)));
+    this.feedback.set('');
+    this.hasError.set(false);
+  }
+
+  removePortfolioPhoto(index: number) {
+    this.selectedPortfolioPhotos = this.selectedPortfolioPhotos.filter((_file, position) => position !== index);
+    this.portfolioPreviews.set(this.selectedPortfolioPhotos.map((file) => URL.createObjectURL(file)));
   }
 
   toggleCategory(id: string) {

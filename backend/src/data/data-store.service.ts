@@ -848,6 +848,7 @@ export class DataStoreService implements OnModuleInit {
     } else if (resource === 'professionals') {
       const categoryIds = this.stringArray(payload.categoryIds, payload.categoryId);
       const serviceIds = await this.validServiceIds(categoryIds, this.stringArray(payload.serviceIds));
+      const portfolioImages = this.stringArray(payload.portfolioImages).slice(0, 10);
       if (!categoryIds.length) throw new NotFoundException('Selecione pelo menos uma categoria');
       const record = await this.prisma.professional.create({
         data: {
@@ -865,6 +866,11 @@ export class DataStoreService implements OnModuleInit {
           professionalServices: { create: serviceIds.map((categoryServiceId) => ({ categoryServiceId })) },
         },
       });
+      if (portfolioImages.length) {
+        await this.prisma.professionalImage.createMany({
+          data: portfolioImages.map((url, displayOrder) => ({ professionalId: record.id, url, displayOrder: displayOrder + 1 })),
+        });
+      }
       id = record.id;
     } else {
       const password = String(payload.password || '123456');
@@ -932,6 +938,7 @@ export class DataStoreService implements OnModuleInit {
     } else if (resource === 'professionals') {
       const categoryIds = this.stringArray(payload.categoryIds, payload.categoryId);
       const serviceIds = await this.validServiceIds(categoryIds, this.stringArray(payload.serviceIds));
+      const portfolioImages = this.stringArray(payload.portfolioImages).slice(0, 10);
       await this.prisma.$transaction(async (transaction) => {
         await transaction.professional.update({
           where: { id },
@@ -945,6 +952,7 @@ export class DataStoreService implements OnModuleInit {
             city: String(payload.city ?? '') || undefined,
             neighborhood: String(payload.neighborhood ?? '') || undefined,
             avatar: String(payload.avatar ?? '') || null,
+            coverImage: payload.coverImage === undefined ? undefined : String(payload.coverImage) || null,
           },
         });
         if (categoryIds.length) {
@@ -952,6 +960,12 @@ export class DataStoreService implements OnModuleInit {
           await transaction.professionalCategory.createMany({ data: categoryIds.map((categoryId) => ({ professionalId: id, categoryId })) });
           await transaction.professionalService.deleteMany({ where: { professionalId: id } });
           if (serviceIds.length) await transaction.professionalService.createMany({ data: serviceIds.map((categoryServiceId) => ({ professionalId: id, categoryServiceId })) });
+        }
+        if (portfolioImages.length) {
+          const count = await transaction.professionalImage.count({ where: { professionalId: id, isCover: false } });
+          await transaction.professionalImage.createMany({
+            data: portfolioImages.map((url, index) => ({ professionalId: id, url, displayOrder: count + index + 1 })),
+          });
         }
       });
     } else {

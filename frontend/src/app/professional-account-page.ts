@@ -270,7 +270,7 @@ export class ProfessionalAccountPageComponent implements OnInit {
     }
     this.saving.set(true);
     const photo$ = this.selectedPhoto ? this.api.uploadProfessionalPhoto(this.selectedPhoto).pipe(map((result) => result.url)) : of('');
-    const cover$ = this.selectedCover ? this.api.uploadCondominiumPhoto(this.selectedCover).pipe(map((result) => result.url)) : of('');
+    const cover$ = this.selectedCover ? this.api.uploadProfessionalPhoto(this.selectedCover).pipe(map((result) => result.url)) : of('');
     forkJoin([photo$, cover$]).subscribe({
       next: ([avatar, cover]) => this.persist(avatar, cover),
       error: () => {

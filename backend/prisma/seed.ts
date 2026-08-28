@@ -162,23 +162,23 @@ async function main() {
     const category = categories.find((item) => item.name === categoryName);
     if (!category) continue;
 
-    const professional = await prisma.professional.create({
-      data: {
-        name,
-        phone: '(34) 99999-3333',
-        whatsapp: '5534999993333',
-        city: 'Uberlandia',
-        neighborhood: 'Gavea',
-        bio: `${name} atende com qualidade, seguranca e pontualidade.`,
-        companyName: name,
-      },
-    });
+    const professional = await prisma.professional.findFirst({ where: { name }, orderBy: { createdAt: 'asc' } })
+      ?? await prisma.professional.create({
+        data: {
+          name,
+          phone: '(34) 99999-3333',
+          whatsapp: '5534999993333',
+          city: 'Uberlandia',
+          neighborhood: 'Gavea',
+          bio: `${name} atende com qualidade, seguranca e pontualidade.`,
+          companyName: name,
+        },
+      });
 
-    await prisma.professionalCategory.create({
-      data: {
-        professionalId: professional.id,
-        categoryId: category.id,
-      },
+    await prisma.professionalCategory.upsert({
+      where: { professionalId_categoryId: { professionalId: professional.id, categoryId: category.id } },
+      update: {},
+      create: { professionalId: professional.id, categoryId: category.id },
     });
 
     const linkedServices = servicesByCategory.get(categoryName)?.slice(0, 4) ?? [];
@@ -189,24 +189,13 @@ async function main() {
       });
     }
 
-    await prisma.recommendation.create({
-      data: {
-        condominiumId: condominium.id,
-        userId: resident.id,
-        professionalId: professional.id,
-        comment: 'Profissional muito recomendado pelos moradores.',
-        recommended: true,
-      },
+    const recommendation = await prisma.recommendation.findFirst({ where: { condominiumId: condominium.id, userId: resident.id, professionalId: professional.id } });
+    if (!recommendation) await prisma.recommendation.create({
+      data: { condominiumId: condominium.id, userId: resident.id, professionalId: professional.id, comment: 'Profissional muito recomendado pelos moradores.', recommended: true },
     });
-
-    await prisma.review.create({
-      data: {
-        condominiumId: condominium.id,
-        userId: resident.id,
-        professionalId: professional.id,
-        rating: 5,
-        comment: 'Excelente atendimento e execucao do servico.',
-      },
+    const review = await prisma.review.findFirst({ where: { condominiumId: condominium.id, userId: resident.id, professionalId: professional.id } });
+    if (!review) await prisma.review.create({
+      data: { condominiumId: condominium.id, userId: resident.id, professionalId: professional.id, rating: 5, comment: 'Excelente atendimento e execucao do servico.' },
     });
   }
 }

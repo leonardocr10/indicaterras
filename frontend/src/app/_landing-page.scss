@@ -1286,7 +1286,8 @@
 
 .landing-final {
   margin-top: 10px;
-  margin-bottom: -44px;
+  /* Keep the call to action fully visible above the footer. */
+  margin-bottom: 0;
   padding: 34px 40px;
   border-radius: 32px;
   display: flex;
@@ -1319,7 +1320,7 @@
 
 .landing-footer {
   width: 100%;
-  padding: 108px max(24px, calc((100% - 1200px) / 2)) 36px;
+  padding: 56px max(24px, calc((100% - 1200px) / 2)) 36px;
   display: grid;
   grid-template-columns: 1.5fr repeat(4, minmax(0, 1fr));
   gap: 34px;

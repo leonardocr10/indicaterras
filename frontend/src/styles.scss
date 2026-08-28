@@ -101,7 +101,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .home-topbar{height:91px;padding:18px 21px 31px;background:radial-gradient(circle at 65% 50%,#075e3a,#004c32 68%)}
 .home-topbar strong{font-family:var(--font-family);font-size:22px;font-weight:700;line-height:28px;letter-spacing:0}
 .home-topbar button{font-size:28px}.home-topbar button svg{width:25px;height:25px}
-.home-surface{margin-top:-31px;padding:20px 21px 18px;border-radius:18px 18px 0 0}
+.home-surface{margin-top:-16px;padding:20px 21px 18px;border-radius:18px 18px 0 0}
 .home-brand-logo{width:142px;height:66px;margin:0 auto 11px;display:block;object-fit:contain}
 .home-surface h1{margin:0 0 18px;font-family:var(--font-family);font-size:24px;font-weight:700;line-height:30px;letter-spacing:0}
 .home-search{height:49px;padding:0 12px;border-width:1px;border-radius:7px;font-size:22px}
@@ -752,7 +752,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .verification-warning p{margin:5px 0 0;color:#8a6c2c;font-size:11px;line-height:16px}
 
 /* Home no modelo do mockup: saudação com local, busca com filtro, atalhos e selo */
-.home-topbar{height:auto;min-height:96px;padding:16px 20px 34px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.home-topbar{height:auto;min-height:80px;padding:16px 20px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .home-topbar-title{min-width:0;flex:1}
 .home-topbar-title strong{display:block;color:#fff;font:700 17px/23px var(--font-family)}
 .home-topbar-title small{margin-top:3px;display:flex;align-items:center;gap:4px;color:#cbe7d8;font-size:11px;line-height:15px}

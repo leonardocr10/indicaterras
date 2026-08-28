@@ -193,13 +193,18 @@ export class LoginPageComponent {
 @Component({
   selector: 'register-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, SearchableSelectComponent, PhoneMaskDirective, LucideArrowLeft, LucideBriefcaseBusiness, LucideEye, LucideEyeOff, LucideLockKeyhole, LucideMail, LucideMapPin, LucidePhone, LucideSearch],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, SearchableSelectComponent, PhoneMaskDirective, LucideArrowLeft, LucideBriefcaseBusiness, LucideChevronLeft, LucideChevronRight, LucideEye, LucideEyeOff, LucideLockKeyhole, LucideMail, LucideMapPin, LucidePhone, LucideSearch],
   template: `
     <section class="auth-page register-page">
       <div class="auth-card wide register-card">
-        <a routerLink="/" class="back-link" aria-label="Voltar para o início"><svg lucideArrowLeft /></a>
-        <img class="auth-logo" [src]="brand.assets.logoPrimary" [alt]="brand.name" />
-        <p class="register-subtitle">{{ isProfessional() ? 'Cadastre seu perfil e comece a receber propostas.' : 'Crie sua conta e encontre quem resolve.' }}</p>
+        <header class="register-header">
+          <a routerLink="/" class="back-link" aria-label="Voltar para o início"><svg lucideArrowLeft /></a>
+          <img class="auth-logo" [src]="brand.assets.logoPrimary" [alt]="brand.name" />
+          <div>
+            <h1>Crie sua conta</h1>
+            <p>{{ isProfessional() ? 'Monte seu perfil e receba propostas.' : 'Encontre profissionais para o que precisar.' }}</p>
+          </div>
+        </header>
 
         <div *ngIf="professionalSignupEnabled()" class="account-type-switch" role="radiogroup" aria-label="Tipo de conta">
           <button type="button" role="radio" [attr.aria-checked]="!isProfessional()" [class.active]="!isProfessional()" (click)="setAccountType('resident')"><svg lucideSearch />Quero contratar</button>
@@ -207,20 +212,29 @@ export class LoginPageComponent {
         </div>
 
         <form [formGroup]="form" (ngSubmit)="submit()">
-          <span class="register-legend">Seus dados</span>
-          <label class="auth-field">Nome completo
-            <span><svg lucideUserRound /><input placeholder="Como você se chama" formControlName="name" /></span>
-          </label>
-          <div class="grid-2">
-            <label class="auth-field">E-mail
-              <span><svg lucideMail /><input type="email" placeholder="seu@email.com" formControlName="email" /></span>
-            </label>
-            <label class="auth-field">Telefone (WhatsApp)
-              <span><svg lucidePhone /><input type="tel" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000" formControlName="phone" appPhoneMask /></span>
-            </label>
+          <div class="register-progress" aria-label="Progresso do cadastro">
+            <span [class.active]="registrationStep() >= 1"></span>
+            <span [class.active]="registrationStep() >= 2"></span>
+            <span [class.active]="registrationStep() >= 3"></span>
           </div>
+          <p class="register-step-label">Etapa {{ registrationStep() }} de 3</p>
 
-          <ng-container *ngIf="!isProfessional()">
+          <ng-container *ngIf="registrationStep() === 1">
+            <span class="register-legend">Seus dados</span>
+            <label class="auth-field">Nome completo
+              <span><svg lucideUserRound /><input placeholder="Como você se chama" formControlName="name" autocomplete="name" /></span>
+            </label>
+            <div class="grid-2">
+              <label class="auth-field">E-mail
+                <span><svg lucideMail /><input type="email" placeholder="seu@email.com" formControlName="email" autocomplete="email" /></span>
+              </label>
+              <label class="auth-field">WhatsApp
+                <span><svg lucidePhone /><input type="tel" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000" formControlName="phone" autocomplete="tel" appPhoneMask /></span>
+              </label>
+            </div>
+          </ng-container>
+
+          <ng-container *ngIf="registrationStep() === 2 && !isProfessional()">
             <span class="register-legend">Seu endereço</span>
             <label class="auth-field">CEP
               <span><svg lucideMapPin /><input placeholder="00000-000" formControlName="zipCode" inputmode="numeric" maxlength="9" (input)="onZipCodeInput($event)" /></span>
@@ -240,7 +254,7 @@ export class LoginPageComponent {
             </div>
           </ng-container>
 
-          <ng-container *ngIf="isProfessional()">
+          <ng-container *ngIf="registrationStep() === 2 && isProfessional()">
             <span class="register-legend">Seu trabalho</span>
             <label class="auth-field">Empresa
               <span><svg lucideBriefcaseBusiness /><input placeholder="Nome da empresa (opcional)" formControlName="companyName" /></span>
@@ -262,18 +276,25 @@ export class LoginPageComponent {
             </label>
           </ng-container>
 
-          <span class="register-legend">Segurança</span>
-          <label class="auth-field">Senha
-            <span><svg lucideLockKeyhole /><input [type]="showPassword() ? 'text' : 'password'" placeholder="Crie uma senha" formControlName="password" /><button type="button" aria-label="Mostrar ou ocultar senha" (click)="showPassword.set(!showPassword())"><svg *ngIf="!showPassword()" lucideEye /><svg *ngIf="showPassword()" lucideEyeOff /></button></span>
-          </label>
-          <div class="password-strength" *ngIf="form.controls.password.value" [attr.data-level]="passwordScore()">
-            <div class="password-strength-bar" role="progressbar" [attr.aria-valuenow]="passwordScore()" aria-valuemin="0" aria-valuemax="4" [attr.aria-label]="'Força da senha: ' + passwordLabel()">
-              <i *ngFor="let step of [1, 2, 3, 4]" [class.on]="passwordScore() >= step"></i>
+          <ng-container *ngIf="registrationStep() === 3">
+            <span class="register-legend">Segurança</span>
+            <p class="register-security-copy">Crie uma senha segura para proteger sua conta.</p>
+            <label class="auth-field">Senha
+              <span><svg lucideLockKeyhole /><input [type]="showPassword() ? 'text' : 'password'" placeholder="Crie uma senha" formControlName="password" autocomplete="new-password" /><button type="button" aria-label="Mostrar ou ocultar senha" (click)="showPassword.set(!showPassword())"><svg *ngIf="!showPassword()" lucideEye /><svg *ngIf="showPassword()" lucideEyeOff /></button></span>
+            </label>
+            <div class="password-strength" *ngIf="form.controls.password.value" [attr.data-level]="passwordScore()">
+              <div class="password-strength-bar" role="progressbar" [attr.aria-valuenow]="passwordScore()" aria-valuemin="0" aria-valuemax="4" [attr.aria-label]="'Força da senha: ' + passwordLabel()">
+                <i *ngFor="let step of [1, 2, 3, 4]" [class.on]="passwordScore() >= step"></i>
+              </div>
+              <small><b>{{ passwordLabel() }}</b>{{ passwordHint() ? ' · ' + passwordHint() : '' }}</small>
             </div>
-            <small><b>{{ passwordLabel() }}</b>{{ passwordHint() ? ' · ' + passwordHint() : '' }}</small>
-          </div>
+          </ng-container>
 
-          <button class="primary-button" type="submit">{{ isProfessional() ? 'Criar conta de profissional' : 'Criar conta' }}</button>
+          <div class="register-actions">
+            <button *ngIf="registrationStep() > 1" class="secondary-button register-previous" type="button" (click)="previousStep()"><svg lucideChevronLeft />Voltar</button>
+            <button *ngIf="registrationStep() < 3" class="primary-button" type="button" (click)="nextStep()">Continuar<svg lucideChevronRight /></button>
+            <button *ngIf="registrationStep() === 3" class="primary-button" type="submit">{{ isProfessional() ? 'Criar conta de profissional' : 'Criar conta' }}</button>
+          </div>
           <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
         </form>
         <p class="register-login-link">Já tem conta? <a routerLink="/login">Entrar</a></p>
@@ -294,6 +315,7 @@ export class RegisterPageComponent implements OnInit {
   protected readonly activeCategories = computed(() => this.categories().filter((category) => category.active));
   protected readonly professionalSignupEnabled = signal(false);
   protected readonly isProfessional = signal(false);
+  protected readonly registrationStep = signal(1);
   protected readonly showPassword = signal(false);
   protected readonly password = signal('');
   protected readonly feedback = signal('');
@@ -373,6 +395,7 @@ export class RegisterPageComponent implements OnInit {
   setAccountType(type: 'resident' | 'professional') {
     const professional = type === 'professional';
     this.isProfessional.set(professional);
+    this.registrationStep.set(1);
     this.feedback.set('');
     this.hasError.set(false);
     const { categoryId, zipCode, street, number, state } = this.form.controls;
@@ -387,6 +410,30 @@ export class RegisterPageComponent implements OnInit {
       enderecoCompleto.forEach((control) => control.setValidators(Validators.required));
     }
     [categoryId, ...enderecoCompleto].forEach((control) => control.updateValueAndValidity());
+  }
+
+  protected previousStep() {
+    this.feedback.set('');
+    this.hasError.set(false);
+    this.registrationStep.update((step) => Math.max(1, step - 1));
+  }
+
+  protected nextStep() {
+    const fields = this.registrationStep() === 1
+      ? ['name', 'email', 'phone']
+      : this.isProfessional()
+        ? ['categoryId', 'city', 'neighborhood']
+        : ['zipCode', 'street', 'number', 'neighborhood', 'city', 'state'];
+    const controls = fields.map((field) => this.form.controls[field as keyof typeof this.form.controls]);
+    controls.forEach((control) => control.markAsTouched());
+    if (controls.some((control) => control.invalid)) {
+      this.feedback.set('Confira os campos obrigatórios antes de continuar.');
+      this.hasError.set(true);
+      return;
+    }
+    this.feedback.set('');
+    this.hasError.set(false);
+    this.registrationStep.update((step) => Math.min(3, step + 1));
   }
 
   protected onZipCodeInput(event: Event) {

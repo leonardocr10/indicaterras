@@ -1331,3 +1331,10 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
 .nearby-without-location{margin:14px 3px 0;color:#5b7183;font-size:11px;line-height:16px}
 .location-sheet-hint{margin:2px 0 0;color:#5b7183;font-size:11px;line-height:16px}
 .professional-card .distance-badge{color:var(--if-primary-dark)}
+.register-done{display:grid;justify-items:center;gap:9px;padding:26px 20px 22px;text-align:center}
+.register-done>span{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;color:#fff;background:var(--if-primary-dark)}
+.register-done>span svg{width:30px;height:30px}
+.register-done h2{margin:6px 0 0;color:#13283d;font-size:20px}
+.register-done p{margin:0;color:#38566a;font-size:13px;line-height:19px}
+.register-done .register-done-note{color:#5b7183;font-size:12px;line-height:18px}
+.register-done a{margin-top:10px}

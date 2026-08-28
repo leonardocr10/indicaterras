@@ -196,7 +196,7 @@ export class LoginPageComponent {
 @Component({
   selector: 'register-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, SearchableSelectComponent, PhoneMaskDirective, LucideArrowLeft, LucideBriefcaseBusiness, LucideChevronLeft, LucideChevronRight, LucideEye, LucideEyeOff, LucideLockKeyhole, LucideMail, LucideMapPin, LucidePhone, LucideSearch, LucideUserRound],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, SearchableSelectComponent, PhoneMaskDirective, LucideArrowLeft, LucideBriefcaseBusiness, LucideChevronLeft, LucideChevronRight, LucideEye, LucideEyeOff, LucideLockKeyhole, LucideMail, LucideMapPin, LucidePhone, LucideSearch, LucideUserRound, LucideCheckCircle2],
   template: `
     <section class="auth-page register-page">
       <div class="auth-card wide register-card">
@@ -211,6 +211,18 @@ export class LoginPageComponent {
           </div>
         </header>
 
+        <!-- Confirmação ocupa a tela inteira: antes era uma linha de texto sob o
+             botão, então a pessoa não percebia que deu certo, tentava de novo e
+             recebia "e-mail já cadastrado" como se tivesse falhado. -->
+        <section class="register-done" *ngIf="registeredEmail() as email">
+          <span><svg lucideCheckCircle2 aria-hidden="true" /></span>
+          <h2>Cadastro enviado!</h2>
+          <p>Criamos sua conta com o e-mail <strong>{{ email }}</strong>.</p>
+          <p class="register-done-note">Ela está aguardando a aprovação da administração. Assim que for aprovada, você poderá entrar no aplicativo.</p>
+          <a class="primary-button full-width" routerLink="/login">Ir para o login</a>
+        </section>
+
+        <ng-container *ngIf="!registeredEmail()">
         <div *ngIf="professionalSignupEnabled()" class="account-type-switch" role="radiogroup" aria-label="Tipo de conta">
           <button type="button" role="radio" [attr.aria-checked]="!isProfessional()" [class.active]="!isProfessional()" (click)="setAccountType('resident')"><svg lucideSearch />Quero contratar</button>
           <button type="button" role="radio" [attr.aria-checked]="isProfessional()" [class.active]="isProfessional()" (click)="setAccountType('professional')"><svg lucideBriefcaseBusiness />Sou profissional</button>
@@ -303,6 +315,7 @@ export class LoginPageComponent {
           <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
         </form>
         <p class="register-login-link">Já tem conta? <a routerLink="/login">Entrar</a></p>
+        </ng-container>
       </div>
     </section>
   `,
@@ -321,6 +334,8 @@ export class RegisterPageComponent implements OnInit {
   protected readonly professionalSignupEnabled = signal(false);
   protected readonly isProfessional = signal(false);
   protected readonly registrationStep = signal(1);
+  /** E-mail confirmado no cadastro; troca o formulario pela tela de sucesso. */
+  protected readonly registeredEmail = signal('');
   protected readonly showPassword = signal(false);
   protected readonly password = signal('');
   protected readonly feedback = signal('');
@@ -512,7 +527,10 @@ export class RegisterPageComponent implements OnInit {
           void this.router.navigateByUrl(role === 'PROFESSIONAL' ? '/profissional/perfil' : role === 'RESIDENT' ? '/app/home' : '/admin/dashboard');
           return;
         }
-        this.feedback.set('Cadastro criado e aguardando aprovação da administração.');
+        // Sem sessão significa cadastro criado aguardando aprovação: mostramos a
+        // confirmação no lugar do formulário, para não parecer que falhou.
+        this.registeredEmail.set(result.email || this.form.getRawValue().email);
+        this.feedback.set('');
         this.hasError.set(false);
       },
       error: (error: { error?: { message?: string | string[] } }) => {

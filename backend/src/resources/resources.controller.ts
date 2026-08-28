@@ -109,13 +109,13 @@ export class ResourcesController {
   }
 
   @Post('comments/:id/like')
-  toggleCommentLike(@Param('id') id: string, @Body('userId') userId: string) {
-    return { data: this.dataStoreService.toggleCommentLike(id, userId) };
+  async toggleCommentLike(@Param('id') id: string, @Body('userId') userId: string) {
+    return { data: await this.dataStoreService.toggleCommentLike(id, userId) };
   }
 
   @Post('comments/:id/replies')
-  replyToComment(@Param('id') id: string, @Body('userId') userId: string, @Body('comment') comment: string) {
-    return { data: this.dataStoreService.replyToComment(id, userId, comment) };
+  async replyToComment(@Param('id') id: string, @Body('userId') userId: string, @Body('comment') comment: string) {
+    return { data: await this.dataStoreService.replyToComment(id, userId, comment) };
   }
 
   @Get('public-settings')
@@ -212,8 +212,8 @@ export class ResourcesController {
   }
 
   @Post('reviews')
-  createReview(@Body() payload: Parameters<DataStoreService['createReview']>[0]) {
-    return { data: this.dataStoreService.createReview(payload) };
+  async createReview(@Body() payload: Parameters<DataStoreService['createReview']>[0]) {
+    return { data: await this.dataStoreService.createReview(payload) };
   }
 
   @Get('uploads')

@@ -86,7 +86,7 @@ export class DataStoreService implements OnModuleInit {
   }
 
   private async loadDatabaseData(): Promise<void> {
-    const [condominiums, categories, professionals, users, reviews, recommendations, favorites, reports] = await Promise.all([
+    const [condominiums, categories, professionals, users, reviews, recommendations, favorites, reports, reviewImages, reviewLikes, reviewReplies] = await Promise.all([
       this.prisma.condominium.findMany({ orderBy: { name: 'asc' } }),
       this.prisma.category.findMany({ include: { services: { include: { aliases: true }, orderBy: { displayOrder: 'asc' } } }, orderBy: { displayOrder: 'asc' } }),
       this.prisma.professional.findMany({
@@ -103,6 +103,9 @@ export class DataStoreService implements OnModuleInit {
       this.prisma.recommendation.findMany({ orderBy: { createdAt: 'desc' } }),
       this.prisma.favorite.findMany(),
       this.prisma.report.findMany({ include: { user: true, professional: true }, orderBy: { createdAt: 'desc' } }),
+      this.prisma.reviewImage.findMany(),
+      this.prisma.reviewLike.findMany(),
+      this.prisma.reviewReply.findMany({ include: { user: true }, orderBy: { createdAt: 'asc' } }),
     ]);
 
     const condominiumSettings = await this.prisma.condominiumSettings.findFirst();
@@ -245,6 +248,34 @@ export class DataStoreService implements OnModuleInit {
       ids.add(favorite.professionalId);
       this.favoriteProfessionalIds.set(favorite.userId, ids);
     }
+
+    this.reviewImages.clear();
+    for (const image of reviewImages) {
+      const urls = this.reviewImages.get(image.reviewId) ?? [];
+      urls.push(image.url);
+      this.reviewImages.set(image.reviewId, urls);
+    }
+
+    this.reviewLikes.clear();
+    for (const like of reviewLikes) {
+      const userIds = this.reviewLikes.get(like.reviewId) ?? new Set<string>();
+      userIds.add(like.userId);
+      this.reviewLikes.set(like.reviewId, userIds);
+    }
+
+    this.reviewReplies.clear();
+    for (const reply of reviewReplies) {
+      const list = this.reviewReplies.get(reply.reviewId) ?? [];
+      list.push({
+        id: reply.id,
+        userId: reply.userId,
+        userName: reply.user.name,
+        comment: reply.comment,
+        createdAt: reply.createdAt.toISOString(),
+      });
+      this.reviewReplies.set(reply.reviewId, list);
+    }
+
     this.reports.splice(
       0,
       this.reports.length,
@@ -1365,30 +1396,54 @@ export class DataStoreService implements OnModuleInit {
       }));
   }
 
-  toggleCommentLike(reviewId: string, userId: string) {
+  async toggleCommentLike(reviewId: string, userId: string) {
     if (!this.reviews.some((review) => review.id === reviewId)) throw new NotFoundException('Comentário não encontrado');
     if (!this.findUserById(userId)) throw new UnauthorizedException('Sessão inválida');
     const likes = this.reviewLikes.get(reviewId) ?? new Set<string>();
     const liked = !likes.has(userId);
+
+    if (this.databaseAvailable) {
+      if (liked) {
+        await this.prisma.reviewLike.upsert({
+          where: { reviewId_userId: { reviewId, userId } },
+          update: {},
+          create: { reviewId, userId },
+        });
+      } else {
+        await this.prisma.reviewLike.deleteMany({ where: { reviewId, userId } });
+      }
+    }
+
     if (liked) likes.add(userId);
     else likes.delete(userId);
     this.reviewLikes.set(reviewId, likes);
     return { reviewId, liked, likes: likes.size };
   }
 
-  replyToComment(reviewId: string, userId: string, comment: string) {
+  async replyToComment(reviewId: string, userId: string, comment: string) {
     if (!this.reviews.some((review) => review.id === reviewId)) throw new NotFoundException('Comentário não encontrado');
     const user = this.findUserById(userId);
     if (!user) throw new UnauthorizedException('Sessão inválida');
     const cleanComment = comment.trim();
     if (!cleanComment) throw new ConflictException('Escreva uma resposta');
     const replies = this.reviewReplies.get(reviewId) ?? [];
+    let replyId = `reply-${reviewId}-${Date.now()}`;
+    let createdAt = new Date();
+
+    if (this.databaseAvailable) {
+      const record = await this.prisma.reviewReply.create({
+        data: { reviewId, userId, comment: cleanComment },
+      });
+      replyId = record.id;
+      createdAt = record.createdAt;
+    }
+
     const reply = {
-      id: `reply-${reviewId}-${Date.now()}`,
+      id: replyId,
       userId,
       userName: user.name,
       comment: cleanComment,
-      createdAt: new Date().toISOString(),
+      createdAt: createdAt.toISOString(),
     };
     replies.push(reply);
     this.reviewReplies.set(reviewId, replies);
@@ -1500,7 +1555,7 @@ export class DataStoreService implements OnModuleInit {
     if (payload.recommended) professional.recommendationCount += 1;
     // the rating given while recommending also becomes a public review, so it counts on the profile
     if (rating > 0) {
-      this.createReview({
+      await this.createReview({
         userId: payload.userId,
         condominiumId: payload.condominiumId,
         professionalId: professional.id,
@@ -1548,24 +1603,45 @@ export class DataStoreService implements OnModuleInit {
     return { active: true, recommendationCount: professional.recommendationCount };
   }
 
-  createReview(payload: { userId: string; condominiumId: string; professionalId: string; rating: number; comment: string; serviceDate?: string; images?: string[] }) {
+  async createReview(payload: { userId: string; condominiumId: string; professionalId: string; rating: number; comment: string; serviceDate?: string; images?: string[] }) {
     const user = this.findUserById(payload.userId);
     const professional = this.getProfessionalById(payload.professionalId);
     if (!user) throw new UnauthorizedException('Sessão inválida');
     if (!professional) throw new NotFoundException('Profissional não encontrado');
+    const images = payload.images?.slice(0, 10) ?? [];
+    const createdAt = new Date();
+    let reviewId = `rev-${Date.now()}-${this.reviews.length + 1}`;
+
+    if (this.databaseAvailable) {
+      const record = await this.prisma.review.create({
+        data: {
+          userId: payload.userId,
+          professionalId: professional.id,
+          condominiumId: payload.condominiumId,
+          rating: payload.rating,
+          comment: payload.comment,
+          serviceDate: payload.serviceDate ? new Date(payload.serviceDate) : undefined,
+        },
+      });
+      reviewId = record.id;
+      if (images.length) {
+        await this.prisma.reviewImage.createMany({ data: images.map((url) => ({ reviewId, url })) });
+      }
+    }
+
     const review = {
-      id: `rev-${Date.now()}-${this.reviews.length + 1}`,
+      id: reviewId,
       userId: payload.userId,
       professionalId: professional.id,
       condominiumId: payload.condominiumId,
       userName: this.toPublicName(user.name),
       rating: payload.rating,
       comment: payload.comment,
-      createdAt: new Date().toISOString(),
-      serviceDate: payload.serviceDate ?? new Date().toISOString(),
+      createdAt: createdAt.toISOString(),
+      serviceDate: payload.serviceDate ?? createdAt.toISOString(),
     };
     this.reviews.push(review);
-    if (payload.images?.length) this.reviewImages.set(review.id, payload.images.slice(0, 10));
+    if (images.length) this.reviewImages.set(review.id, images);
     professional.reviewCount += 1;
     professional.rating = Number(((professional.rating * (professional.reviewCount - 1) + payload.rating) / professional.reviewCount).toFixed(1));
     return review;

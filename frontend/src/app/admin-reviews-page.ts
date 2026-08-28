@@ -94,7 +94,14 @@ export class AdminReviewsPageComponent implements OnInit {
             <div class="review-people-row"><div class="review-detail-person"><span>{{ item.resident.initials }}</span><div><small>Morador</small><strong>{{ item.resident.name }}</strong><em>Morador verificado ✓</em></div></div><div class="review-detail-person professional"><img *ngIf="item.professional.avatar; else detailFallback" [src]="api.assetUrl(item.professional.avatar)" [alt]="item.professional.name" /><ng-template #detailFallback><span><svg lucideBriefcaseBusiness /></span></ng-template><div><small>Profissional avaliado</small><strong>{{ item.professional.name }}</strong><em>{{ item.professional.category }}</em></div></div></div>
             <div class="review-metrics"><div><small>Avaliação</small><strong class="detail-stars">★★★★★ <b>{{ item.rating | number:'1.1-1' }}</b></strong></div><div><small>Status</small><span class="review-status" [ngClass]="statusClass(item.status)">{{ item.status }}</span></div><div><small>Data da avaliação</small><strong>{{ formatDate(item.createdAt) }}</strong></div><div><small>Recomenda</small><span class="review-recommends" [class.no]="!item.recommends"><svg lucideThumbsUp />{{ item.recommends ? 'Recomenda' : 'Não recomenda' }}</span></div></div>
             <div class="review-full-comment"><small>Comentário do morador</small><blockquote>“{{ item.comment }}”</blockquote></div>
-            <div class="review-service-facts"><div><svg lucideUserRound /><span>Categoria<strong>{{ item.professional.category }}</strong></span></div><div><svg lucideBriefcaseBusiness /><span>Serviço<strong>{{ servicesLabel(item.professional.services) }}</strong></span></div><div><svg lucideBuilding2 /><span>Condomínio<strong>{{ item.condominium }}</strong></span></div><div><svg lucideGlobe2 /><span>Visibilidade<strong>{{ item.status === 'Publicado' ? 'Pública' : 'Oculta' }}</strong></span></div></div>
+            <div class="review-facts">
+              <div class="review-facts-row">
+                <div class="review-fact"><span class="review-fact-icon"><svg lucideUserRound /></span><div><small>Categoria</small><strong>{{ item.professional.category }}</strong></div></div>
+                <div class="review-fact"><span class="review-fact-icon"><svg lucideBuilding2 /></span><div><small>Condomínio</small><strong>{{ item.condominium }}</strong></div></div>
+                <div class="review-fact"><span class="review-fact-icon"><svg lucideGlobe2 /></span><div><small>Visibilidade</small><strong>{{ item.status === 'Publicado' ? 'Pública' : 'Oculta' }}</strong></div></div>
+              </div>
+              <div class="review-fact-services"><span class="review-fact-icon"><svg lucideBriefcaseBusiness /></span><div><small>Serviços prestados</small><div class="review-service-chips"><span *ngFor="let service of item.professional.services">{{ service }}</span><span *ngIf="!item.professional.services.length" class="empty">Não informado</span></div></div></div>
+            </div>
           </section>
           <section class="review-detail-card review-images-card"><h2><svg lucideImage />Fotos anexadas</h2><div *ngIf="item.images.length; else noImages" class="review-image-grid"><button *ngFor="let photo of item.images; let index=index" type="button" (click)="openImage(index)"><img [src]="api.assetUrl(photo)" alt="Foto anexada à avaliação" /></button></div><ng-template #noImages><p class="review-no-images">Nenhuma foto foi anexada a esta avaliação.</p></ng-template></section>
         </div>
@@ -122,7 +129,6 @@ export class AdminReviewDetailsPageComponent implements OnInit {
   setStatus(status: string) { this.api.updateAdminSectionStatus('reviews', this.id, status).subscribe({ next: () => { this.toast.success(`Avaliação ${status.toLowerCase()} com sucesso.`); this.load(); }, error: () => this.toast.error('Não foi possível atualizar a avaliação.') }); }
   saveResponse() { this.api.saveAdminReviewResponse(this.id, this.response).subscribe({ next: () => { this.toast.success('Resposta salva com sucesso.'); this.load(); }, error: () => this.toast.error('Não foi possível salvar a resposta.') }); }
   statusClass(status: string) { return `status-${this.normalize(status).replace(/\s+/g, '-')}`; }
-  servicesLabel(services: string[]) { return services.length ? services.slice(0, 3).join(', ') : 'Não informado'; }
   formatDate(value: string) { return value ? new Intl.DateTimeFormat('pt-BR').format(new Date(value)) : '-'; }
   formatDateTime(value: string) { return value ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)) : '-'; }
   openImage(index: number) { this.lightboxIndex.set(index); }

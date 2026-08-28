@@ -1953,7 +1953,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
 @Component({
   selector: 'admin-crud-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SearchableSelectComponent, PhoneMaskDirective, LucideSearch, LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucidePencil, LucideTrash2, LucideX],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SearchableSelectComponent, PhoneMaskDirective, LucideSearch, LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucidePencil, LucideTrash2, LucideX, LucideUserRound, LucideMail, LucidePhone, LucideLockKeyhole, LucideMapPin],
   template: `
     <main class="admin-content admin-crud-content">
         <header class="admin-topbar"><div><p class="admin-eyebrow">Gestão IndicaFácil</p><h1>{{ config.title }}</h1><p>Consulte, filtre, exporte e gerencie os registros.</p></div></header>
@@ -1981,7 +1981,27 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
         <div *ngIf="editorOpen()" class="admin-modal-backdrop" (click)="closeEditor()">
           <form class="admin-editor admin-crud-modal" [formGroup]="form" (click)="$event.stopPropagation()" (ngSubmit)="save()">
             <header class="admin-modal-header"><div><h2>{{ editingId() ? 'Editar cadastro' : 'Novo cadastro' }}</h2><p>{{ editingId() ? 'Atualize os dados abaixo.' : 'Preencha os dados para criar um registro.' }}</p></div><button type="button" aria-label="Fechar" (click)="closeEditor()"><svg lucideX /></button></header>
-            <div class="admin-modal-fields" [class.client-modal-fields]="resource() === 'residents'">
+            <section *ngIf="resource() === 'residents'" class="admin-client-registration">
+              <header><span>Dados da conta</span><p>Informe os dados de acesso do cliente.</p></header>
+              <div class="admin-client-fields">
+                <label class="field-wide">Nome completo<span class="client-input"><svg lucideUserRound /><input formControlName="name" placeholder="Como o cliente se chama" autocomplete="name" /></span></label>
+                <label>E-mail<span class="client-input"><svg lucideMail /><input type="email" formControlName="email" placeholder="cliente@email.com" autocomplete="email" /></span></label>
+                <label>Telefone (WhatsApp)<span class="client-input"><svg lucidePhone /><input type="tel" inputmode="tel" maxlength="15" formControlName="phone" placeholder="(00) 00000-0000" appPhoneMask /></span></label>
+                <label>Senha<span class="client-input"><svg lucideLockKeyhole /><input type="password" formControlName="password" placeholder="Crie uma senha" autocomplete="new-password" /></span></label>
+                <label>Confirmar senha<span class="client-input"><svg lucideLockKeyhole /><input type="password" formControlName="passwordConfirmation" placeholder="Repita a senha" autocomplete="new-password" /></span></label>
+              </div>
+              <header class="client-address-heading"><span>Endereço</span><p>O CEP preenche rua, bairro, cidade e estado automaticamente.</p></header>
+              <div class="admin-client-fields">
+                <label class="field-wide">CEP<span class="client-input"><svg lucideMapPin /><input formControlName="zipCode" inputmode="numeric" maxlength="9" placeholder="00000-000" (input)="onAdminZipCodeInput($event)" /></span><small *ngIf="adminZipStatus()" [class.error]="adminZipFailed()">{{ adminZipStatus() }}</small></label>
+                <label class="field-wide">Rua<span class="client-input"><svg lucideMapPin /><input formControlName="street" placeholder="Nome da rua" autocomplete="street-address" /></span></label>
+                <label>Número<span class="client-input"><input formControlName="number" placeholder="123" /></span></label>
+                <label>Complemento<span class="client-input"><input formControlName="complement" placeholder="Apto, bloco (opcional)" /></span></label>
+                <label class="field-wide">Bairro<span class="client-input"><input formControlName="neighborhood" placeholder="Bairro" /></span></label>
+                <label>Cidade<span class="client-input"><input formControlName="city" placeholder="Cidade" /></span></label>
+                <label>Estado<span class="client-input"><input formControlName="state" maxlength="2" placeholder="UF" /></span></label>
+              </div>
+            </section>
+            <div *ngIf="resource() !== 'residents'" class="admin-modal-fields">
             <label *ngFor="let field of visibleFields()" [class.field-wide]="field.wide">{{ field.label }}
               <textarea *ngIf="field.type === 'textarea'" [formControlName]="field.key"></textarea>
               <app-searchable-select *ngIf="field.select === 'category'" [formControlName]="field.key" [items]="categories()" valueKey="id" labelKey="name" emptyLabel="Selecione" searchPlaceholder="Pesquisar categoria..." />
@@ -2036,6 +2056,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
 })
 export class AdminCrudPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly spreadsheet = inject(SpreadsheetService);
@@ -2047,6 +2068,8 @@ export class AdminCrudPageComponent implements OnInit {
   protected readonly feedback = signal('');
   protected readonly hasError = signal(false);
   protected readonly saving = signal(false);
+  protected readonly adminZipStatus = signal('');
+  protected readonly adminZipFailed = signal(false);
   protected readonly photoPreview = signal('');
   protected readonly coverPreview = signal('');
   protected readonly portfolioPreviews = signal<string[]>([]);
@@ -2164,6 +2187,8 @@ export class AdminCrudPageComponent implements OnInit {
     });
     this.feedback.set('');
     this.hasError.set(false);
+    this.adminZipStatus.set('');
+    this.adminZipFailed.set(false);
     this.editorOpen.set(openEditor);
   }
 
@@ -2177,6 +2202,8 @@ export class AdminCrudPageComponent implements OnInit {
     this.photoPreview.set(this.api.assetUrl(String(record[photoKey] ?? '')));
     this.coverPreview.set(this.resource() === 'professionals' ? this.api.assetUrl(String(record['coverImage'] ?? '')) : '');
     this.portfolioPreviews.set([]);
+    this.adminZipStatus.set('');
+    this.adminZipFailed.set(false);
     const categoryIds = Array.isArray(record['categoryIds']) ? record['categoryIds'].map(String) : record['categoryId'] ? [String(record['categoryId'])] : [];
     const serviceIds = Array.isArray(record['serviceIds']) ? record['serviceIds'].map(String) : [];
     this.selectedCategoryIds.set(categoryIds);
@@ -2308,6 +2335,33 @@ export class AdminCrudPageComponent implements OnInit {
   removePortfolioPhoto(index: number) {
     this.selectedPortfolioPhotos = this.selectedPortfolioPhotos.filter((_file, position) => position !== index);
     this.portfolioPreviews.set(this.selectedPortfolioPhotos.map((file) => URL.createObjectURL(file)));
+  }
+
+  onAdminZipCodeInput(event: Event) {
+    const zipCode = (event.target as HTMLInputElement).value;
+    const digits = zipCode.replace(/\D/g, '');
+    if (digits.length !== 8) {
+      this.adminZipStatus.set('');
+      this.adminZipFailed.set(false);
+      return;
+    }
+    this.adminZipStatus.set('Buscando endereço...');
+    this.adminZipFailed.set(false);
+    fetchAddressByZipCode(this.http, digits).subscribe({
+      next: (address) => {
+        this.form.patchValue({
+          street: address.street || this.form.controls.street.value,
+          neighborhood: address.neighborhood || this.form.controls.neighborhood.value,
+          city: address.city || this.form.controls.city.value,
+          state: address.state || this.form.controls.state.value,
+        });
+        this.adminZipStatus.set('Endereço preenchido pelo CEP.');
+      },
+      error: () => {
+        this.adminZipStatus.set('CEP não encontrado. Preencha o endereço manualmente.');
+        this.adminZipFailed.set(true);
+      },
+    });
   }
 
   toggleCategory(id: string) {

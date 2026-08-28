@@ -74,8 +74,13 @@ export class ResourcesController {
   }
 
   @Get('professionals')
-  async getProfessionals(@Query('category') category?: string, @Query('service') service?: string, @Query('search') search?: string) {
-    return { data: this.dataStoreService.getProfessionals(category, service, search) };
+  async getProfessionals(
+    @Query('category') category?: string,
+    @Query('service') service?: string,
+    @Query('search') search?: string,
+    @Query('condominiumId') condominiumId?: string,
+  ) {
+    return { data: this.dataStoreService.getProfessionals(category, service, search, condominiumId) };
   }
 
   @Get('professionals/:id/services')

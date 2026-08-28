@@ -1590,7 +1590,7 @@ export class AdminCrudPageComponent implements OnInit {
     role: 'RESIDENT', approvalStatus: 'APPROVED', emailVerified: true, active: true, block: '', unit: '',
   });
   private readonly configs: Record<AdminResource, { title: string; fields: AdminField[]; columns: string[]; columnKeys: string[] }> = {
-    condominiums: { title: 'Condomínios', fields: [{ key: 'name', label: 'Nome' }, { key: 'slug', label: 'Slug' }, { key: 'address', label: 'Endereço' }, { key: 'city', label: 'Cidade' }, { key: 'state', label: 'Estado' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'email', label: 'E-mail', type: 'email' }], columns: ['Foto', 'Nome', 'Cidade', 'Estado', 'E-mail'], columnKeys: ['coverImage', 'name', 'city', 'state', 'email'] },
+    condominiums: { title: 'Condomínios', fields: [{ key: 'name', label: 'Nome' }, { key: 'slug', label: 'Slug' }, { key: 'address', label: 'Endereço' }, { key: 'city', label: 'Cidade' }, { key: 'state', label: 'Estado' }, { key: 'neighborhood', label: 'Bairro' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'email', label: 'E-mail', type: 'email' }], columns: ['Foto', 'Nome', 'Cidade', 'Estado', 'E-mail'], columnKeys: ['coverImage', 'name', 'city', 'state', 'email'] },
     residents: { title: 'Moradores', fields: [{ key: 'name', label: 'Nome' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone', type: 'tel' }, { key: 'condominiumId', label: 'Condomínio', select: 'condominium' }, { key: 'password', label: 'Senha', type: 'password' }], columns: ['Nome', 'E-mail', 'Telefone', 'Perfil'], columnKeys: ['name', 'email', 'phone', 'role'] },
     users: { title: 'Usuários do sistema', fields: [
       { key: 'name', label: 'Nome completo' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone', type: 'tel' },
@@ -1827,6 +1827,7 @@ export class AdminCrudPageComponent implements OnInit {
             <input placeholder="Endereço" formControlName="address" />
             <input placeholder="Cidade" formControlName="city" />
             <input placeholder="Estado" formControlName="state" />
+            <input placeholder="Bairro" formControlName="neighborhood" />
             <input type="tel" inputmode="tel" maxlength="15" placeholder="Telefone" formControlName="phone" appPhoneMask />
             <input placeholder="E-mail" formControlName="email" />
           </div>
@@ -1860,6 +1861,7 @@ export class AdminCondominiumPageComponent {
     address: ['Av. das Palmeiras, 1000'],
     city: ['Uberlândia'],
     state: ['MG'],
+    neighborhood: [''],
     phone: ['(34) 99999-0000'],
     email: ['contato@terrasalphas.com.br'],
     primaryColor: ['#0F5A3C'],

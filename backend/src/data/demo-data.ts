@@ -11,6 +11,7 @@ export interface DemoCondominium {
   address: string;
   city: string;
   state: string;
+  neighborhood: string;
   phone: string;
   email: string;
   active: boolean;
@@ -115,6 +116,7 @@ export const demoCondominiums: DemoCondominium[] = [
     address: 'Av. das Palmeiras, 1000',
     city: 'Uberlandia',
     state: 'MG',
+    neighborhood: '',
     phone: '(34) 99999-0000',
     email: 'contato@terrasalphas.com.br',
     active: true,

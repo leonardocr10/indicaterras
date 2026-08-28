@@ -53,6 +53,7 @@ model Condominium {
   address         String
   city            String
   state           String
+  neighborhood    String               @default("")
   phone           String
   email           String
   active          Boolean              @default(true)

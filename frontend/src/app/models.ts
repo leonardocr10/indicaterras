@@ -9,6 +9,7 @@ export interface Condominium {
   address: string;
   city: string;
   state: string;
+  neighborhood: string;
   phone: string;
   email: string;
   active: boolean;
@@ -60,6 +61,7 @@ export interface Professional {
   avatar: string;
   coverImage: string;
   featured: boolean;
+  matchesLocation?: boolean;
 }
 
 export interface Review {

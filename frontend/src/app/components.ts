@@ -130,7 +130,7 @@ export class CategoryCardComponent {
 @Component({
   selector: 'professional-card',
   standalone: true,
-  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideHeart, LucideEllipsis, LucideMessageCircle, LucidePhone, LucideThumbsUp],
+  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideHeart, LucideEllipsis, LucideMessageCircle, LucideMapPin, LucidePhone, LucideThumbsUp],
   template: `
     <article class="professional-card" [class.compact-card]="compact" [class.favorite-card]="mode === 'favorite'">
       <div class="avatar" [class]="avatarClass">
@@ -142,6 +142,7 @@ export class CategoryCardComponent {
           <h3><a *ngIf="mode === 'favorite'" [routerLink]="['/app/profissional', professional.id]">{{ professional.name }}</a><ng-container *ngIf="mode !== 'favorite'">{{ professional.name }}</ng-container></h3>
           <p>{{ professional.category }}</p>
         </div>
+        <span *ngIf="professional.matchesLocation" class="location-badge"><svg lucideMapPin />Atende sua região</span>
         <div class="rating-line">
           <rating-stars [rating]="professional.rating" />
           <strong>{{ professional.rating | number: '1.1-1' }}</strong>

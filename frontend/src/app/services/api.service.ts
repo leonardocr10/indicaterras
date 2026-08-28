@@ -22,6 +22,9 @@ export class ApiService {
     if (category) params.set('category', category);
     if (service) params.set('service', service);
     if (search) params.set('search', search);
+    // Prioriza, na busca do morador logado, profissionais que atendem perto do seu condomínio.
+    const condominiumId = this.auth.user()?.condominiumId;
+    if (condominiumId) params.set('condominiumId', condominiumId);
     const query = params.size ? `?${params.toString()}` : '';
     return this.http
       .get<ApiResponse<Professional[]>>(`${this.baseUrl}/professionals${query}`)

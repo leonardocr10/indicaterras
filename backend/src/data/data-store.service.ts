@@ -128,6 +128,7 @@ export class DataStoreService implements OnModuleInit {
         address: item.address,
         city: item.city,
         state: item.state,
+        neighborhood: item.neighborhood ?? '',
         phone: item.phone,
         email: item.email,
         active: item.active,
@@ -677,7 +678,7 @@ export class DataStoreService implements OnModuleInit {
       const name = String(payload.name ?? 'Novo condomínio');
       const record: DemoCondominium = {
         id, name, slug: this.toSlug(String(payload.slug ?? name)), logo: String(payload.logo ?? ''), coverImage: String(payload.coverImage ?? ''), primaryColor: '#0F5A3C', secondaryColor: '#F4C542',
-        address: String(payload.address ?? ''), city: String(payload.city ?? ''), state: String(payload.state ?? 'MG'), phone: String(payload.phone ?? ''), email: String(payload.email ?? ''), active: true,
+        address: String(payload.address ?? ''), city: String(payload.city ?? ''), state: String(payload.state ?? 'MG'), neighborhood: String(payload.neighborhood ?? ''), phone: String(payload.phone ?? ''), email: String(payload.email ?? ''), active: true,
       };
       this.condominiums.push(record);
       return record;
@@ -765,6 +766,7 @@ export class DataStoreService implements OnModuleInit {
           address: String(payload.address ?? ''),
           city: String(payload.city ?? ''),
           state: String(payload.state || 'MG'),
+          neighborhood: String(payload.neighborhood ?? ''),
           phone: String(payload.phone ?? ''),
           email: String(payload.email ?? ''),
           logo: String(payload.logo ?? '') || null,
@@ -844,6 +846,7 @@ export class DataStoreService implements OnModuleInit {
           address: String(payload.address ?? '') || undefined,
           city: String(payload.city ?? '') || undefined,
           state: String(payload.state ?? '') || undefined,
+          neighborhood: payload.neighborhood === undefined ? undefined : String(payload.neighborhood),
           phone: String(payload.phone ?? '') || undefined,
           email: String(payload.email ?? '') || undefined,
           logo: payload.logo === undefined ? undefined : String(payload.logo) || null,
@@ -1023,9 +1026,9 @@ export class DataStoreService implements OnModuleInit {
     return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
-  getProfessionals(categorySlug?: string, serviceSlug?: string, search?: string): DemoProfessional[] {
+  getProfessionals(categorySlug?: string, serviceSlug?: string, search?: string, condominiumId?: string): Array<DemoProfessional & { matchesLocation?: boolean }> {
     const query = search ?? '';
-    return this.professionals.filter((professional) => {
+    const filtered = this.professionals.filter((professional) => {
       const categoryMatch = !categorySlug || professional.categories.some((category) => category.slug === categorySlug);
       const serviceMatch = !serviceSlug || professional.serviceDetails.some((service) => service.slug === serviceSlug);
       if (!categoryMatch || !serviceMatch) return false;
@@ -1040,6 +1043,27 @@ export class DataStoreService implements OnModuleInit {
       ].join(' ');
       return this.matchesSearch(searchable, query);
     });
+
+    const condominium = condominiumId ? this.condominiums.find((item) => item.id === condominiumId) : undefined;
+    if (!condominium) return filtered;
+
+    // Prioriza quem atende perto do morador: bairro+cidade primeiro, depois só cidade, depois o resto.
+    // A ordem relativa dentro de cada camada é preservada (sort é estável).
+    const condoCity = this.normalize(condominium.city);
+    const condoNeighborhood = this.normalize(condominium.neighborhood);
+    const locationTier = (professional: DemoProfessional) => {
+      const cityMatch = Boolean(condoCity) && this.normalize(professional.city) === condoCity;
+      const neighborhoodMatch = cityMatch && Boolean(condoNeighborhood) && this.normalize(professional.neighborhood) === condoNeighborhood;
+      return { cityMatch, neighborhoodMatch };
+    };
+
+    return filtered
+      .map((professional) => ({ professional, ...locationTier(professional) }))
+      .sort((left, right) => {
+        const tierOf = (item: { cityMatch: boolean; neighborhoodMatch: boolean }) => (item.neighborhoodMatch ? 0 : item.cityMatch ? 1 : 2);
+        return tierOf(left) - tierOf(right);
+      })
+      .map(({ professional, neighborhoodMatch }) => ({ ...professional, matchesLocation: neighborhoodMatch }));
   }
 
   getCategoryById(id: string) {

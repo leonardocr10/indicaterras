@@ -158,9 +158,12 @@ export class ApiService {
       .pipe(map((response) => response.data));
   }
 
+  // Arquivos enviados (fotos) ficam fora do prefixo /api, servidos direto pelo Node/Nginx em /uploads.
+  private readonly assetBase = this.baseUrl.replace(/\/api\/?$/, '');
+
   assetUrl(path: string | null | undefined) {
     if (!path) return '';
-    return /^https?:\/\//i.test(path) ? path : `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+    return /^https?:\/\//i.test(path) ? path : `${this.assetBase}${path.startsWith('/') ? path : `/${path}`}`;
   }
 
   getPublicSettings() {

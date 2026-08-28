@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import {
   demoCategories,
@@ -18,7 +18,7 @@ import {
 } from './demo-data';
 import { PrismaService } from './prisma.service';
 import { SERVICE_ALIASES } from './service-aliases';
-import { ACTION_LABELS, Complaint, ComplaintAction, ComplaintEvent, ComplaintStatus, ProfessionalAction, demoComplaints } from './complaints';
+import { ACTION_LABELS, ACTION_TYPE_MAP, COMPLAINT_LABEL_TO_STATUS, COMPLAINT_STATUS_TO_LABEL, ComplaintAction, ComplaintEvent, ComplaintStatus } from './complaints';
 
 @Injectable()
 export class DataStoreService implements OnModuleInit {
@@ -35,9 +35,6 @@ export class DataStoreService implements OnModuleInit {
   private readonly reviewImages = new Map<string, string[]>();
   private readonly professionalByUserId = new Map<string, string>();
   private readonly professionalCovers = new Map<string, string>();
-  private readonly complaints: Complaint[] = [];
-  private readonly professionalActions: ProfessionalAction[] = [];
-  private complaintsVinculadas = false;
   private readonly professionalWorks = new Map<string, Array<{ id: string; image: string; title: string; createdAt: string }>>();
   private readonly reviewLikes = new Map<string, Set<string>>();
   private readonly reviewReplies = new Map<string, Array<{ id: string; userId: string; userName: string; comment: string; createdAt: string }>>();
@@ -286,7 +283,7 @@ export class DataStoreService implements OnModuleInit {
         reason: item.reason,
         description: item.details ?? '',
         date: item.createdAt.toLocaleDateString('pt-BR'),
-        status: 'Pendente',
+        status: COMPLAINT_STATUS_TO_LABEL[item.status as keyof typeof COMPLAINT_STATUS_TO_LABEL] ?? 'Pendente',
       })),
     );
   }
@@ -1197,56 +1194,62 @@ export class DataStoreService implements OnModuleInit {
 
   // ---------- Denúncias ----------
 
-  /** As denúncias de demonstração são amarradas a profissionais reais depois do primeiro sync. */
-  private prepararDenuncias() {
-    if (!this.professionals.length) return;
-    if (!this.complaints.length) {
-      demoComplaints.forEach((base, indice) => {
-        const profissional = this.professionals[indice % this.professionals.length];
-        this.complaints.push({
-          ...base,
-          professionalId: profissional.id,
-          professionalName: profissional.name,
-          history: [
-            { id: `${base.id}-h1`, at: base.createdAt, label: 'Denúncia recebida', kind: 'received' },
-            ...(base.status === 'Em análise' || base.status === 'Resolvida'
-              ? [{ id: `${base.id}-h2`, at: base.createdAt, label: `Status alterado para ${base.status}`, kind: 'status' as const }]
-              : []),
-          ],
-        });
-      });
-      this.complaintsVinculadas = true;
-      return;
+  /** Toda a funcionalidade de denúncias depende de dados reais persistidos: sem banco, não há modo de demonstração. */
+  private ensureDatabase() {
+    if (!this.databaseAvailable) {
+      throw new ServiceUnavailableException('Denúncias indisponíveis no momento: banco de dados não conectado.');
     }
-    if (this.complaintsVinculadas) return;
-    for (const [indice, denuncia] of this.complaints.entries()) {
-      const profissional = this.getProfessionalById(denuncia.professionalId) ?? this.professionals[indice % this.professionals.length];
-      denuncia.professionalId = profissional.id;
-      denuncia.professionalName = profissional.name;
-    }
-    this.complaintsVinculadas = true;
   }
 
-  private registrarEvento(denuncia: Complaint, label: string, kind: ComplaintEvent['kind'], detail?: string) {
-    denuncia.history.unshift({
-      id: `${denuncia.id}-${Date.now()}`,
-      at: new Date().toISOString(),
-      label,
-      detail,
-      kind,
-    });
+  private readonly denunciaInclude = {
+    user: true,
+    professional: { include: { professionalCategories: { include: { category: true } } } },
+  } as const;
+
+  private linhaDaDenuncia(denuncia: {
+    id: string;
+    professionalId: string;
+    reason: string;
+    details: string | null;
+    status: string;
+    channel: string;
+    createdAt: Date;
+    user: { name: string; block: string | null; unit: string | null };
+    professional: { name: string; professionalCategories: Array<{ category: { name: string } }> };
+  }) {
+    const criada = denuncia.createdAt;
+    return {
+      id: denuncia.id,
+      resident: denuncia.user.name,
+      residentInitials: this.initials(denuncia.user.name),
+      residentPlace: [denuncia.user.block, denuncia.user.unit].filter(Boolean).join(' - '),
+      professionalId: denuncia.professionalId,
+      professional: denuncia.professional.name,
+      professionalCategory: denuncia.professional.professionalCategories[0]?.category.name ?? 'Sem categoria',
+      reason: denuncia.reason,
+      description: denuncia.details ?? '',
+      date: criada.toLocaleDateString('pt-BR'),
+      time: criada.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      status: COMPLAINT_STATUS_TO_LABEL[denuncia.status as keyof typeof COMPLAINT_STATUS_TO_LABEL] ?? 'Pendente',
+      channel: denuncia.channel,
+    };
   }
 
-  private resumoDoProfissional(professionalId: string) {
+  /** Punições já aplicadas ao prestador + status atual, calculado a partir das ações ainda ativas. */
+  private async resumoDoProfissional(professionalId: string) {
     const profissional = this.getProfessionalById(professionalId);
-    const acoes = this.professionalActions.filter((a) => a.professionalId === professionalId);
-    const ultima = acoes[0];
-    const suspensaoAtiva = ultima?.until && Date.parse(ultima.until) > Date.now() ? ultima : undefined;
+    const acoes = await this.prisma.professionalAction.findMany({ where: { professionalId }, orderBy: { createdAt: 'desc' } });
+    const acoesAtivas = acoes.filter((item) => item.active);
+    const ultima = acoesAtivas[0];
+    const suspensaoAtiva = ultima?.endsAt && ultima.endsAt.getTime() > Date.now() ? ultima : undefined;
     let status = 'Ativo no condomínio';
-    if (acoes.some((a) => a.action === 'block')) status = 'Bloqueado permanentemente';
-    else if (suspensaoAtiva) status = `Suspenso até ${new Date(suspensaoAtiva.until as string).toLocaleDateString('pt-BR')}`;
-    else if (ultima?.action === 'hide') status = 'Oculto do app';
-    else if (ultima?.action === 'warn') status = 'Advertido';
+    if (acoesAtivas.some((item) => item.action === 'BLOCK')) status = 'Bloqueado permanentemente';
+    else if (suspensaoAtiva) status = `Suspenso até ${suspensaoAtiva.endsAt!.toLocaleDateString('pt-BR')}`;
+    else if (ultima?.action === 'HIDE') status = 'Oculto do app';
+    else if (ultima?.action === 'WARN') status = 'Advertido';
+
+    const complaintCount = await this.prisma.report.count({ where: { professionalId } });
+
     return {
       id: professionalId,
       name: profissional?.name ?? 'Profissional indisponível',
@@ -1254,119 +1257,183 @@ export class DataStoreService implements OnModuleInit {
       avatar: profissional?.avatar ?? '',
       rating: profissional?.rating ?? 0,
       reviewCount: profissional?.reviewCount ?? 0,
-      complaintCount: this.complaints.filter((c) => c.professionalId === professionalId).length,
+      complaintCount,
       phone: profissional?.phone ?? '',
       whatsapp: profissional?.whatsapp ?? '',
       status,
-      actions: acoes,
+      actions: acoes.map((item) => ({
+        id: item.id,
+        label: item.label,
+        createdAt: item.createdAt.toISOString(),
+        until: item.endsAt ? item.endsAt.toISOString() : null,
+      })),
     };
   }
 
-  private linhaDaDenuncia(denuncia: Complaint) {
-    const criada = new Date(denuncia.createdAt);
-    return {
-      id: denuncia.id,
-      resident: denuncia.residentName,
-      residentInitials: this.initials(denuncia.residentName),
-      residentPlace: [denuncia.residentBlock, denuncia.residentUnit].filter(Boolean).join(' - '),
-      professionalId: denuncia.professionalId,
-      professional: denuncia.professionalName,
-      professionalCategory: this.getProfessionalById(denuncia.professionalId)?.category ?? 'Sem categoria',
-      reason: denuncia.reason,
-      description: denuncia.description,
-      date: criada.toLocaleDateString('pt-BR'),
-      time: criada.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      status: denuncia.status,
-      channel: denuncia.channel,
+  async getComplaints() {
+    this.ensureDatabase();
+    const reports = await this.prisma.report.findMany({
+      include: this.denunciaInclude,
+      orderBy: { createdAt: 'desc' },
+    });
+    return reports.map((denuncia) => this.linhaDaDenuncia(denuncia));
+  }
+
+  async getComplaintDetails(id: string) {
+    this.ensureDatabase();
+    const detailsInclude = {
+      ...this.denunciaInclude,
+      images: true,
+      history: { include: { user: true }, orderBy: { createdAt: 'desc' as const } },
     };
-  }
-
-  getComplaints() {
-    this.prepararDenuncias();
-    return this.complaints
-      .slice()
-      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
-      .map((denuncia) => this.linhaDaDenuncia(denuncia));
-  }
-
-  getComplaintDetails(id: string) {
-    this.prepararDenuncias();
-    const denuncia = this.complaints.find((c) => c.id === id);
+    let denuncia = await this.prisma.report.findUnique({ where: { id }, include: detailsInclude });
     if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
-    const jaVisualizou = denuncia.history.some((h) => h.kind === 'view');
-    if (!jaVisualizou) this.registrarEvento(denuncia, 'Administrador visualizou os anexos', 'view');
+
+    const jaVisualizou = denuncia.history.some((item) => item.kind === 'view');
+    if (!jaVisualizou) {
+      await this.prisma.reportHistory.create({ data: { reportId: id, kind: 'view', label: 'Administrador visualizou os anexos' } });
+      denuncia = await this.prisma.report.findUnique({ where: { id }, include: detailsInclude });
+      if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
+    }
+
     return {
       ...this.linhaDaDenuncia(denuncia),
-      createdAt: denuncia.createdAt,
-      images: denuncia.images,
-      history: denuncia.history,
-      adminNote: denuncia.adminNote,
+      createdAt: denuncia.createdAt.toISOString(),
+      images: denuncia.images.map((image) => image.url),
+      history: denuncia.history.map((item) => ({
+        id: item.id,
+        at: item.createdAt.toISOString(),
+        label: item.label,
+        detail: item.detail ?? undefined,
+        kind: item.kind as ComplaintEvent['kind'],
+      })),
+      adminNote: denuncia.adminNote ?? '',
       notifyParties: denuncia.notifyParties,
-      professionalSummary: this.resumoDoProfissional(denuncia.professionalId),
+      professionalSummary: await this.resumoDoProfissional(denuncia.professionalId),
     };
   }
 
-  updateComplaintStatus(id: string, status: ComplaintStatus) {
-    this.prepararDenuncias();
-    const denuncia = this.complaints.find((c) => c.id === id);
-    if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
+  async updateComplaintStatus(id: string, status: ComplaintStatus) {
+    this.ensureDatabase();
     const permitidos: ComplaintStatus[] = ['Pendente', 'Em análise', 'Urgente', 'Resolvida', 'Ignorada'];
     if (!permitidos.includes(status)) throw new ConflictException('Status inválido para a denúncia');
-    denuncia.status = status;
-    this.registrarEvento(denuncia, `Status alterado para ${status}`, 'status');
+    const denuncia = await this.prisma.report.findUnique({ where: { id } });
+    if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
+
+    await this.prisma.report.update({
+      where: { id },
+      data: {
+        status: COMPLAINT_LABEL_TO_STATUS[status],
+        resolvedAt: status === 'Resolvida' && !denuncia.resolvedAt ? new Date() : undefined,
+        reviewedAt: status !== 'Pendente' && !denuncia.reviewedAt ? new Date() : undefined,
+      },
+    });
+    await this.prisma.reportHistory.create({ data: { reportId: id, kind: 'status', label: `Status alterado para ${status}` } });
+
+    const memoria = this.reports.find((item) => item.id === id);
+    if (memoria) memoria.status = status;
+
     return this.getComplaintDetails(id);
   }
 
-  saveComplaintNote(id: string, note: string, notify: boolean) {
-    this.prepararDenuncias();
-    const denuncia = this.complaints.find((c) => c.id === id);
+  async saveComplaintNote(id: string, note: string, notify: boolean) {
+    this.ensureDatabase();
+    const denuncia = await this.prisma.report.findUnique({ where: { id } });
     if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
-    denuncia.adminNote = String(note ?? '').trim();
-    denuncia.notifyParties = Boolean(notify);
-    this.registrarEvento(
-      denuncia,
-      'Parecer administrativo registrado',
-      'note',
-      notify ? 'Morador e prestador serão notificados.' : undefined,
-    );
+    const adminNote = String(note ?? '').trim();
+    await this.prisma.report.update({ where: { id }, data: { adminNote, notifyParties: Boolean(notify) } });
+    await this.prisma.reportHistory.create({
+      data: {
+        reportId: id,
+        kind: 'note',
+        label: 'Parecer administrativo registrado',
+        detail: notify ? 'Morador e prestador serão notificados.' : undefined,
+      },
+    });
     return this.getComplaintDetails(id);
   }
 
   async applyComplaintAction(id: string, action: ComplaintAction) {
-    this.prepararDenuncias();
-    const denuncia = this.complaints.find((c) => c.id === id);
-    if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
+    this.ensureDatabase();
     if (!ACTION_LABELS[action]) throw new ConflictException('Ação inválida');
+    const denuncia = await this.prisma.report.findUnique({ where: { id } });
+    if (!denuncia) throw new NotFoundException('Denúncia não encontrada');
+    const professionalId = denuncia.professionalId;
 
     if (action === 'restore') {
-      // limpa as punicoes e devolve o profissional para as listagens
-      for (let i = this.professionalActions.length - 1; i >= 0; i--) {
-        if (this.professionalActions[i].professionalId === denuncia.professionalId) this.professionalActions.splice(i, 1);
-      }
-      await this.updateAdminRecord('professionals', denuncia.professionalId, { active: true });
-      this.registrarEvento(denuncia, ACTION_LABELS.restore, 'action');
-      return this.getComplaintDetails(id);
+      // preserva o histórico: em vez de apagar as punições anteriores, apenas marca como inativas
+      await this.prisma.professionalAction.updateMany({ where: { professionalId, active: true }, data: { active: false } });
     }
 
     const dias = action === 'suspend7' ? 7 : action === 'suspend30' ? 30 : 0;
-    const registro: ProfessionalAction = {
-      id: `acao-${Date.now()}`,
-      complaintId: denuncia.id,
-      professionalId: denuncia.professionalId,
-      action,
-      label: ACTION_LABELS[action],
-      until: dias ? new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString() : null,
-      createdAt: new Date().toISOString(),
-    };
-    this.professionalActions.unshift(registro);
+    const endsAt = dias ? new Date(Date.now() + dias * 24 * 60 * 60 * 1000) : null;
 
-    // esconder, suspender ou bloquear tira o profissional das listagens do app
-    if (action !== 'warn') {
-      await this.updateAdminRecord('professionals', denuncia.professionalId, { active: false }).catch(() => undefined);
+    await this.prisma.professionalAction.create({
+      data: {
+        professionalId,
+        reportId: id,
+        action: ACTION_TYPE_MAP[action],
+        label: ACTION_LABELS[action],
+        endsAt,
+      },
+    });
+
+    if (action === 'restore') {
+      await this.updateAdminRecord('professionals', professionalId, { active: true });
+    } else if (action !== 'warn') {
+      // esconder, suspender ou bloquear tira o profissional das listagens do app
+      await this.updateAdminRecord('professionals', professionalId, { active: false }).catch(() => undefined);
     }
 
-    this.registrarEvento(denuncia, registro.label, 'action');
+    await this.prisma.reportHistory.create({ data: { reportId: id, kind: 'action', label: ACTION_LABELS[action] } });
+
     return this.getComplaintDetails(id);
+  }
+
+  /** Denúncia enviada pelo morador contra um profissional, feita pelo app. */
+  async submitComplaint(payload: { userId: string; professionalId: string; reason: string; description: string; images?: string[] }) {
+    const user = this.findUserById(payload.userId);
+    if (!user) throw new UnauthorizedException('Sessão inválida');
+    const professional = this.getProfessionalById(payload.professionalId);
+    if (!professional) throw new NotFoundException('Profissional não encontrado');
+    this.ensureDatabase();
+
+    const reason = String(payload.reason ?? '').trim();
+    if (!reason) throw new ConflictException('Informe o motivo da denúncia');
+    const description = String(payload.description ?? '').trim();
+    const images = payload.images?.slice(0, 10) ?? [];
+
+    const report = await this.prisma.report.create({
+      data: {
+        condominiumId: user.condominiumId,
+        userId: payload.userId,
+        professionalId: professional.id,
+        reason,
+        details: description || null,
+        status: 'PENDENTE',
+        channel: 'App do morador',
+      },
+    });
+
+    if (images.length) {
+      await this.prisma.reportImage.createMany({ data: images.map((url) => ({ reportId: report.id, url })) });
+    }
+
+    await this.prisma.reportHistory.create({
+      data: { reportId: report.id, userId: payload.userId, kind: 'received', label: 'Denúncia recebida' },
+    });
+
+    this.reports.push({
+      id: report.id,
+      resident: user.name,
+      professional: professional.name,
+      reason,
+      description,
+      date: report.createdAt.toLocaleDateString('pt-BR'),
+      status: 'Pendente',
+    });
+
+    return { id: report.id };
   }
 
   getProfessionalById(id: string): DemoProfessional | undefined {
@@ -1724,12 +1791,12 @@ export class DataStoreService implements OnModuleInit {
       topProfessionals,
       pending: {
         newResidents: this.users.filter((user) => user.role === 'RESIDENT' && user.approvalStatus === 'PENDING').length,
-        reports: this.reports.filter((report) => (this.moderationStatuses.get(report.id) ?? report.status) === 'Pendente').length,
+        reports: this.reports.filter((report) => report.status === 'Pendente').length,
       },
     };
   }
 
-  getPendingItems() {
+  async getPendingItems() {
     const condominiumName = (condominiumId: string) => this.condominiums.find((item) => item.id === condominiumId)?.name ?? '';
 
     const newResidents = this.users
@@ -1742,15 +1809,19 @@ export class DataStoreService implements OnModuleInit {
         link: '/admin/moradores',
       }));
 
-    const pendingReports = this.getComplaints()
-      .filter((row) => row.status === 'Pendente')
-      .map((row) => ({
-        id: `report-${row.id}`,
-        type: 'REPORT' as const,
-        title: 'Denúncia aguardando análise',
-        subtitle: [row.professional, row.reason, row.date].filter(Boolean).join(' · '),
-        link: `/admin/denuncias/${row.id}`,
-      }));
+    // Denúncias exigem banco de dados; se ele estiver indisponível, apenas os moradores pendentes aparecem na lista.
+    let pendingReports: Array<{ id: string; type: 'REPORT'; title: string; subtitle: string; link: string }> = [];
+    if (this.databaseAvailable) {
+      pendingReports = (await this.getComplaints())
+        .filter((row) => row.status === 'Pendente')
+        .map((row) => ({
+          id: `report-${row.id}`,
+          type: 'REPORT' as const,
+          title: 'Denúncia aguardando análise',
+          subtitle: [row.professional, row.reason, row.date].filter(Boolean).join(' · '),
+          link: `/admin/denuncias/${row.id}`,
+        }));
+    }
 
     return [...newResidents, ...pendingReports];
   }

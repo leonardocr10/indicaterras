@@ -108,6 +108,17 @@ export class ResourcesController {
     return { data: this.dataStoreService.getProfessionalComments(id, userId) };
   }
 
+  @Post('professionals/:id/reports')
+  async submitComplaint(
+    @Param('id') id: string,
+    @Body('userId') userId: string,
+    @Body('reason') reason: string,
+    @Body('description') description: string,
+    @Body('images') images: string[] = [],
+  ) {
+    return { data: await this.dataStoreService.submitComplaint({ userId, professionalId: id, reason, description, images }) };
+  }
+
   @Post('comments/:id/like')
   async toggleCommentLike(@Param('id') id: string, @Body('userId') userId: string) {
     return { data: await this.dataStoreService.toggleCommentLike(id, userId) };
@@ -187,8 +198,8 @@ export class ResourcesController {
   }
 
   @Get('admin-pending')
-  getPendingItems() {
-    return { data: this.dataStoreService.getPendingItems() };
+  async getPendingItems() {
+    return { data: await this.dataStoreService.getPendingItems() };
   }
 
   @Post('favorites/:professionalId/toggle')
@@ -238,6 +249,13 @@ export class ResourcesController {
   async uploadWorkPhotos(@UploadedFiles() files: ArquivoEnviado[] = []) {
     if (!files.length) throw new BadRequestException('Selecione ao menos uma foto para enviar.');
     return { data: await this.fileStorageService.salvarVarios('works', files) };
+  }
+
+  @Post('uploads/reports')
+  @UseInterceptors(FilesInterceptor('files', 10, opcoesDeUpload(10)))
+  async uploadReportPhotos(@UploadedFiles() files: ArquivoEnviado[] = []) {
+    if (!files.length) throw new BadRequestException('Selecione ao menos uma foto para enviar.');
+    return { data: await this.fileStorageService.salvarVarios('reports', files) };
   }
 
   @Post('admin/uploads/professionals')
@@ -296,22 +314,22 @@ export class ResourcesController {
 
   @Get('admin-reports')
   async getComplaints() {
-    return { data: this.dataStoreService.getComplaints() };
+    return { data: await this.dataStoreService.getComplaints() };
   }
 
   @Get('admin-reports/:id')
   async getComplaintDetails(@Param('id') id: string) {
-    return { data: this.dataStoreService.getComplaintDetails(id) };
+    return { data: await this.dataStoreService.getComplaintDetails(id) };
   }
 
   @Patch('admin-reports/:id/status')
-  updateComplaintStatus(@Param('id') id: string, @Body('status') status: ComplaintStatus) {
-    return { data: this.dataStoreService.updateComplaintStatus(id, status) };
+  async updateComplaintStatus(@Param('id') id: string, @Body('status') status: ComplaintStatus) {
+    return { data: await this.dataStoreService.updateComplaintStatus(id, status) };
   }
 
   @Patch('admin-reports/:id/note')
-  saveComplaintNote(@Param('id') id: string, @Body('note') note: string, @Body('notify') notify = true) {
-    return { data: this.dataStoreService.saveComplaintNote(id, note, notify) };
+  async saveComplaintNote(@Param('id') id: string, @Body('note') note: string, @Body('notify') notify = true) {
+    return { data: await this.dataStoreService.saveComplaintNote(id, note, notify) };
   }
 
   @Post('admin-reports/:id/actions')

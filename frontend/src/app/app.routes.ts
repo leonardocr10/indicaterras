@@ -12,26 +12,16 @@ import {
   RegisterPageComponent,
   ReviewsPageComponent,
 } from './pages';
-import { AdminLoginPageComponent, AdminSectionPageComponent, ResidentProfilePageComponent } from './extra-pages';
+import { ResidentProfilePageComponent } from './extra-pages';
 import { AdminLayoutComponent, MobileLayoutComponent } from './layouts';
 import { adminGuard, professionalGuard, residentGuard } from './guards/auth.guard';
-import { AdminCategoryPageComponent } from './admin-category-page';
-import { AdminReviewDetailsPageComponent, AdminReviewsPageComponent } from './admin-reviews-page';
-import { CommentsPageComponent } from './comments-page';
-import { ProfessionalAccountPageComponent } from './professional-account-page';
-import { AdminReportsPageComponent } from './admin-reports-page';
-import { AdminReportDetailsPageComponent } from './admin-report-details-page';
-import { AdminPendingPageComponent } from './admin-pending-page';
-import { AdminProfilePageComponent } from './admin-profile-page';
 import { LandingPageComponent } from './landing-page';
-import { ResetPasswordPageComponent } from './reset-password-page';
-import { MessagesPageComponent } from './messages-page';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
   { path: 'cadastro', component: RegisterPageComponent },
-  { path: 'redefinir-senha', component: ResetPasswordPageComponent },
-  { path: 'admin/login', component: AdminLoginPageComponent },
+  { path: 'redefinir-senha', loadComponent: () => import('./reset-password-page').then((m) => m.ResetPasswordPageComponent) },
+  { path: 'admin/login', loadComponent: () => import('./extra-pages').then((m) => m.AdminLoginPageComponent) },
   {
     path: 'app',
     component: MobileLayoutComponent,
@@ -41,9 +31,9 @@ export const routes: Routes = [
       { path: 'home', component: HomePageComponent },
       { path: 'buscar', component: ProfessionalsPageComponent },
       { path: 'profissionais', component: ProfessionalsPageComponent },
-      { path: 'profissional/:id/comentarios', component: CommentsPageComponent },
+      { path: 'profissional/:id/comentarios', loadComponent: () => import('./comments-page').then((m) => m.CommentsPageComponent) },
       { path: 'profissional/:id', component: ProfessionalProfilePageComponent },
-      { path: 'mensagens/:professionalId', component: MessagesPageComponent },
+      { path: 'mensagens/:professionalId', loadComponent: () => import('./messages-page').then((m) => m.MessagesPageComponent) },
       { path: 'indicar', component: IndicatePageComponent },
       { path: 'avaliacoes/:id', component: ReviewsPageComponent },
       { path: 'favoritos', component: FavoritesPageComponent },
@@ -56,7 +46,7 @@ export const routes: Routes = [
   },
   {
     path: 'profissional/perfil',
-    component: ProfessionalAccountPageComponent,
+    loadComponent: () => import('./professional-account-page').then((m) => m.ProfessionalAccountPageComponent),
     canActivate: [professionalGuard],
   },
   {
@@ -66,8 +56,8 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: AdminDashboardPageComponent },
-      { path: 'pendencias', component: AdminPendingPageComponent },
-      { path: 'perfil', component: AdminProfilePageComponent },
+      { path: 'pendencias', loadComponent: () => import('./admin-pending-page').then((m) => m.AdminPendingPageComponent) },
+      { path: 'perfil', loadComponent: () => import('./admin-profile-page').then((m) => m.AdminProfilePageComponent) },
       { path: 'condominios/novo', redirectTo: 'clientes', pathMatch: 'full' },
       { path: 'condominios/:id', redirectTo: 'clientes', pathMatch: 'full' },
       { path: 'condominios', redirectTo: 'clientes', pathMatch: 'full' },
@@ -75,15 +65,15 @@ export const routes: Routes = [
       { path: 'clientes', component: AdminCrudPageComponent, data: { resource: 'residents' } },
       { path: 'usuarios', component: AdminCrudPageComponent, data: { resource: 'users' } },
       { path: 'profissionais', component: AdminCrudPageComponent, data: { resource: 'professionals' } },
-      { path: 'categorias', component: AdminCategoryPageComponent },
-      { path: 'avaliacoes', component: AdminReviewsPageComponent },
-      { path: 'avaliacoes/:id', component: AdminReviewDetailsPageComponent },
-      { path: 'indicacoes', component: AdminSectionPageComponent, data: { section: 'recommendations' } },
-      { path: 'denuncias', component: AdminReportsPageComponent },
-      { path: 'denuncias/:id', component: AdminReportDetailsPageComponent },
-      { path: 'configuracoes', component: AdminSectionPageComponent, data: { section: 'settings' } },
+      { path: 'categorias', loadComponent: () => import('./admin-category-page').then((m) => m.AdminCategoryPageComponent) },
+      { path: 'avaliacoes', loadComponent: () => import('./admin-reviews-page').then((m) => m.AdminReviewsPageComponent) },
+      { path: 'avaliacoes/:id', loadComponent: () => import('./admin-reviews-page').then((m) => m.AdminReviewDetailsPageComponent) },
+      { path: 'indicacoes', loadComponent: () => import('./extra-pages').then((m) => m.AdminSectionPageComponent), data: { section: 'recommendations' } },
+      { path: 'denuncias', loadComponent: () => import('./admin-reports-page').then((m) => m.AdminReportsPageComponent) },
+      { path: 'denuncias/:id', loadComponent: () => import('./admin-report-details-page').then((m) => m.AdminReportDetailsPageComponent) },
+      { path: 'configuracoes', loadComponent: () => import('./extra-pages').then((m) => m.AdminSectionPageComponent), data: { section: 'settings' } },
       { path: 'inteligencia-artificial', loadComponent: () => import('./admin-ai-page').then((m) => m.AdminAiPageComponent) },
-      { path: 'relatorios', component: AdminSectionPageComponent, data: { section: 'reports-dashboard' } },
+      { path: 'relatorios', loadComponent: () => import('./extra-pages').then((m) => m.AdminSectionPageComponent), data: { section: 'reports-dashboard' } },
     ],
   },
   { path: 'home', redirectTo: 'app/home', pathMatch: 'full' },

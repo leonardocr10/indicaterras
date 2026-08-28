@@ -392,18 +392,35 @@ export class HomePageComponent implements OnInit {
   }
 
   protected searchProfessionals() {
-    const search = this.searchText.replace(/\s+/g, ' ').trim();
-    void this.router.navigate(['/app/profissionais'], { queryParams: search ? { busca: search } : {} });
+    this.findProfessionalsForProblem(this.searchText);
   }
 
   protected searchProblemProfessionals() {
-    const search = this.problemText.replace(/\s+/g, ' ').trim();
-    void this.router.navigate(['/app/profissionais'], { queryParams: search ? { busca: search } : {} });
+    this.findProfessionalsForProblem(this.problemText);
   }
 
   protected createRequestFromProblem() {
     const problem = this.problemText.replace(/\s+/g, ' ').trim();
     void this.router.navigate(['/app/solicitacoes/nova'], { queryParams: problem ? { problema: problem } : {} });
+  }
+
+  private findProfessionalsForProblem(value: string) {
+    const query = value.replace(/\s+/g, ' ').trim();
+    if (!query) {
+      void this.router.navigate(['/app/profissionais']);
+      return;
+    }
+
+    this.api.matchProblem(query).subscribe({
+      next: (match) => {
+        // A categoria reconhecida é mais confiável que procurar toda a frase no perfil.
+        // Ex.: "meu chuveiro queimou" deve abrir Eletricistas, não zerar a lista por "queimou".
+        void this.router.navigate(['/app/profissionais'], {
+          queryParams: match.category ? { categoria: match.category.slug } : { busca: query },
+        });
+      },
+      error: () => void this.router.navigate(['/app/profissionais'], { queryParams: { busca: query } }),
+    });
   }
 }
 

@@ -53,7 +53,9 @@ import { brand } from './brand';
         </ul>
       </aside>
       <div class="auth-card resident-login-card">
-        <img class="auth-logo" [src]="brand.assets.logoPrimary" [alt]="brand.name" />
+        <a routerLink="/" class="auth-logo-link" aria-label="Voltar para a página inicial">
+          <img class="auth-logo" [src]="brand.assets.logoPrimary" [alt]="brand.name" />
+        </a>
         <div class="login-heading">
           <h1>Bem-vindo de volta</h1>
           <p>Entre para continuar resolvendo o que precisa.</p>
@@ -199,7 +201,9 @@ export class LoginPageComponent {
       <div class="auth-card wide register-card">
         <header class="register-header">
           <a routerLink="/" class="back-link" aria-label="Voltar para o início"><svg lucideArrowLeft /></a>
-          <img class="auth-logo" [src]="brand.assets.logoPrimary" [alt]="brand.name" />
+          <a routerLink="/" class="auth-logo-link" aria-label="Voltar para a página inicial">
+            <img class="auth-logo" [src]="brand.assets.logoPrimary" [alt]="brand.name" />
+          </a>
           <div>
             <h1>Crie sua conta</h1>
             <p>{{ isProfessional() ? 'Monte seu perfil e receba propostas.' : 'Encontre profissionais para o que precisar.' }}</p>

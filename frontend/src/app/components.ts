@@ -33,6 +33,7 @@ import {
   LucideUsersRound,
   LucideHandshake,
   LucideChartNoAxesColumn,
+  LucideChevronDown,
   LucideX,
 } from '@lucide/angular';
 
@@ -378,34 +379,12 @@ export class BottomNavigationComponent { protected readonly brand = brand; }
 @Component({
   selector: 'admin-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideClipboardCheck, LucideBuilding2, LucideUserRound, LucideUsersRound, LucideBriefcaseBusiness, LucideTag, LucideStar, LucideHandshake, LucideTriangleAlert, LucideSettings, LucideChartNoAxesColumn, LucideBell],
+  imports: [CommonModule, RouterLink, RouterLinkActive, LucideLayoutDashboard, LucideClipboardCheck, LucideBuilding2, LucideUserRound, LucideUsersRound, LucideBriefcaseBusiness, LucideTag, LucideStar, LucideHandshake, LucideTriangleAlert, LucideSettings, LucideChartNoAxesColumn],
   template: `
     <aside class="admin-sidebar">
       <div class="brand-card">
         <img class="admin-brand-logo" [src]="brand.assets.logoReverse" [alt]="brand.name" />
       </div>
-      <div class="notification-bell-wrapper">
-        <button type="button" class="notification-bell" [attr.aria-expanded]="painelAberto()" aria-label="Notificações" (click)="alternarPainel($event)">
-          <svg lucideBell />
-          <span *ngIf="totalNotificacoes() > 0" class="notification-count">{{ totalNotificacoes() }}</span>
-        </button>
-        <div *ngIf="painelAberto()" class="notification-panel" (click)="$event.stopPropagation()">
-          <h3>Notificações</h3>
-          <ng-container *ngIf="totalNotificacoes() > 0; else semNotificacao">
-            <a *ngIf="pendentes().newResidents > 0" routerLink="/admin/moradores" (click)="painelAberto.set(false)">
-              <b>{{ pendentes().newResidents }}</b>
-              <span>{{ pendentes().newResidents === 1 ? 'novo morador aguardando aprovação' : 'novos moradores aguardando aprovação' }}</span>
-            </a>
-            <a *ngIf="pendentes().reports > 0" routerLink="/admin/denuncias" (click)="painelAberto.set(false)">
-              <b>{{ pendentes().reports }}</b>
-              <span>{{ pendentes().reports === 1 ? 'denúncia pendente' : 'denúncias pendentes' }}</span>
-            </a>
-          </ng-container>
-          <ng-template #semNotificacao><p class="notification-empty">Nenhuma pendência no momento.</p></ng-template>
-          <a routerLink="/admin/pendencias" class="notification-panel-footer" (click)="painelAberto.set(false)">Ver central de pendências</a>
-        </div>
-      </div>
-
       <span class="sidebar-group-label">Operação</span>
       <a routerLink="/admin/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><svg lucideLayoutDashboard /><span>Dashboard</span></a>
       <a *ngIf="isVisible('pendencias')" routerLink="/admin/pendencias" routerLinkActive="active"><svg lucideClipboardCheck /><span>Central de pendências</span><b *ngIf="totalNotificacoes() > 0" class="sidebar-count">{{ totalNotificacoes() }}</b></a>
@@ -437,7 +416,6 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
   protected readonly userName = computed(() => this.auth.user()?.name ?? 'Administrador');
   protected readonly roleLabel = computed(() => (this.auth.user()?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Administrador do condomínio'));
 
-  protected readonly painelAberto = signal(false);
   protected readonly pendentes = signal<{ newResidents: number; reports: number }>({ newResidents: 0, reports: 0 });
   protected readonly totalNotificacoes = computed(() => this.pendentes().newResidents + this.pendentes().reports);
   protected readonly modulosRestritos = signal<string[]>([]);
@@ -470,18 +448,46 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
     });
   }
 
-  @HostListener('document:click')
-  protected fecharPainel() {
-    if (this.painelAberto()) this.painelAberto.set(false);
-  }
-
-  protected alternarPainel(evento: Event) {
-    evento.stopPropagation();
-    this.painelAberto.set(!this.painelAberto());
-  }
-
   logout() {
     this.auth.logout();
     void this.router.navigateByUrl('/admin/login');
   }
+}
+
+@Component({
+  selector: 'admin-top-menu',
+  standalone: true,
+  imports: [CommonModule, RouterLink, LucideBell, LucideChevronDown],
+  template: `
+    <header class="admin-global-topbar">
+      <div class="admin-global-topbar-spacer"></div>
+      <div class="admin-top-notifications">
+        <button type="button" class="admin-top-bell" aria-label="Notificações" [attr.aria-expanded]="open()" (click)="toggle($event)"><svg lucideBell /><i *ngIf="total()">{{ total() }}</i></button>
+        <section *ngIf="open()" class="admin-top-notification-panel" (click)="$event.stopPropagation()">
+          <header><strong>Notificações</strong><span *ngIf="total()">{{ total() }} pendente{{ total() === 1 ? '' : 's' }}</span></header>
+          <a *ngIf="pending().newResidents" routerLink="/admin/moradores" (click)="open.set(false)"><b>{{ pending().newResidents }}</b><span>{{ pending().newResidents === 1 ? 'morador aguardando aprovação' : 'moradores aguardando aprovação' }}</span></a>
+          <a *ngIf="pending().reports" routerLink="/admin/denuncias" (click)="open.set(false)"><b>{{ pending().reports }}</b><span>{{ pending().reports === 1 ? 'denúncia pendente' : 'denúncias pendentes' }}</span></a>
+          <p *ngIf="!total()">Nenhuma pendência no momento.</p>
+          <a routerLink="/admin/pendencias" class="admin-top-notification-footer" (click)="open.set(false)">Ver central de pendências</a>
+        </section>
+      </div>
+      <div class="admin-top-user"><img src="/assets/placeholders/default-avatar.svg" alt="" /><span><b>{{ userName() }}</b><small>{{ roleLabel() }}</small></span><svg lucideChevronDown /></div>
+    </header>
+  `,
+})
+export class AdminTopMenuComponent implements OnInit, OnDestroy {
+  private readonly auth = inject(AuthService);
+  private readonly api = inject(ApiService);
+  protected readonly userName = computed(() => this.auth.user()?.name ?? 'Administrador');
+  protected readonly roleLabel = computed(() => this.auth.user()?.role === 'SUPER_ADMIN' ? 'Super admin' : 'Administrador');
+  protected readonly pending = signal<{ newResidents: number; reports: number }>({ newResidents: 0, reports: 0 });
+  protected readonly total = computed(() => this.pending().newResidents + this.pending().reports);
+  protected readonly open = signal(false);
+  private interval?: ReturnType<typeof setInterval>;
+
+  ngOnInit() { this.load(); this.interval = setInterval(() => this.load(), 60_000); }
+  ngOnDestroy() { if (this.interval) clearInterval(this.interval); }
+  protected toggle(event: Event) { event.stopPropagation(); this.open.set(!this.open()); }
+  @HostListener('document:click') protected close() { this.open.set(false); }
+  private load() { this.api.getDashboard().subscribe({ next: (dashboard) => this.pending.set(dashboard.pending), error: () => undefined }); }
 }

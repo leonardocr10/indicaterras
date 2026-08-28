@@ -3,8 +3,6 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
-  LucideBell,
-  LucideChevronDown,
   LucideGripVertical,
   LucideInfo,
   LucidePencil,
@@ -42,8 +40,6 @@ type IconTarget = 'category' | 'service';
     CommonModule,
     FormsModule,
     SearchableSelectComponent,
-    LucideBell,
-    LucideChevronDown,
     LucideGripVertical,
     LucideInfo,
     LucidePencil,
@@ -62,10 +58,6 @@ type IconTarget = 'category' | 'service';
         <div>
           <nav class="category-breadcrumb"><span>Admin</span><b>/</b><strong>Categorias</strong></nav>
           <h1>Categorias</h1><p>Gerencie categorias, serviços, palavras-chave e ícones.</p>
-        </div>
-        <div class="category-header-actions">
-          <button class="notification-button" type="button" aria-label="Notificações"><svg lucideBell /><span>3</span></button>
-          <div class="category-admin-user"><img src="/assets/placeholders/default-avatar.svg" alt="Foto padrão do administrador" /><span><b>Administrador</b><small>Super admin</small></span><svg lucideChevronDown /></div>
         </div>
       </header>
       <p *ngIf="feedback()" class="category-feedback" [class.error]="hasError()">{{ feedback() }}</p>

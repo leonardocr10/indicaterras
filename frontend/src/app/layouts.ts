@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { AdminSidebarComponent, BottomNavigationComponent } from './components';
+import { AdminSidebarComponent, AdminTopMenuComponent, BottomNavigationComponent } from './components';
 
 @Component({
   selector: 'mobile-layout',
@@ -18,11 +18,12 @@ export class MobileLayoutComponent {}
 @Component({
   selector: 'admin-layout',
   standalone: true,
-  imports: [RouterOutlet, AdminSidebarComponent],
+  imports: [RouterOutlet, AdminSidebarComponent, AdminTopMenuComponent],
   template: `
     <section class="admin-page">
       <admin-sidebar />
       <div class="admin-layout-main">
+        <admin-top-menu />
         <router-outlet />
       </div>
     </section>

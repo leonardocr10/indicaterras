@@ -471,7 +471,7 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
         </section>
       </div>
       <button type="button" class="admin-top-user" [attr.aria-expanded]="userMenuOpen()" (click)="toggleUserMenu($event)"><img src="/assets/placeholders/default-avatar.svg" alt="" /><span><b>{{ userName() }}</b><small>{{ roleLabel() }}</small></span><svg lucideChevronDown /></button>
-      <section *ngIf="userMenuOpen()" class="admin-user-menu" (click)="$event.stopPropagation()"><a routerLink="/admin/configuracoes" (click)="userMenuOpen.set(false)">Perfil</a><button type="button" (click)="logout()">Sair</button></section>
+      <section *ngIf="userMenuOpen()" class="admin-user-menu" (click)="$event.stopPropagation()"><a routerLink="/admin/perfil" (click)="userMenuOpen.set(false)">Perfil</a><button type="button" (click)="logout()">Sair</button></section>
     </header>
   `,
 })

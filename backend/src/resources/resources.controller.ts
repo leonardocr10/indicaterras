@@ -90,6 +90,21 @@ export class ResourcesController {
     return this.catalogService.groups().then((data) => ({ data }));
   }
 
+  @Get('me/account')
+  getOwnAccount(@Query('userId') userId: string) {
+    return this.dataStoreService.getOwnAccount(userId).then((data) => ({ data }));
+  }
+
+  @Patch('me/account')
+  updateOwnAccount(@Body('userId') userId: string, @Body() payload: Record<string, unknown>) {
+    return this.dataStoreService.updateOwnAccount(userId, payload).then((data) => ({ data }));
+  }
+
+  @Post('me/account/change-password')
+  changeOwnPassword(@Body('userId') userId: string, @Body('currentPassword') currentPassword: string, @Body('newPassword') newPassword: string) {
+    return this.dataStoreService.changeOwnPassword(userId, currentPassword, newPassword).then((data) => ({ data }));
+  }
+
   @Get('categories/:id/services')
   async getCategoryServices(@Param('id') id: string, @Query('includeInactive') includeInactive?: string) {
     return { data: this.dataStoreService.getCategoryServices(id, includeInactive === 'true') };

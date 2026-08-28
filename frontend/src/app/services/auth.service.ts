@@ -80,6 +80,12 @@ export class AuthService {
     return this.http.post<ApiResponse<{ success: boolean }>>(`${this.baseUrl}/auth/reset-password`, { token, password }).pipe(map((response) => response.data));
   }
 
+  updateSessionUser(user: Partial<SessionUser>) {
+    const session = this.sessionState();
+    if (!session) return;
+    this.persist({ ...session, user: { ...session.user, ...user } });
+  }
+
   private persist(session: AuthSession) {
     this.sessionState.set(session);
     localStorage.setItem(this.storageKey, JSON.stringify(session));

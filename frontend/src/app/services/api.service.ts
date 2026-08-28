@@ -138,6 +138,19 @@ export class ApiService {
       .pipe(map((response) => response.data));
   }
 
+  getMyAccount() {
+    const userId = this.auth.user()?.id ?? '';
+    return this.http.get<ApiResponse<{ id: string; name: string; email: string; phone: string | null; role: string }>>(`${this.baseUrl}/me/account?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+  }
+
+  updateMyAccount(payload: { name: string; email: string; phone: string }) {
+    return this.http.patch<ApiResponse<{ id: string; name: string; email: string; phone: string | null }>>(`${this.baseUrl}/me/account`, { userId: this.auth.user()?.id, ...payload }).pipe(map((response) => response.data));
+  }
+
+  changeMyPassword(currentPassword: string, newPassword: string) {
+    return this.http.post<ApiResponse<{ success: boolean }>>(`${this.baseUrl}/me/account/change-password`, { userId: this.auth.user()?.id, currentPassword, newPassword }).pipe(map((response) => response.data));
+  }
+
   getCondominiums() {
     return this.http
       .get<ApiResponse<Condominium[]>>(`${this.baseUrl}/condominiums`)

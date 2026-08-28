@@ -22,6 +22,7 @@ import { ProfessionalAccountPageComponent } from './professional-account-page';
 import { AdminReportsPageComponent } from './admin-reports-page';
 import { AdminReportDetailsPageComponent } from './admin-report-details-page';
 import { AdminPendingPageComponent } from './admin-pending-page';
+import { AdminProfilePageComponent } from './admin-profile-page';
 import { LandingPageComponent } from './landing-page';
 import { ResetPasswordPageComponent } from './reset-password-page';
 import { MessagesPageComponent } from './messages-page';
@@ -66,6 +67,7 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: AdminDashboardPageComponent },
       { path: 'pendencias', component: AdminPendingPageComponent },
+      { path: 'perfil', component: AdminProfilePageComponent },
       { path: 'condominios/novo', redirectTo: 'condominios', pathMatch: 'full' },
       { path: 'condominios/:id', redirectTo: 'condominios', pathMatch: 'full' },
       { path: 'condominios', component: AdminCrudPageComponent, data: { resource: 'condominiums' } },

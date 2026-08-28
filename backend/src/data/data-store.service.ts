@@ -1139,6 +1139,39 @@ export class DataStoreService implements OnModuleInit {
     return this.categories.find((category) => category.id === id || category.slug === id);
   }
 
+  async getOwnAccount(userId: string) {
+    this.ensureDatabase('carregar o perfil');
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+    return this.accountPayload(user);
+  }
+
+  async updateOwnAccount(userId: string, payload: Record<string, unknown>) {
+    this.ensureDatabase('atualizar o perfil');
+    const name = String(payload.name ?? '').trim();
+    const email = String(payload.email ?? '').trim().toLowerCase();
+    if (!name || !email) throw new ConflictException('Informe nome e e-mail.');
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { name, email, phone: String(payload.phone ?? '').trim() || null },
+    });
+    await this.loadDatabaseData();
+    return this.accountPayload(user);
+  }
+
+  async changeOwnPassword(userId: string, currentPassword: string, newPassword: string) {
+    this.ensureDatabase('trocar a senha');
+    if (String(newPassword).length < 6) throw new ConflictException('A nova senha deve ter ao menos 6 caracteres.');
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !await bcrypt.compare(String(currentPassword ?? ''), user.passwordHash)) throw new UnauthorizedException('A senha atual está incorreta.');
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(newPassword, 10) } });
+    return { success: true };
+  }
+
+  private accountPayload(user: { id: string; name: string; email: string; phone: string | null; role: string }) {
+    return { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role };
+  }
+
   getCategoryServices(categoryId: string, includeInactive = false) {
     const category = this.getCategoryById(categoryId);
     if (!category) throw new NotFoundException('Categoria não encontrada');

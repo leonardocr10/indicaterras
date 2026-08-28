@@ -18,6 +18,7 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "seed:categorias-vazias": "ts-node prisma/seed-categorias-vazias.ts",
     "geocode:profissionais": "ts-node prisma/geocode-professionals.ts",
+    "seed:corretor-seguros": "ts-node prisma/seed-corretor-seguros.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

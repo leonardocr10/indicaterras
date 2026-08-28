@@ -25,6 +25,7 @@ const SLUG_POR_NOME: Record<string, string> = {
   'portoes-automacao': 'portoes-automacao',
   montador: 'montador',
   churrasqueiro: 'churrasqueiro',
+  'corretor-seguros': 'corretor-seguros',
   outros: 'outros',
 };
 

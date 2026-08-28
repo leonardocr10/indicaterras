@@ -45,3 +45,52 @@ describe('CatalogService', () => {
     expect(result.services[0]?.name).toBe(expectedService);
   });
 });
+
+/**
+ * Corretor de Seguros e uma categoria unica com os tipos de seguro como
+ * servicos - e nao uma categoria por tipo. Estes casos garantem que a frase
+ * natural do cliente cai no servico certo dentro dela.
+ */
+describe('CatalogService com Corretor de Seguros', () => {
+  const seguros = category('broker', 'Corretor de Seguros', 'corretor-seguros', 'Serviços profissionais', [
+    ['Seguro Auto', ['carro', 'moto', 'frota', 'seguro de carro', 'seguro do carro', 'seguro para carro', 'seguro automóvel', 'seguro de frota', 'seguro para frota', 'renovar seguro carro']],
+    ['Seguro Residencial', ['casa', 'apartamento', 'imóvel', 'seguro de casa', 'seguro da casa', 'seguro residencial', 'seguro para casa']],
+    ['Seguro Empresarial', ['loja', 'empresa', 'comércio', 'seguro da empresa', 'seguro para empresa', 'seguro empresarial', 'seguro de loja']],
+    ['Seguro Saúde', ['plano de saúde', 'seguro saúde', 'plano de saúde empresa', 'plano para empresa', 'plano empresarial']],
+    ['Seguro de Máquinas e Equipamentos', ['trator', 'colheitadeira', 'seguro trator', 'seguro para trator', 'seguro colheitadeira', 'seguro de colheitadeira', 'seguro de máquina']],
+    ['Seguro Agro', ['fazenda', 'lavoura', 'seguro para fazenda', 'seguro da fazenda', 'seguro lavoura', 'seguro rural', 'seguro agro']],
+    ['Seguro de Vida', ['seguro de vida', 'seguro vida']],
+  ]);
+  const outras = [
+    category('electrician', 'Eletricista', 'eletricista', 'Casa e manutenção', [['Chuveiro', ['chuveiro queimou']]]),
+    category('air', 'Ar-condicionado', 'ar-condicionado', 'Casa e manutenção', [['Manutenção', ['ar nao gela']]]),
+    category('health', 'Psicólogo', 'psicologo', 'Saúde e bem-estar', [['Psicoterapia individual', ['psicologa']]]),
+  ];
+  const service = new CatalogService({
+    category: { findMany: jest.fn().mockResolvedValue([seguros, ...outras]) },
+    professional: { findMany: jest.fn().mockResolvedValue([]) },
+  } as never);
+
+  it.each([
+    ['Quero fazer seguro do meu carro', 'Seguro Auto'],
+    ['Preciso de seguro para minha empresa', 'Seguro Empresarial'],
+    ['Quero seguro da minha casa', 'Seguro Residencial'],
+    ['Preciso de plano de saude para minha empresa', 'Seguro Saúde'],
+    ['Quero fazer seguro da minha colheitadeira', 'Seguro de Máquinas e Equipamentos'],
+    ['Preciso de seguro para o trator', 'Seguro de Máquinas e Equipamentos'],
+    ['Quero seguro para minha fazenda', 'Seguro Agro'],
+    ['Preciso de seguro para minha frota', 'Seguro Auto'],
+    ['quero fazer um seguro de vida', 'Seguro de Vida'],
+    ['Quero proteger minha lavoura', 'Seguro Agro'],
+    ['Preciso de plano de saúde para minha empresa', 'Seguro Saúde'],
+  ])('interpreta "%s"', async (frase, servicoEsperado) => {
+    const resultado = await service.match(frase);
+    expect(resultado.category?.name).toBe('Corretor de Seguros');
+    expect(resultado.services[0]?.name).toBe(servicoEsperado);
+  });
+
+  it('nao rouba buscas de outras categorias', async () => {
+    const chuveiro = await service.match('meu chuveiro queimou');
+    expect(chuveiro.category?.name).toBe('Eletricista');
+  });
+});

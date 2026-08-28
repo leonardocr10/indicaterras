@@ -114,6 +114,13 @@ model User {
   approvedAt      DateTime?
   block           String?
   unit            String?
+  zipCode         String?
+  street          String?
+  number          String?
+  complement      String?
+  neighborhood    String?
+  city            String?
+  state           String?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   condominium     Condominium?       @relation(fields: [condominiumId], references: [id])

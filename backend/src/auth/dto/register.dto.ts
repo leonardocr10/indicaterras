@@ -10,16 +10,37 @@ export class RegisterDto {
   @IsString()
   phone!: string;
 
+  @IsOptional()
   @IsString()
-  condominiumId!: string;
+  condominiumId?: string;
 
   @IsOptional()
   @IsString()
-  block?: string;
+  zipCode?: string;
 
   @IsOptional()
   @IsString()
-  unit?: string;
+  street?: string;
+
+  @IsOptional()
+  @IsString()
+  number?: string;
+
+  @IsOptional()
+  @IsString()
+  complement?: string;
+
+  @IsOptional()
+  @IsString()
+  neighborhood?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  state?: string;
 
   @IsString()
   @MinLength(6)

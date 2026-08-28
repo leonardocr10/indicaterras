@@ -22,6 +22,26 @@ export function fetchBrazilianCities(http: HttpClient) {
   );
 }
 
+export interface AddressByZipCode {
+  street: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+}
+
+/** Consulta o CEP na BrasilAPI (publica e gratuita) para preencher o endereco. */
+export function fetchAddressByZipCode(http: HttpClient, zipCode: string) {
+  const digits = String(zipCode ?? '').replace(/\D/g, '');
+  return http.get<AddressByZipCode>(`https://brasilapi.com.br/api/cep/v2/${digits}`).pipe(
+    map((address) => ({
+      street: address.street ?? '',
+      neighborhood: address.neighborhood ?? '',
+      city: address.city ?? '',
+      state: address.state ?? '',
+    })),
+  );
+}
+
 // Fonte: lista de bairros por regiao (Central, Norte, Sul, Leste, Oeste) de Uberlandia-MG.
 const UBERLANDIA_NEIGHBORHOODS = [
   'Aclimação', 'Alto Umuarama', 'Alvorada', 'Bom Jesus', 'Brasil', 'Carajás', 'Cazeca',

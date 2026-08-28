@@ -227,6 +227,13 @@ export class DataStoreService implements OnModuleInit {
         active: item.active,
         block: item.block ?? undefined,
         unit: item.unit ?? undefined,
+        zipCode: item.zipCode ?? undefined,
+        street: item.street ?? undefined,
+        number: item.number ?? undefined,
+        complement: item.complement ?? undefined,
+        neighborhood: item.neighborhood ?? undefined,
+        city: item.city ?? undefined,
+        state: item.state ?? undefined,
       })),
     );
     this.reviews.splice(
@@ -346,13 +353,18 @@ export class DataStoreService implements OnModuleInit {
   }
 
   async createResident(payload: {
-    condominiumId: string;
+    condominiumId?: string;
     name: string;
     email: string;
     phone: string;
     password: string;
-    block?: string;
-    unit?: string;
+    zipCode?: string;
+    street?: string;
+    number?: string;
+    complement?: string;
+    neighborhood?: string;
+    city?: string;
+    state?: string;
   }): Promise<Omit<DemoUser, 'password'>> {
     await this.usersReady;
     this.ensureDatabase('criar a conta do morador');
@@ -368,8 +380,13 @@ export class DataStoreService implements OnModuleInit {
           phone: payload.phone || null,
           passwordHash: await bcrypt.hash(payload.password, 10),
           role: 'RESIDENT',
-          block: payload.block || null,
-          unit: payload.unit || null,
+          zipCode: payload.zipCode || null,
+          street: payload.street || null,
+          number: payload.number || null,
+          complement: payload.complement || null,
+          neighborhood: payload.neighborhood || null,
+          city: payload.city || null,
+          state: payload.state || null,
           emailVerified: true,
           approvalStatus: requireApproval ? 'PENDING' : 'APPROVED',
           approvedAt: requireApproval ? null : new Date(),

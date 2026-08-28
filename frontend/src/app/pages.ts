@@ -29,7 +29,7 @@ import {
 import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { matchesSearch } from './search.util';
-import { fetchBrazilianCities, neighborhoodsForCity } from './brazil-locations';
+import { fetchAddressByZipCode, fetchBrazilianCities, neighborhoodsForCity } from './brazil-locations';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import { categoryAvatar, categoryCover } from './category-art.util';
 import { SearchableSelectComponent } from './searchable-select';
@@ -138,11 +138,19 @@ export class LoginPageComponent {
           <input type="tel" inputmode="tel" maxlength="15" placeholder="Telefone (WhatsApp)" formControlName="phone" appPhoneMask />
 
           <ng-container *ngIf="!isProfessional()">
-            <input placeholder="CPF (opcional)" formControlName="cpf" />
-            <app-searchable-select formControlName="condominiumId" [items]="condominiums()" valueKey="id" labelKey="name" placeholder="Selecione o condomínio" searchPlaceholder="Pesquisar condomínio..." />
+            <div class="cep-field">
+              <input placeholder="CEP" formControlName="zipCode" inputmode="numeric" maxlength="9" (input)="onZipCodeInput($event)" />
+              <small *ngIf="zipStatus()" [class.error]="zipStatus() === 'Não encontramos esse CEP.'">{{ zipStatus() }}</small>
+            </div>
+            <input placeholder="Rua" formControlName="street" />
             <div class="grid-2">
-              <input placeholder="Bloco" formControlName="block" />
-              <input placeholder="Unidade" formControlName="unit" />
+              <input placeholder="Número" formControlName="number" />
+              <input placeholder="Complemento (opcional)" formControlName="complement" />
+            </div>
+            <input placeholder="Bairro" formControlName="neighborhood" />
+            <div class="grid-2">
+              <input placeholder="Cidade" formControlName="city" />
+              <input placeholder="Estado" formControlName="state" maxlength="2" />
             </div>
           </ng-container>
 
@@ -181,29 +189,25 @@ export class RegisterPageComponent implements OnInit {
   protected readonly loadingCities = signal(false);
   protected readonly selectedCity = signal('');
   protected readonly neighborhoodOptions = computed(() => neighborhoodsForCity(this.selectedCity()));
+  protected readonly zipStatus = signal('');
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
     phone: ['', Validators.required],
-    cpf: [''],
-    condominiumId: ['', Validators.required],
-    block: [''],
-    unit: [''],
+    zipCode: ['', Validators.required],
+    street: ['', Validators.required],
+    number: ['', Validators.required],
+    complement: [''],
     companyName: [''],
     categoryId: [''],
-    city: [''],
-    neighborhood: [''],
+    city: ['', Validators.required],
+    neighborhood: ['', Validators.required],
+    state: ['', Validators.required],
     bio: [''],
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   ngOnInit() {
-    this.api.getCondominiums().subscribe((condominiums) => {
-      this.condominiums.set(condominiums);
-      if (!this.isProfessional() && !this.form.controls.condominiumId.value) {
-        this.form.controls.condominiumId.setValue(condominiums[0]?.id ?? '');
-      }
-    });
     this.api.getCategories().subscribe((categories) => this.categories.set(categories));
     this.api.getPublicSettings().subscribe({
       next: (settings) => this.professionalSignupEnabled.set(settings.professionalSelfRegistration),
@@ -211,7 +215,9 @@ export class RegisterPageComponent implements OnInit {
     });
     this.form.controls.city.valueChanges.subscribe((city) => {
       this.selectedCity.set(city ?? '');
-      this.form.controls.neighborhood.setValue('');
+      // Só o profissional escolhe bairro numa lista por cidade; no morador a cidade
+      // vem preenchida pelo CEP junto com o bairro, que não pode ser apagado aqui.
+      if (this.isProfessional()) this.form.controls.neighborhood.setValue('');
     });
   }
 
@@ -231,21 +237,43 @@ export class RegisterPageComponent implements OnInit {
     this.isProfessional.set(professional);
     this.feedback.set('');
     this.hasError.set(false);
-    const { condominiumId, categoryId, city, neighborhood } = this.form.controls;
+    const { categoryId, zipCode, street, number, state } = this.form.controls;
+    // Profissional escolhe cidade/bairro numa lista; morador informa o endereço completo pelo CEP.
+    const enderecoCompleto = [zipCode, street, number, state];
     if (professional) {
-      condominiumId.clearValidators();
       categoryId.setValidators(Validators.required);
-      city.setValidators(Validators.required);
-      neighborhood.setValidators(Validators.required);
+      enderecoCompleto.forEach((control) => control.clearValidators());
       if (!this.cities().length) this.loadCities();
     } else {
-      condominiumId.setValidators(Validators.required);
-      if (!condominiumId.value) condominiumId.setValue(this.condominiums()[0]?.id ?? '');
       categoryId.clearValidators();
-      city.clearValidators();
-      neighborhood.clearValidators();
+      enderecoCompleto.forEach((control) => control.setValidators(Validators.required));
     }
-    [condominiumId, categoryId, city, neighborhood].forEach((control) => control.updateValueAndValidity());
+    [categoryId, ...enderecoCompleto].forEach((control) => control.updateValueAndValidity());
+  }
+
+  protected onZipCodeInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const digits = input.value.replace(/\D/g, '').slice(0, 8);
+    const masked = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+    this.form.controls.zipCode.setValue(masked);
+    input.value = masked;
+    if (digits.length !== 8) {
+      this.zipStatus.set('');
+      return;
+    }
+    this.zipStatus.set('Buscando endereço...');
+    fetchAddressByZipCode(this.http, digits).subscribe({
+      next: (address) => {
+        this.zipStatus.set('');
+        this.form.patchValue({
+          street: address.street || this.form.controls.street.value,
+          neighborhood: address.neighborhood || this.form.controls.neighborhood.value,
+          city: address.city,
+          state: address.state,
+        });
+      },
+      error: () => this.zipStatus.set('Não encontramos esse CEP.'),
+    });
   }
 
   submit() {
@@ -272,9 +300,13 @@ export class RegisterPageComponent implements OnInit {
           name: values.name,
           email: values.email,
           phone: values.phone,
-          condominiumId: values.condominiumId,
-          block: values.block,
-          unit: values.unit,
+          zipCode: values.zipCode,
+          street: values.street,
+          number: values.number,
+          complement: values.complement,
+          neighborhood: values.neighborhood,
+          city: values.city,
+          state: values.state,
           password: values.password,
         });
     request.subscribe({

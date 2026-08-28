@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE `User`
+    ADD COLUMN `zipCode` VARCHAR(191) NULL,
+    ADD COLUMN `street` VARCHAR(191) NULL,
+    ADD COLUMN `number` VARCHAR(191) NULL,
+    ADD COLUMN `complement` VARCHAR(191) NULL,
+    ADD COLUMN `neighborhood` VARCHAR(191) NULL,
+    ADD COLUMN `city` VARCHAR(191) NULL,
+    ADD COLUMN `state` VARCHAR(191) NULL;

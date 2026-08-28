@@ -30,6 +30,13 @@ export interface DemoUser {
   active: boolean;
   block?: string;
   unit?: string;
+  zipCode?: string;
+  street?: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
 }
 
 export interface DemoCategory {

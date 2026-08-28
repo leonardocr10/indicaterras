@@ -28,8 +28,13 @@ export class AuthService {
       name: registerDto.name,
       phone: registerDto.phone,
       password: registerDto.password,
-      block: registerDto.block,
-      unit: registerDto.unit,
+      zipCode: registerDto.zipCode,
+      street: registerDto.street,
+      number: registerDto.number,
+      complement: registerDto.complement,
+      neighborhood: registerDto.neighborhood,
+      city: registerDto.city,
+      state: registerDto.state,
     });
     const canAccess = !this.dataStoreService.requiresUserApproval() || user.approvalStatus === 'APPROVED';
     return {

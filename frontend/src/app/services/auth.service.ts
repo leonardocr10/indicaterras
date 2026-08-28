@@ -43,7 +43,7 @@ export class AuthService {
     );
   }
 
-  register(payload: { name: string; email: string; phone: string; condominiumId: string; block?: string; unit?: string; password: string }) {
+  register(payload: { name: string; email: string; phone: string; zipCode?: string; street?: string; number?: string; complement?: string; neighborhood?: string; city?: string; state?: string; password: string }) {
     return this.http.post<ApiResponse<RegistrationResult>>(`${this.baseUrl}/auth/register`, payload).pipe(
       map((response) => response.data),
       tap((result) => { if (result.session) this.persist(result.session); }),

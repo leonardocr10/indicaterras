@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnInit, signal } from '@angular/core';
 import { LucideDownload, LucideShare, LucideX } from '@lucide/angular';
+import { brand } from './brand';
 
 /** Evento do Chrome/Edge que permite abrir a instalação a partir de um botão nosso. */
 interface BeforeInstallPromptEvent extends Event {
@@ -8,7 +9,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-const CHAVE_DISPENSADO = 'alphas-indica-instalacao-dispensada';
+const CHAVE_DISPENSADO = 'indicafacil-instalacao-dispensada';
 
 @Component({
   selector: 'install-prompt',
@@ -16,7 +17,7 @@ const CHAVE_DISPENSADO = 'alphas-indica-instalacao-dispensada';
   imports: [CommonModule, LucideDownload, LucideShare, LucideX],
   template: `
     <aside *ngIf="visivel()" class="install-banner" [class.acima-da-navegacao]="comNavegacao()" role="dialog" aria-label="Instalar aplicativo">
-      <img src="icons/icon-96x96.png" alt="" />
+      <img [src]="brand.assets.icon" alt="Símbolo IndicaFácil" />
       <div class="install-texto">
         <strong>Instalar o IndicaFácil</strong>
         <p *ngIf="modo() === 'android'">Adicione na tela de início e abra como aplicativo, sem passar pelo navegador.</p>
@@ -30,6 +31,7 @@ const CHAVE_DISPENSADO = 'alphas-indica-instalacao-dispensada';
   `,
 })
 export class InstallPromptComponent implements OnInit {
+  protected readonly brand = brand;
   protected readonly visivel = signal(false);
   protected readonly modo = signal<'android' | 'ios-safari' | 'ios-chrome' | 'ios-outro'>('android');
   protected readonly comNavegacao = signal(false);

@@ -15,7 +15,7 @@ SET @s4 = UUID();
 SET @s5 = UUID();
 SET @s6 = UUID();
 
-INSERT INTO CategoryService (id, categoryId, name, slug, icon, displayOrder, active, createdAt, updatedAt) VALUES
+INSERT INTO category_services (id, categoryId, name, slug, icon, displayOrder, active, createdAt, updatedAt) VALUES
 (@s1, @cat_id, 'Churrasco para eventos',              'churrasco-para-eventos',              'cooking', 1, 1, NOW(3), NOW(3)),
 (@s2, @cat_id, 'Churrasco em domicílio',               'churrasco-em-domicilio',              'cooking', 2, 1, NOW(3), NOW(3)),
 (@s3, @cat_id, 'Espetinho para festas',                'espetinho-para-festas',               'cooking', 3, 1, NOW(3), NOW(3)),
@@ -39,4 +39,4 @@ INSERT INTO category_service_aliases (id, categoryServiceId, alias, normalizedAl
 (UUID(), @s6, 'montar churrasqueira', 'montar churrasqueira');
 
 SELECT 'Categoria criada:' AS info, @cat_id AS id;
-SELECT id, name, slug FROM CategoryService WHERE categoryId = @cat_id ORDER BY displayOrder;
+SELECT id, name, slug FROM category_services WHERE categoryId = @cat_id ORDER BY displayOrder;

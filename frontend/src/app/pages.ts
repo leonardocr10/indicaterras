@@ -17,7 +17,7 @@ import { ThemeService } from './services/theme.service';
 import { AuthService } from './services/auth.service';
 import { ToastService } from './services/toast.service';
 import {
-  LucideArrowLeft, LucideBell, LucideCalendarDays, LucideCheckCircle2, LucideEllipsis,
+  LucideArrowLeft, LucideArrowRight, LucideBell, LucideCalendarDays, LucideCheckCircle2, LucideEllipsis,
   LucideHeart, LucideCamera, LucideMenu, LucideMessageCircle, LucidePhone,
   LucideSearch, LucideShare2, LucideSlidersHorizontal, LucideUsersRound, LucideSparkles,
   LucideBriefcaseBusiness, LucideChevronDown, LucideFileText, LucideThumbsUp,
@@ -304,31 +304,40 @@ export class RegisterPageComponent implements OnInit {
     FormsModule,
     RouterLink,
     CategoryCardComponent,
-    ProfessionalCardComponent,
     MobileTopbarComponent,
     LucideSearch,
     LucideSlidersHorizontal,
     LucideShieldCheck,
-    LucideChevronRight,
+    LucideMessageCircle,
+    LucideUsersRound,
+    LucideArrowRight,
   ],
   template: `
-    <section class="mobile-page home-page" *ngIf="payload() as home">
+      <section class="mobile-page home-page" *ngIf="payload() as home">
       <mobile-topbar />
       <section class="home-surface">
-        <h1>O que você precisa hoje?</h1>
-        <p class="home-subtitle">Encontre profissionais e serviços de confiança.</p>
+        <div class="home-hero">
+          <div><h1>Encontre o profissional ideal</h1><p>com confiança e segurança.</p></div>
+          <div class="home-hero-proof" aria-label="Profissionais verificados e avaliados"><span><svg lucideShieldCheck /></span><i class="hero-avatar avatar-one"></i><i class="hero-avatar avatar-two"></i><i class="hero-avatar avatar-three"></i></div>
+        </div>
         <form class="home-search" role="search" (ngSubmit)="searchProfessionals()">
           <svg lucideSearch aria-hidden="true" />
           <input name="homeSearch" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" [(ngModel)]="searchText" (keydown.enter)="searchProfessionals(); $event.preventDefault()" placeholder="Buscar profissional ou serviço..." aria-label="Buscar profissional ou serviço" />
           <a class="home-search-filters" routerLink="/app/profissionais" aria-label="Abrir filtros de busca"><svg lucideSlidersHorizontal /></a>
         </form>
-        <section class="home-request-highlight">
-          <strong>Qual problema você precisa resolver?</strong>
-          <textarea [(ngModel)]="problemText" name="problemText" rows="3" placeholder="Buscar profissional ou descrever problema... Ex.: Meu chuveiro não esquenta"></textarea>
-          <div class="home-request-actions">
-            <button type="button" class="secondary-button" (click)="searchProblemProfessionals()">Ver profissionais</button>
-            <button type="button" class="primary-button home-request-primary" (click)="createRequestFromProblem()">Quero receber propostas</button>
-          </div>
+        <section class="home-decision-grid">
+          <article class="home-decision-card request">
+            <span><svg lucideMessageCircle /></span><h2>Descreva seu problema</h2>
+            <p>Conte o que precisa resolver. Ex.: Meu chuveiro não esquenta</p>
+            <button type="button" class="primary-button" (click)="createRequest()">Quero receber propostas<svg lucideArrowRight /></button>
+            <small><svg lucideArrowRight />Receba propostas de profissionais interessados no seu serviço.</small>
+          </article>
+          <article class="home-decision-card browse">
+            <span><svg lucideUsersRound /></span><h2>Ver profissionais</h2>
+            <p>Navegue e escolha o profissional ideal para o que você precisa.</p>
+            <a routerLink="/app/profissionais" class="secondary-button">Ver profissionais<svg lucideArrowRight /></a>
+            <small><svg lucideShieldCheck />Compare avaliações, preços e escolha com segurança.</small>
+          </article>
         </section>
         <div class="home-popular" *ngIf="popularCategories(home).length">
           <span>Mais buscados:</span>
@@ -345,21 +354,10 @@ export class RegisterPageComponent implements OnInit {
         </div>
         <a class="home-verified" routerLink="/app/profissionais">
           <span><svg lucideShieldCheck /></span>
-          <div><strong>Profissionais verificados</strong><small>Mais segurança para você e sua família.</small></div>
-          <svg lucideChevronRight />
+          <div><strong>Profissionais verificados e avaliados</strong><small>Aqui você encontra confiança, qualidade e o melhor atendimento da sua região.</small></div>
+          <div class="verified-avatars" aria-hidden="true"><i></i><i></i><i></i><b>+15k</b></div>
         </a>
       </section>
-
-      <section class="home-content recommended-section">
-        <div class="section-title">
-          <h2>Mais recomendados do {{ home.condominium.name }}</h2>
-          <a routerLink="/app/profissionais">Ver todos</a>
-        </div>
-        <div class="recommended-strip">
-          <professional-card *ngFor="let professional of home.featuredProfessionals" [professional]="professional" [compact]="true" [condominiumName]="home.condominium.name" />
-        </div>
-      </section>
-
     </section>
   `,
 })
@@ -370,7 +368,6 @@ export class HomePageComponent implements OnInit {
   private readonly router = inject(Router);
   protected readonly payload = signal<HomePayload | null>(null);
   protected searchText = '';
-  protected problemText = '';
 
   ngOnInit() {
     // The administrative desktop experience is a separate dashboard, not the resident directory.
@@ -395,13 +392,8 @@ export class HomePageComponent implements OnInit {
     this.findProfessionalsForProblem(this.searchText);
   }
 
-  protected searchProblemProfessionals() {
-    this.findProfessionalsForProblem(this.problemText);
-  }
-
-  protected createRequestFromProblem() {
-    const problem = this.problemText.replace(/\s+/g, ' ').trim();
-    void this.router.navigate(['/app/solicitacoes/nova'], { queryParams: problem ? { problema: problem } : {} });
+  protected createRequest() {
+    void this.router.navigate(['/app/solicitacoes/nova']);
   }
 
   private findProfessionalsForProblem(value: string) {
@@ -416,7 +408,7 @@ export class HomePageComponent implements OnInit {
         // A categoria reconhecida é mais confiável que procurar toda a frase no perfil.
         // Ex.: "meu chuveiro queimou" deve abrir Eletricistas, não zerar a lista por "queimou".
         void this.router.navigate(['/app/profissionais'], {
-          queryParams: match.category ? { categoria: match.category.slug } : { busca: query },
+          queryParams: match.category ? { categoria: match.category.slug, servico: match.services[0]?.slug ?? null } : { busca: query },
         });
       },
       error: () => void this.router.navigate(['/app/profissionais'], { queryParams: { busca: query } }),
@@ -427,7 +419,7 @@ export class HomePageComponent implements OnInit {
 @Component({
   selector: 'professionals-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ProfessionalCardComponent, SearchableSelectComponent, LucideArrowLeft, LucideSearch, LucideSlidersHorizontal, LucideThumbsUp, LucideStar, LucideX],
+  imports: [CommonModule, FormsModule, RouterLink, ProfessionalCardComponent, SearchableSelectComponent, LucideArrowLeft, LucideChevronDown, LucideSearch, LucideSlidersHorizontal, LucideThumbsUp, LucideX],
   template: `
     <section class="mobile-page professionals-page">
       <div class="professionals-heading">
@@ -435,17 +427,29 @@ export class HomePageComponent implements OnInit {
         <div><h1>{{ pageTitle() }}</h1><p>{{ filteredProfessionals().length }} {{ filteredProfessionals().length === 1 ? 'profissional encontrado' : 'profissionais encontrados' }}</p></div>
       </div>
       <div class="professionals-content">
-        <div class="filter-row">
-          <button class="filter-chip icon-only" type="button" [class.active]="sortMode() === 'recommended'" (click)="sortMode.set('recommended')" aria-label="Mais recomendados" title="Mais recomendados"><svg lucideThumbsUp /></button>
-          <button class="filter-chip icon-only" type="button" [class.active]="sortMode() === 'rating'" (click)="sortMode.set('rating')" aria-label="Melhor avaliados" title="Melhor avaliados"><svg lucideStar /></button>
-          <button class="filter-chip filter-open-button icon-only" type="button" [class.has-filters]="activeFilterCount() > 0" (click)="openFilters()" aria-label="Filtros" title="Filtros"><span *ngIf="activeFilterCount()">{{ activeFilterCount() }}</span><svg lucideSlidersHorizontal /></button>
+        <div class="filter-row category-filter-row">
+          <button class="filter-chip recommended-filter" type="button" [class.active]="sortMode() === 'recommended'" (click)="setSort('recommended')"><svg lucideThumbsUp />Mais indicados</button>
+          <div class="sort-menu">
+            <button class="filter-chip" type="button" (click)="sortOpen.set(!sortOpen())">Ordenar<svg lucideChevronDown /></button>
+            <div *ngIf="sortOpen()" class="sort-menu-options">
+              <button *ngFor="let option of sortOptions" type="button" [class.active]="sortMode() === option.value" (click)="setSort(option.value)">{{ option.label }}</button>
+            </div>
+          </div>
+          <button class="filter-chip filter-open-button" type="button" [class.has-filters]="activeFilterCount() > 0" (click)="openFilters()"><svg lucideSlidersHorizontal /><span>Filtros</span><b *ngIf="activeFilterCount()">{{ activeFilterCount() }}</b></button>
         </div>
-        <professional-card *ngFor="let professional of filteredProfessionals()" [professional]="professional" />
-        <div class="professionals-empty" *ngIf="filteredProfessionals().length === 0">
+        <section class="recommended-professionals-section" *ngIf="recommendedProfessionals().length">
+          <header><div><h2>Recomendados para você</h2><p>Os mais bem avaliados e indicados da sua região.</p></div></header>
+          <professional-card *ngFor="let professional of recommendedProfessionals()" [professional]="professional" [highlight]="true" />
+        </section>
+        <section class="other-professionals-section" *ngIf="otherProfessionals().length">
+          <header><div><h2>Outros profissionais</h2><p>Confira mais opções disponíveis.</p></div></header>
+          <professional-card *ngFor="let professional of otherProfessionals()" [professional]="professional" />
+        </section>
+        <div class="professionals-empty" *ngIf="!filteredProfessionals().length">
           <svg lucideSearch />
           <h2>Nenhum profissional encontrado</h2>
-          <p>Ajuste ou limpe os filtros para ver outras opções.</p>
-          <button class="secondary-button" type="button" (click)="clearFilters()">Limpar filtros</button>
+          <p>Ainda não encontramos profissionais desta categoria na sua região.</p>
+          <button class="secondary-button" type="button" (click)="requestProposals()">Quero receber propostas</button>
         </div>
       </div>
 
@@ -496,7 +500,8 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   protected readonly professionals = signal<Professional[]>([]);
   protected readonly categories = signal<Category[]>([]);
-  protected readonly sortMode = signal<'recommended' | 'rating'>('recommended');
+  protected readonly sortMode = signal<'recommended' | 'rating' | 'reviews' | 'az'>('recommended');
+  protected readonly sortOpen = signal(false);
   protected readonly filtersOpen = signal(false);
   protected readonly selectedCategory = signal('');
   protected readonly searchText = signal('');
@@ -509,6 +514,12 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     { value: 4, label: '4,0 ou mais' },
     { value: 4.5, label: '4,5 ou mais' },
     { value: 4.8, label: '4,8 ou mais' },
+  ];
+  protected readonly sortOptions: Array<{ value: 'recommended' | 'rating' | 'reviews' | 'az'; label: string }> = [
+    { value: 'recommended', label: 'Mais indicados' },
+    { value: 'rating', label: 'Melhor avaliados' },
+    { value: 'reviews', label: 'Mais avaliações' },
+    { value: 'az', label: 'A-Z' },
   ];
 
   protected readonly pageTitle = computed(() => {
@@ -568,9 +579,15 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
           && (!service || professional.serviceDetails.some((item) => item.slug === service))
           && professional.rating >= minimumRating;
       })
-      .sort((first, second) => this.sortMode() === 'rating'
-        ? second.rating - first.rating || second.reviewCount - first.reviewCount
-        : second.recommendationCount - first.recommendationCount || second.rating - first.rating);
+      .sort((first, second) => this.compareProfessionals(first, second));
+  });
+  protected readonly recommendedProfessionals = computed(() => this.filteredProfessionals()
+    .filter((professional) => professional.recommendationCount > 0 || professional.reviewCount > 0)
+    .sort((first, second) => second.recommendationCount - first.recommendationCount || second.rating - first.rating || second.reviewCount - first.reviewCount)
+    .slice(0, 3));
+  protected readonly otherProfessionals = computed(() => {
+    const recommendedIds = new Set(this.recommendedProfessionals().map((professional) => professional.id));
+    return this.filteredProfessionals().filter((professional) => !recommendedIds.has(professional.id));
   });
 
   ngOnInit() {
@@ -579,6 +596,9 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     this.route.queryParamMap.subscribe((params) => {
       this.selectedCategory.set(params.get('categoria') ?? '');
       this.searchText.set(params.get('busca') ?? '');
+      this.serviceFilter.set(params.get('servico') ?? '');
+      const sort = params.get('ordem');
+      if (sort && this.sortOptions.some((option) => option.value === sort)) this.sortMode.set(sort as 'recommended' | 'rating' | 'reviews' | 'az');
     });
   }
 
@@ -598,6 +618,8 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
       queryParams: {
         categoria: this.selectedCategory() || null,
         busca: this.searchText() || null,
+        servico: this.serviceFilter() || null,
+        ordem: this.sortMode() === 'recommended' ? null : this.sortMode(),
       },
       queryParamsHandling: 'merge',
     });
@@ -621,6 +643,16 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
   }
 
+  protected setSort(sort: 'recommended' | 'rating' | 'reviews' | 'az') {
+    this.sortMode.set(sort);
+    this.sortOpen.set(false);
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { ordem: sort === 'recommended' ? null : sort }, queryParamsHandling: 'merge' });
+  }
+
+  protected requestProposals() {
+    void this.router.navigate(['/app/solicitacoes/nova'], { queryParams: { categoria: this.selectedCategory() || null, servico: this.serviceFilter() || null } });
+  }
+
   @HostListener('window:keydown.escape')
   protected closeFiltersWithEscape() {
     if (this.filtersOpen()) this.closeFilters();
@@ -636,6 +668,15 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 
   private normalize(value: string) {
     return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
+
+  private compareProfessionals(first: Professional, second: Professional) {
+    switch (this.sortMode()) {
+      case 'rating': return second.rating - first.rating || second.reviewCount - first.reviewCount;
+      case 'reviews': return second.reviewCount - first.reviewCount || second.rating - first.rating;
+      case 'az': return first.name.localeCompare(second.name, 'pt-BR');
+      default: return second.recommendationCount - first.recommendationCount || second.rating - first.rating || second.reviewCount - first.reviewCount;
+    }
   }
 }
 

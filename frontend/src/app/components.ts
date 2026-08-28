@@ -10,6 +10,7 @@ import { categoryAvatar } from './category-art.util';
 import { brand } from './brand';
 import {
   LucideBell,
+  LucideBadgeCheck,
   LucideBriefcaseBusiness,
   LucideBuilding2,
   LucideCirclePlus,
@@ -132,9 +133,10 @@ export class CategoryCardComponent {
 @Component({
   selector: 'professional-card',
   standalone: true,
-  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideHeart, LucideEllipsis, LucideMessageCircle, LucideMapPin, LucidePhone, LucideThumbsUp],
+  imports: [CommonModule, RouterLink, RatingStarsComponent, LucideBadgeCheck, LucideHeart, LucideEllipsis, LucideMessageCircle, LucideMapPin, LucidePhone, LucideThumbsUp, LucideUsersRound],
   template: `
-    <article class="professional-card" [class.compact-card]="compact" [class.favorite-card]="mode === 'favorite'">
+    <article class="professional-card" [class.highlight-professional-card]="highlight" [class.compact-card]="compact" [class.favorite-card]="mode === 'favorite'">
+      <span *ngIf="highlight" class="recommended-badge"><svg lucideBadgeCheck />Recomendado</span>
       <div class="avatar" [class]="avatarClass">
         <img *ngIf="avatarUrl; else initialsTemplate" [src]="avatarUrl" [alt]="'Foto de ' + professional.name" (error)="$any($event.target).src='/assets/placeholders/default-avatar.svg'" />
         <ng-template #initialsTemplate>{{ initials }}</ng-template>
@@ -145,13 +147,17 @@ export class CategoryCardComponent {
           <p>{{ professional.category }}</p>
         </div>
         <span *ngIf="professional.matchesLocation" class="location-badge"><svg lucideMapPin />Atende sua região</span>
-        <div class="rating-line">
+        <div *ngIf="professional.rating > 0 && professional.reviewCount > 0; else noReviews" class="rating-line">
           <rating-stars [rating]="professional.rating" />
           <strong>{{ professional.rating | number: '1.1-1' }}</strong>
           <span>({{ professional.reviewCount }})</span>
         </div>
-        <p class="recommendation-line">{{ displayedRecommendationCount }} moradores recomendam</p>
-        <a *ngIf="mode !== 'favorite'" class="public-comments" [routerLink]="['/app/profissional', professional.id, 'comentarios']"><svg lucideMessageCircle />{{ professional.reviewCount }} comentários públicos</a>
+        <ng-template #noReviews><p class="professional-no-reviews">Ainda sem avaliações</p></ng-template>
+        <div class="professional-social-proof" *ngIf="displayedRecommendationCount || professional.reviewCount; else firstRecommendation">
+          <span *ngIf="displayedRecommendationCount"><svg lucideUsersRound />{{ displayedRecommendationCount }} pessoas recomendam</span>
+          <a *ngIf="mode !== 'favorite' && professional.reviewCount" [routerLink]="['/app/profissional', professional.id, 'comentarios']"><svg lucideMessageCircle />{{ professional.reviewCount }} comentários públicos</a>
+        </div>
+        <ng-template #firstRecommendation><p class="professional-first-recommendation">Seja o primeiro a recomendar</p></ng-template>
       </div>
       <div class="professional-card-side">
         <div class="professional-card-icon-actions">
@@ -176,6 +182,7 @@ export class CategoryCardComponent {
 export class ProfessionalCardComponent {
   @Input({ required: true }) professional!: Professional;
   @Input() compact = false;
+  @Input() highlight = false;
   @Input() mode: 'default' | 'favorite' = 'default';
   @Input() condominiumName = '';
   @Output() removed = new EventEmitter<string>();

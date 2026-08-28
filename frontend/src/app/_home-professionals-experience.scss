@@ -1,0 +1,71 @@
+/* Home do morador: uma busca, duas decisões claras e categorias da nova marca. */
+.home-page { background: var(--if-background); }
+.home-page .home-topbar { height: 118px; padding: 20px 24px 33px; background: linear-gradient(115deg, #065f46, #04713f 68%, #0b8550); }
+.home-topbar-title strong { font-size: 20px; letter-spacing: -.5px; }
+.home-topbar-title small { margin-top: 3px; display: flex; align-items: center; gap: 5px; font-size: 12px; }
+.home-topbar-title small svg { width: 15px; height: 15px; }
+.home-page .home-surface { margin-top: -1px; padding: 27px 18px 18px; border-radius: 29px 29px 0 0; background: #fff; }
+.home-hero { min-height: 109px; padding: 4px 3px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.home-hero h1 { max-width: 220px; margin: 0; color: #102338; font-size: 25px; line-height: 30px; letter-spacing: -.8px; }
+.home-hero p { margin: 4px 0 0; color: #213950; font-size: 18px; line-height: 24px; }
+.home-hero-proof { position: relative; width: 118px; height: 79px; flex: 0 0 118px; }
+.home-hero-proof > span { position: absolute; top: 8px; left: 0; width: 43px; height: 43px; border: 2px solid #e1f3e8; border-radius: 50%; display: grid; place-items: center; color: #fff; background: var(--if-primary-dark); box-shadow: 0 4px 10px rgba(6, 95, 70, .16); }
+.home-hero-proof > span svg { width: 24px; height: 24px; }
+.hero-avatar { position: absolute; width: 43px; height: 43px; border: 2px solid #dcf2e4; border-radius: 50%; background-image: url('/assets/professional-avatars.png'); background-size: 200% 200%; box-shadow: 0 2px 7px rgba(15, 39, 28, .12); }
+.hero-avatar.avatar-one { right: 55px; top: 3px; background-position: 0 0; }
+.hero-avatar.avatar-two { right: 27px; top: 8px; background-position: 100% 0; }
+.hero-avatar.avatar-three { right: 0; top: 14px; background-position: 0 100%; }
+.home-search { height: 58px; padding: 0 11px 0 15px; border: 1px solid #dce7e1; border-radius: 18px; box-shadow: 0 5px 18px rgba(14, 43, 29, .055); }
+.home-search svg { width: 25px; height: 25px; }
+.home-search input { font-size: 14px; }
+.home-search-filters { width: 45px; height: 43px; border-radius: 13px; display: grid; place-items: center; color: #fff; background: var(--if-primary-dark); }
+.home-search-filters svg { width: 21px; height: 21px; }
+.home-decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.home-decision-card { min-width: 0; padding: 14px 11px; border: 1px solid #dce7e1; border-radius: 19px; display: grid; align-content: start; gap: 9px; background: #fff; }
+.home-decision-card.request { background: linear-gradient(145deg, #f6fcf8, #fff); }
+.home-decision-card > span { width: 39px; height: 39px; border: 1px solid #cce8d7; border-radius: 50%; display: grid; place-items: center; color: #087044; }
+.home-decision-card > span svg { width: 21px; height: 21px; }
+.home-decision-card h2 { margin: 0; color: #172c40; font-size: 14px; line-height: 18px; }
+.home-decision-card p { min-height: 61px; margin: 0; color: #344b60; font-size: 11px; line-height: 16px; }
+.home-decision-card .primary-button, .home-decision-card .secondary-button { width: 100%; min-height: 40px; padding: 8px 7px; border-radius: 11px; gap: 5px; font-size: 11px; line-height: 14px; }
+.home-decision-card .secondary-button { border-color: #087044; }
+.home-decision-card button svg, .home-decision-card a svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.home-decision-card small { min-height: 46px; padding: 8px; border-radius: 10px; display: flex; align-items: flex-start; gap: 6px; color: #294b3d; background: #edf8f1; font-size: 9px; line-height: 13px; }
+.home-decision-card small svg { width: 15px; height: 15px; flex: 0 0 auto; color: #087044; }
+.home-page .home-popular { margin: 17px 0 0; padding: 0; }
+.home-page .home-popular span { font-size: 11px; }
+.home-page .home-popular a { min-height: 31px; padding: 7px 12px; border-color: #d8e3de; color: #283a4a; font-size: 11px; }
+.home-page .home-content { padding: 26px 18px 0; }
+.home-page .section-title { align-items: center; }
+.home-page .section-title h2 { color: #13283d; font-size: 21px; }
+.home-page .section-title a { font-size: 12px; color: #087044; }
+.home-page .category-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; margin-top: 15px; }
+.home-page .category-card { min-height: 91px; padding: 10px 3px 8px; border: 1px solid #e0e8e4; border-radius: 16px; gap: 5px; color: #172c40; font-size: 10px; font-weight: 700; box-shadow: 0 3px 9px rgba(18, 45, 32, .035); }
+.home-page .category-icon { height: 36px; }
+.home-page .category-icon img { width: 31px; height: 31px; filter: brightness(0) saturate(100%) invert(26%) sepia(24%) saturate(1866%) hue-rotate(108deg) brightness(82%) contrast(100%); }
+.home-page .category-card.more .category-icon img { width: 26px; height: 26px; }
+.home-page .home-verified { margin: 23px 0 0; padding: 15px 13px; border: 0; border-radius: 17px; gap: 10px; background: linear-gradient(108deg, #eaf8ef, #f4fbf7); }
+.home-page .home-verified > span { width: 43px; height: 43px; border-radius: 14px; color: #075e3a; background: #d8f0e1; }
+.home-page .home-verified > span svg { width: 25px; height: 25px; }
+.home-page .home-verified strong { color: #143244; font-size: 13px; line-height: 18px; }
+.home-page .home-verified small { max-width: 205px; color: #38566a; font-size: 10px; line-height: 14px; }
+.verified-avatars { margin-left: auto; display: flex; align-items: center; }
+.verified-avatars i { width: 27px; height: 27px; margin-left: -7px; border: 2px solid #f5fbf7; border-radius: 50%; display: block; background-image: url('/assets/professional-avatars.png'); background-size: 200% 200%; }
+.verified-avatars i:nth-child(1) { margin-left: 0; background-position: 0 0; }
+.verified-avatars i:nth-child(2) { background-position: 100% 0; }
+.verified-avatars i:nth-child(3) { background-position: 0 100%; }
+.verified-avatars b { width: 30px; height: 30px; margin-left: -5px; border: 2px solid #f5fbf7; border-radius: 50%; display: grid; place-items: center; color: #fff; background: #087044; font-size: 8px; }
+
+/* A arte da categoria é o fallback visual, sem símbolos coloridos ou emojis. */
+.professionals-page .professional-card .avatar:not(:has(img))::after { content: ''; }
+
+@media (max-width: 360px) {
+  .home-hero h1 { font-size: 22px; line-height: 27px; }
+  .home-hero p { font-size: 16px; }
+  .home-hero-proof { width: 100px; transform: scale(.88); transform-origin: right center; }
+  .home-decision-card { padding: 12px 9px; }
+  .home-decision-card h2 { font-size: 13px; }
+  .home-decision-card p { font-size: 10px; }
+  .home-page .category-card { min-height: 82px; font-size: 9px; }
+  .home-page .category-icon img { width: 27px; height: 27px; }
+}

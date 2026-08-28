@@ -1073,12 +1073,12 @@
 }
 
 .landing-professionals {
-  margin-top: 84px;
-  padding: 68px 56px 0;
+  margin-top: 56px;
+  padding: 48px 56px 0;
   border-radius: 42px 42px 0 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 290px minmax(0, 0.7fr);
-  gap: 38px;
+  gap: 32px;
   overflow: hidden;
   color: #fff;
   background:
@@ -1087,12 +1087,27 @@
 }
 
 .landing-professionals-copy {
-  padding-bottom: 54px;
+  padding-bottom: 34px;
 }
 
 .landing-professionals p {
   max-width: 410px;
   color: #d6ece0;
+  line-height: 1.5;
+}
+
+.landing-professionals h2 {
+  margin-top: 10px;
+  font-size: clamp(36px, 3.7vw, 48px);
+}
+
+.landing-professionals ul {
+  margin-top: 24px;
+  gap: 10px;
+}
+
+.landing-professionals li {
+  font-size: 15px;
 }
 
 .landing-professionals li {
@@ -1107,21 +1122,21 @@
 .professional-phone {
   position: relative;
   width: 100%;
-  min-height: 520px;
-  padding: 38px 16px 20px;
+  min-height: 470px;
+  padding: 34px 16px 18px;
   border-radius: 34px 34px 0 0;
   color: #172636;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.24);
 }
 
 .professional-phone h3 {
-  margin: 0 0 22px;
-  font-size: 24px;
+  margin: 0 0 16px;
+  font-size: 22px;
 }
 
 .professional-phone span {
-  margin-top: 12px;
-  padding: 14px;
+  margin-top: 9px;
+  padding: 12px 14px;
   border: 1px solid #e6eee9;
   border-radius: 16px;
   display: grid;
@@ -1145,15 +1160,15 @@
 }
 
 .landing-professionals aside {
-  padding-top: 56px;
+  padding-top: 30px;
   display: grid;
   align-content: start;
-  gap: 18px;
+  gap: 12px;
 }
 
 .landing-professionals aside article {
-  padding: 18px;
-  border-radius: 22px;
+  padding: 14px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -1161,8 +1176,8 @@
 }
 
 .highlight-icon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
   border-radius: 50%;
   display: grid;
@@ -1182,7 +1197,7 @@
 }
 
 .landing-professionals aside b {
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1.15;
 }
 
@@ -1194,7 +1209,7 @@
 }
 
 .testimonials {
-  padding-bottom: 86px;
+  padding: 64px 0 68px;
 }
 
 .testimonial-grid {

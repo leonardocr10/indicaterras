@@ -1094,7 +1094,7 @@ label>span{display:block}
 }
 
 .brand-card{height:104px;margin:0 4px 12px;padding:4px 10px 16px}
-.admin-brand-logo{width:190px;height:58px;object-fit:contain;object-position:center;mix-blend-mode:normal}
+.admin-brand-logo{width:190px;height:58px;object-fit:contain;object-position:center;mix-blend-mode:normal;background:transparent;box-shadow:none}
 .admin-sidebar>a.active{min-height:46px;border-color:rgba(74,222,128,.25);border-radius:7px;background:#087b52;box-shadow:inset 4px 0 0 var(--if-primary),0 8px 18px rgba(0,40,28,.15)}
 .admin-sidebar>a.active svg{color:var(--if-primary-light)}
 

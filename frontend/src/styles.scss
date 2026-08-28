@@ -440,7 +440,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 
 /* Modern administrative workspace */
 .admin-page{--admin-green:#075e46;--admin-green-deep:#033b2d;--admin-green-soft:#eaf5ef;--admin-gold:#c89b36;--admin-border:#e1e9e5;--admin-shadow:0 12px 36px rgba(10,45,33,.065);grid-template-columns:256px minmax(0,1fr);background:radial-gradient(circle at 92% 2%,rgba(203,226,213,.48),transparent 28%),linear-gradient(145deg,#f7faf8 0%,#fbfcfb 56%,#f3f7f5 100%)}
-.admin-sidebar{z-index:30;width:256px;padding:20px 14px 22px;gap:5px;background:radial-gradient(circle at 0 0,rgba(20,132,92,.5),transparent 31%),linear-gradient(168deg,#064d3c 0%,#03382c 54%,#022b23 100%);box-shadow:14px 0 40px rgba(3,43,33,.09)}
+.admin-sidebar{z-index:30;width:256px;padding:20px 14px 22px;gap:2px;background:radial-gradient(circle at 0 0,rgba(20,132,92,.5),transparent 31%),linear-gradient(168deg,#064d3c 0%,#03382c 54%,#022b23 100%);box-shadow:14px 0 40px rgba(3,43,33,.09)}
 .admin-sidebar:before{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.025),transparent 42%)}
 .brand-card{height:126px;margin:0 4px 14px;padding:7px 12px 18px;border-bottom:1px solid rgba(255,255,255,.11)}
 .admin-brand-logo{width:176px;height:106px;border-radius:10px;object-fit:cover;box-shadow:0 12px 28px rgba(0,0,0,.13)}
@@ -458,9 +458,9 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .notification-empty{margin:4px 6px 6px;color:#66706b;font-size:12px}
 .notification-panel-footer{display:block;margin-top:4px;padding:9px 8px;border-top:1px solid #eef2ef;border-radius:0 0 6px 6px;text-align:center;color:var(--primary)!important;font-size:11.5px;font-weight:700}
 .sidebar-count{margin-left:auto;min-width:19px;height:19px;padding:0 5px;border-radius:999px;display:grid;place-items:center;color:#3a2405;background:#e4c56f;font-size:10px;font-weight:700;line-height:1}
-.sidebar-group-label{display:block;margin:14px 10px 6px;color:#6ea38c;font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
-.sidebar-group-label:first-of-type{margin-top:4px}
-.admin-sidebar>a{position:relative;min-height:48px;padding:0 13px;border:1px solid transparent;border-radius:5px;gap:12px;color:#dbeae4;font-size:13px;transition:transform .18s ease,background .18s ease,color .18s ease}
+.sidebar-group-label{display:block;margin:10px 10px 3px;color:#6ea38c;font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+.sidebar-group-label:first-of-type{margin-top:2px}
+.admin-sidebar>a{position:relative;min-height:40px;padding:0 13px;border:1px solid transparent;border-radius:5px;gap:12px;color:#dbeae4;font-size:13px;transition:transform .18s ease,background .18s ease,color .18s ease}
 .admin-sidebar>a svg{width:19px;height:19px;padding:1px;stroke-width:1.8}.admin-sidebar>a:hover{transform:translateX(2px);color:#fff;background:rgba(255,255,255,.07)}
 .admin-sidebar>a.active{color:#fff;border-color:rgba(255,255,255,.07);background:linear-gradient(90deg,rgba(53,159,116,.36),rgba(255,255,255,.08));box-shadow:inset 3px 0 0 #d4b25c,0 9px 20px rgba(0,24,18,.12)}.admin-sidebar>a.active svg{color:#e4c56f}
 .sidebar-user{position:relative;margin:16px 2px 0;padding:16px 10px 2px;border-top-color:rgba(255,255,255,.12);display:grid;grid-template-columns:42px 1fr auto;gap:4px 10px}
@@ -1072,8 +1072,9 @@ label>span{display:block}
 .sidebar-avatar{border-color:var(--if-primary-light)}
 .sidebar-user button{color:#d1fae5}
 
-.admin-sidebar{background:#065F46!important}
-.admin-sidebar:before{display:none}
+/* Mesmo verde do painel de destaque da tela de login, no lugar do
+   verde solido que estava anulando o gradiente/brilho definidos acima. */
+.admin-sidebar{background:radial-gradient(circle at 8% 0,#09794e,#00482f 52%,#003a29)!important}
 
 /* Navegação administrativa: marca oficial, rolagem discreta e item ativo em alto contraste. */
 @media (min-width: 821px) {

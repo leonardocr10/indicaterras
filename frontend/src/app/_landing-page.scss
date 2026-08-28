@@ -1088,6 +1088,8 @@
 
 .landing-professionals-copy {
   padding-bottom: 34px;
+  display: flex;
+  flex-direction: column;
 }
 
 .landing-professionals p {
@@ -1108,6 +1110,11 @@
 
 .landing-professionals li {
   font-size: 15px;
+}
+
+.landing-professionals-copy .landing-white-cta {
+  margin-top: 26px;
+  align-self: flex-end;
 }
 
 .landing-professionals li {

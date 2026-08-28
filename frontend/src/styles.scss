@@ -73,7 +73,10 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 
 /* Resident login */
 .resident-login-page{display:block;width:min(100%,430px);margin:0 auto;padding:0;background:#fff}
-.resident-login-card{width:100%;min-height:100vh;padding:38px 31px 34px;align-content:start;gap:16px;border:0;border-radius:0;box-shadow:none;text-align:center;overflow:hidden}
+.login-showcase{display:none}
+/* "safe center" centraliza o formulario na tela, mas volta a alinhar pelo topo
+   quando o conteudo e mais alto que a tela, para nao cortar o inicio do card. */
+.resident-login-card{width:100%;min-height:100vh;padding:38px 31px 34px;align-content:safe center;gap:16px;border:0;border-radius:0;box-shadow:none;text-align:center;overflow:hidden}
 .resident-login-card .auth-logo{width:260px;height:158px;margin:0 auto;object-fit:contain;object-position:center;border-radius:0;box-shadow:none}
 .resident-login-card>p{max-width:280px;margin:-5px auto 9px;color:#444c48;font-size:14px;font-weight:400;line-height:21px}
 .resident-login-card form{gap:16px;text-align:left}
@@ -1165,3 +1168,30 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
 .register-login-link{margin:2px 0 0;color:var(--muted);font-size:13px;text-align:center}
 .register-login-link a{color:var(--if-primary-dark);font-weight:700}
 @media(max-width:520px){.register-card .grid-2{grid-template-columns:1fr}}
+
+/* Login: no celular o cartao ocupa a tela toda; no desktop vira duas colunas
+   (painel da marca + formulario centralizado) em vez de uma faixa estreita
+   esticada por toda a altura, que deixava um vazio enorme embaixo. */
+.login-heading{display:grid;gap:4px;margin-bottom:2px}
+.login-heading h1{margin:0;color:var(--ink);font:800 24px/30px var(--font-family)}
+.login-heading p{max-width:320px;margin:0 auto;color:var(--muted);font-size:14px;line-height:20px}
+@media(min-width:900px){
+  /* place-items:center vem de .auth-page e encolheria as duas colunas */
+  .resident-login-page{width:100%;min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;place-items:stretch;background:var(--if-background)}
+  .login-showcase{display:flex;flex-direction:column;justify-content:center;gap:30px;padding:56px clamp(40px,5vw,86px);color:#fff;background:radial-gradient(circle at 8% 0,#09794e,#00482f 52%,#003a29)}
+  .login-showcase>img{width:210px;height:auto;object-fit:contain;object-position:left}
+  .login-showcase h2{margin:0;font:700 40px/1.12 var(--font-family);letter-spacing:-1.4px}
+  .login-showcase h2 b{color:#4ade80}
+  .login-showcase ul{margin:0;padding:0;display:grid;gap:20px;list-style:none}
+  .login-showcase li{display:flex;align-items:flex-start;gap:14px}
+  .login-showcase li>svg{width:36px;height:36px;flex:0 0 auto;padding:8px;border-radius:9px;color:#a7e8bd;background:rgba(255,255,255,.09)}
+  .login-showcase li b{display:block;font-size:14px}
+  .login-showcase li small{display:block;margin-top:3px;color:#cfe8da;font-size:12px;line-height:17px}
+  .resident-login-card{width:min(100%,430px);min-height:0;margin:auto;padding:40px 34px 34px;align-content:center;border:1px solid var(--if-border);border-radius:var(--if-radius-lg);box-shadow:0 18px 42px rgba(8,44,29,.09)}
+  .resident-login-card .auth-logo{width:190px;height:auto;max-height:74px}
+}
+@media(min-width:900px) and (max-width:1120px){
+  .resident-login-page{grid-template-columns:1fr}
+  .login-showcase{display:none}
+  .resident-login-card{margin:auto}
+}

@@ -25,6 +25,7 @@ import {
   LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideMapPin,
   LucideHouse, LucideHandshake, LucideX,
   LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideShieldCheck,
+  LucideBadgeCheck, LucideClipboardList,
 } from '@lucide/angular';
 import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
@@ -39,12 +40,24 @@ import { brand } from './brand';
 @Component({
   selector: 'login-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideBadgeCheck, LucideClipboardList, LucideShieldCheck],
   template: `
     <section class="auth-page resident-login-page">
+      <aside class="login-showcase" aria-hidden="true">
+        <img [src]="brand.assets.logoReverse" [alt]="brand.name" />
+        <h2>Encontrar quem resolve<br /><b>ficou fácil.</b></h2>
+        <ul>
+          <li><svg lucideBadgeCheck /><div><b>Profissionais verificados</b><small>Avaliados por quem já contratou</small></div></li>
+          <li><svg lucideClipboardList /><div><b>Compare propostas</b><small>Receba orçamentos e escolha o melhor</small></div></li>
+          <li><svg lucideShieldCheck /><div><b>Do começo ao fim</b><small>Acompanhe o serviço com segurança</small></div></li>
+        </ul>
+      </aside>
       <div class="auth-card resident-login-card">
         <img class="auth-logo" [src]="brand.assets.logoPrimary" [alt]="brand.name" />
-        <p>Encontrar quem resolve ficou fácil.</p>
+        <div class="login-heading">
+          <h1>Bem-vindo de volta</h1>
+          <p>Entre para continuar resolvendo o que precisa.</p>
+        </div>
         <form [formGroup]="form" (ngSubmit)="submit()">
           <label class="auth-field">E-mail
             <span><svg lucideMail /><input type="email" placeholder="seu@email.com" formControlName="email" /></span>
@@ -54,7 +67,7 @@ import { brand } from './brand';
           </label>
           <div class="auth-row">
             <label><input type="checkbox" formControlName="rememberMe" /> Lembrar-me</label>
-            <button type="button" class="text-button">Esqueci minha senha</button>
+            <button type="button" class="text-button" (click)="forgotPassword()">Esqueci minha senha</button>
           </div>
           <button class="primary-button" type="submit">Entrar</button>
           <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
@@ -82,6 +95,13 @@ export class LoginPageComponent {
 
   togglePassword() {
     this.showPassword.update((value) => !value);
+  }
+
+  // A redefinicao automatica por e-mail ainda nao existe; sem isso o botao
+  // ficava mudo, entao ao menos orienta quem esqueceu a senha.
+  forgotPassword() {
+    this.feedback.set('Para redefinir sua senha, fale com a administração pelo WhatsApp de suporte.');
+    this.hasError.set(false);
   }
 
   private connectionMessage(status?: number) {

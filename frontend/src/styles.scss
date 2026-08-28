@@ -1035,6 +1035,25 @@ label>span{display:block}
 .badge,.request-suggestion-card,.request-warning{color:var(--if-primary-dark);background:#ecfdf3}
 .status-badge{color:var(--if-primary-dark);background:#dcfce7}
 
+@media (min-width: 821px) {
+  .admin-sidebar {
+    height:100dvh;
+    min-height:100dvh;
+    overflow-x:hidden;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    background:var(--if-primary-dark);
+  }
+
+  .sidebar-user { flex:0 0 auto; padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
+}
+
+.sidebar-group-label{color:#a7f3d0}
+.admin-sidebar>a.active{background:rgba(34,197,94,.18);box-shadow:inset 3px 0 0 var(--if-primary),0 9px 20px rgba(0,24,18,.12)}
+.admin-sidebar>a.active svg{color:var(--if-primary-light)}
+.sidebar-avatar{border-color:var(--if-primary-light)}
+.sidebar-user button{color:#d1fae5}
+
 
 @media (max-width: 420px) {
   .request-grid-2,.request-media-grid{grid-template-columns:1fr}

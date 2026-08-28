@@ -23,11 +23,7 @@ import { ToastService } from './services/toast.service';
       <section class="comment-composer">
         <div class="comment-avatar current-user-avatar">{{ currentUserInitials() }}</div>
         <div class="comment-compose-main">
-          <div class="comment-input-shell">
-            <textarea #composer [(ngModel)]="draft" (input)="autoGrow($event)" maxlength="700" rows="1" placeholder="Escreva um comentário..." aria-label="Novo comentário"></textarea>
-            <label class="comment-icon-button" aria-label="Adicionar fotos"><svg lucideCamera /><input type="file" multiple accept="image/png,image/jpeg,image/webp" (change)="selectPhotos($event)" /></label>
-            <button class="comment-icon-button" type="button" aria-label="Adicionar emoji" (click)="emojiOpen.set(!emojiOpen())"><svg lucideSmile /></button>
-          </div>
+          <textarea #composer class="comment-textarea" [(ngModel)]="draft" (input)="autoGrow($event)" maxlength="700" rows="1" placeholder="Escreva um comentário..." aria-label="Novo comentário"></textarea>
           <div *ngIf="emojiOpen()" class="comment-emoji-picker">
             <button *ngFor="let emoji of emojis" type="button" (click)="addEmoji(emoji)">{{ emoji }}</button>
           </div>
@@ -35,8 +31,12 @@ import { ToastService } from './services/toast.service';
             <figure *ngFor="let preview of photoPreviews(); let index = index"><img [src]="preview" alt="Foto selecionada" /><button type="button" (click)="removePhoto(index)" aria-label="Remover foto"><svg lucideX /></button></figure>
           </div>
           <div class="comment-compose-footer">
-            <div class="comment-rating" aria-label="Nota do comentário">
-              <button *ngFor="let star of stars" type="button" [class.active]="star <= rating()" (click)="rating.set(star)" [attr.aria-label]="star + ' estrelas'">★</button>
+            <div class="comment-compose-tools">
+              <label class="comment-icon-button" aria-label="Adicionar fotos"><svg lucideCamera /><input type="file" multiple accept="image/png,image/jpeg,image/webp" (change)="selectPhotos($event)" /></label>
+              <button class="comment-icon-button" type="button" aria-label="Adicionar emoji" (click)="emojiOpen.set(!emojiOpen())"><svg lucideSmile /></button>
+              <div class="comment-rating" aria-label="Nota do comentário">
+                <button *ngFor="let star of stars" type="button" [class.active]="star <= rating()" (click)="rating.set(star)" [attr.aria-label]="star + ' estrelas'">★</button>
+              </div>
             </div>
             <button class="comment-send-button" type="button" [disabled]="submitting() || (!draft.trim() && !selectedPhotos.length)" (click)="publish()"><svg lucideSend />{{ submitting() ? 'Publicando...' : 'Publicar' }}</button>
           </div>

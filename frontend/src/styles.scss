@@ -251,18 +251,20 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .comment-avatar img{width:100%;height:100%;object-fit:cover}
 .current-user-avatar{color:#fff;background:linear-gradient(145deg,#0b7450,#074a35)}
 .comment-compose-main{position:relative;min-width:0}
-.comment-input-shell{min-height:45px;padding:3px 5px 3px 12px;border:1px solid #d9dee6;border-radius:11px;display:flex;align-items:center;gap:2px;background:#fff}
-.comment-input-shell textarea{min-width:0;min-height:34px;max-height:100px;padding:8px 2px;border:0;flex:1;color:#182235;background:transparent;font:500 13px/18px Inter,sans-serif;resize:none;outline:0}
-.comment-input-shell textarea::placeholder{color:#8b95a5}
-.comment-icon-button{width:34px;height:34px;padding:0;border:0;display:grid;place-items:center;color:#334155;background:transparent;cursor:pointer}
-.comment-icon-button svg{width:19px;height:19px;stroke-width:1.9}.comment-icon-button input{display:none}
+.comment-textarea{width:100%;min-height:64px;max-height:160px;padding:11px 13px;border:1px solid #d9dee6;border-radius:11px;display:block;color:#182235;background:#fff;font:500 13px/19px Inter,sans-serif;resize:none;outline:0;box-sizing:border-box;transition:border-color .16s ease}
+.comment-textarea:focus{border-color:#0b7450}
+.comment-textarea::placeholder{color:#8b95a5}
+.comment-icon-button{width:34px;height:34px;padding:0;border:0;border-radius:9px;display:grid;place-items:center;color:#334155;background:#f1f4f2;cursor:pointer}
+.comment-icon-button:hover{background:#e6ebe8}
+.comment-icon-button svg{width:18px;height:18px;stroke-width:1.9}.comment-icon-button input{display:none}
 .comment-emoji-picker{position:absolute;z-index:5;margin-top:5px;padding:6px;border:1px solid #e0e6e2;border-radius:10px;display:flex;gap:3px;background:#fff;box-shadow:0 12px 30px rgba(12,45,34,.14)}
 .comment-emoji-picker button{width:34px;height:34px;padding:0;border:0;border-radius:7px;background:#f7f9f8;font-size:18px}
 .comment-selected-photos{margin-top:8px;display:flex;gap:7px;overflow-x:auto}
 .comment-selected-photos figure{position:relative;width:70px;height:62px;margin:0;flex:0 0 auto;border-radius:8px;overflow:hidden}.comment-selected-photos img{width:100%;height:100%;object-fit:cover}.comment-selected-photos button{position:absolute;right:3px;top:3px;width:20px;height:20px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;color:#fff;background:rgba(12,27,21,.75)}.comment-selected-photos svg{width:12px}
-.comment-compose-footer{margin-top:7px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.comment-rating{display:flex;gap:1px}.comment-rating button{padding:0;border:0;color:#d8dee5;background:transparent;font-size:20px;line-height:24px}.comment-rating button.active{color:#ffab00}
-.comment-send-button{min-height:32px;padding:5px 10px;border:0;border-radius:9px;display:flex;align-items:center;gap:5px;color:#fff;background:#075e3a;font-size:11px;font-weight:700}.comment-send-button:disabled{opacity:.45}.comment-send-button svg{width:14px}
+.comment-compose-footer{margin-top:9px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.comment-compose-tools{display:flex;align-items:center;gap:6px}
+.comment-rating{display:flex;align-items:center;gap:1px;margin-left:6px;padding-left:10px;border-left:1px solid #e4e7eb}.comment-rating button{padding:0;border:0;color:#d8dee5;background:transparent;font-size:20px;line-height:24px}.comment-rating button.active{color:#ffab00}
+.comment-send-button{min-height:36px;padding:8px 14px;border:0;border-radius:9px;display:flex;align-items:center;gap:6px;color:#fff;background:#075e3a;font-size:12px;font-weight:700}.comment-send-button:disabled{opacity:.45}.comment-send-button svg{width:14px}
 .comments-helper{margin:12px 0 17px 48px;padding-bottom:16px;border-bottom:1px solid #e4e7eb;color:#283548;font-size:11px;line-height:16px}
 .comment-feed-item{padding:0 0 15px;display:grid;grid-template-columns:38px 1fr;align-items:start;gap:10px}
 .comment-feed-item+.comment-feed-item{padding-top:15px;border-top:1px solid #e4e7eb}
@@ -436,8 +438,11 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .notification-panel a b{color:var(--primary);font-size:15px}
 .notification-panel a span{color:#4a564f;font-size:12px;line-height:16px}
 .notification-empty{margin:4px 6px 6px;color:#66706b;font-size:12px}
+.notification-panel-footer{display:block;margin-top:4px;padding:9px 8px;border-top:1px solid #eef2ef;border-radius:0 0 9px 9px;text-align:center;color:var(--primary)!important;font-size:11.5px;font-weight:700}
 .sidebar-count{margin-left:auto;min-width:19px;height:19px;padding:0 5px;border-radius:999px;display:grid;place-items:center;color:#3a2405;background:#e4c56f;font-size:10px;font-weight:700;line-height:1}
-.admin-sidebar>a{position:relative;min-height:48px;padding:0 13px;border:1px solid transparent;border-radius:12px;gap:12px;color:#dbeae4;font-size:13px;transition:transform .18s ease,background .18s ease,color .18s ease}
+.sidebar-group-label{display:block;margin:14px 10px 6px;color:#6ea38c;font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+.sidebar-group-label:first-of-type{margin-top:4px}
+.admin-sidebar>a{position:relative;min-height:48px;padding:0 13px;border:1px solid transparent;border-radius:8px;gap:12px;color:#dbeae4;font-size:13px;transition:transform .18s ease,background .18s ease,color .18s ease}
 .admin-sidebar>a svg{width:19px;height:19px;padding:1px;stroke-width:1.8}.admin-sidebar>a:hover{transform:translateX(2px);color:#fff;background:rgba(255,255,255,.07)}
 .admin-sidebar>a.active{color:#fff;border-color:rgba(255,255,255,.07);background:linear-gradient(90deg,rgba(53,159,116,.36),rgba(255,255,255,.08));box-shadow:inset 3px 0 0 #d4b25c,0 9px 20px rgba(0,24,18,.12)}.admin-sidebar>a.active svg{color:#e4c56f}
 .sidebar-user{position:relative;margin:16px 2px 0;padding:16px 10px 2px;border-top-color:rgba(255,255,255,.12);display:grid;grid-template-columns:42px 1fr auto;gap:4px 10px}
@@ -591,6 +596,19 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .admin-table-wrap th,.admin-table-wrap td{padding:11px 10px}
 .admin-table-wrap td{max-width:290px;overflow:hidden;text-overflow:ellipsis}
 .admin-table-wrap tbody tr:hover{background:#f8faf9}
+
+/* Central de pendências */
+.pending-list-panel{display:grid;gap:10px}
+.pending-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid #eef2f0;border-radius:14px;background:#fff;transition:background .16s ease}
+.pending-row:hover{background:#f7faf8}
+.pending-row-icon{width:38px;height:38px;border-radius:11px;background:#eaf5ef;color:#08704e;display:grid;place-items:center;flex:0 0 auto}
+.pending-row-icon svg{width:18px;height:18px}
+.pending-row-icon.danger{background:#fff0ef;color:#bd2b24}
+.pending-row-body{flex:1;min-width:0;display:grid;gap:3px}
+.pending-row-body strong{font-size:13px;color:#233a31}
+.pending-row-body span{font-size:11.5px;color:#66706b}
+.pending-row>a{padding:8px 14px;border:1px solid #cfe3d8;border-radius:8px;color:#096544;background:#f2faf5;font-size:12px;font-weight:700;white-space:nowrap}
+.pending-row>a:hover{background:#e5f5eb}
 
 /* Admin navigation stays reachable on small screens instead of disappearing */
 @media(max-width:780px){
@@ -897,7 +915,7 @@ label>span{display:block}
   .professional-filter-sheet input,
   .professional-filter-sheet select{font-size:16px}
 
-  .comment-input-shell textarea{min-height:38px;padding:9px 2px;line-height:22px}
+  .comment-textarea{min-height:58px;line-height:20px}
   .comment-reply-form{min-height:42px}
   .comment-reply-form input{padding:9px 11px;line-height:22px}
   .home-search input{font-size:16px}

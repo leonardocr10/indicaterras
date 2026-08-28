@@ -108,7 +108,10 @@ export class GeminiProvider implements AiProvider {
     if (!response.ok) {
       const body = await response.text().catch(() => '');
       this.logger.warn(`Gemini respondeu ${response.status}: ${body.slice(0, 300)}`);
-      throw new GeminiProviderError(`Gemini respondeu com status ${response.status}.`);
+      // A mensagem do Google diz o motivo real (modelo descontinuado, cota estourada,
+      // API desabilitada). Sem ela o admin só vê o número do status e fica sem ação.
+      // A chave viaja na URL, nunca no corpo, então repeti-la aqui não a expõe.
+      throw new GeminiProviderError(`Gemini respondeu com status ${response.status}. ${this.extractErrorMessage(body)}`.trim());
     }
 
     const json = (await response.json()) as {
@@ -117,6 +120,17 @@ export class GeminiProvider implements AiProvider {
     const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) throw new GeminiProviderError('Resposta do Gemini não contém texto.');
     return text;
+  }
+
+  /** Extrai `error.message` do corpo de erro do Google, limitado para não poluir a tela. */
+  private extractErrorMessage(body: string): string {
+    try {
+      const parsed = JSON.parse(body) as { error?: { message?: string } };
+      const message = parsed.error?.message;
+      return message ? message.slice(0, 300) : '';
+    } catch {
+      return '';
+    }
   }
 
   private parseResponse(raw: string): ProblemAnalysisResult {

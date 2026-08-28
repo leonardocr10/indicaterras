@@ -75,6 +75,13 @@ describe('GeminiProvider', () => {
     await expect(provider.analyzeProblem(input)).rejects.toThrow(/status 429/);
   });
 
+  it('inclui a explicação do Google na mensagem de erro', async () => {
+    const corpo = JSON.stringify({ error: { code: 404, message: 'This model models/gemini-2.5-flash-lite is no longer available to new users.', status: 'NOT_FOUND' } });
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404, text: () => Promise.resolve(corpo) }) as never;
+
+    await expect(provider.analyzeProblem(input)).rejects.toThrow(/no longer available to new users/);
+  });
+
   it('falha quando não há chave de API configurada', async () => {
     global.fetch = jest.fn() as never;
 

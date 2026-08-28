@@ -1054,6 +1054,9 @@ label>span{display:block}
 .sidebar-avatar{border-color:var(--if-primary-light)}
 .sidebar-user button{color:#d1fae5}
 
+.admin-sidebar{background:#065F46!important}
+.admin-sidebar:before{display:none}
+
 /* Navegação administrativa: marca oficial, rolagem discreta e item ativo em alto contraste. */
 @media (min-width: 821px) {
   .admin-sidebar {

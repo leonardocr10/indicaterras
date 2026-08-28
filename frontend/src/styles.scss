@@ -1195,3 +1195,24 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
   .login-showcase{display:none}
   .resident-login-card{margin:auto}
 }
+
+/* Modal "Esqueci minha senha" e tela de redefinir senha */
+.auth-modal-backdrop{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(6,25,17,.55);backdrop-filter:blur(2px);animation:menu-fade-in .18s ease-out}
+.auth-modal{position:relative;width:min(100%,400px);max-height:calc(100vh - 40px);overflow-y:auto;padding:34px 28px 28px;border-radius:var(--if-radius-lg);display:grid;gap:14px;text-align:center;background:#fff;box-shadow:0 24px 60px rgba(4,30,20,.28);animation:filter-sheet-in .2s ease-out}
+.auth-modal-close{position:absolute;right:14px;top:14px;width:32px;height:32px;border:0;border-radius:7px;display:grid;place-items:center;color:#3b4a43;background:#f2f6f4}
+.auth-modal-close svg{width:16px;height:16px}
+.auth-modal-icon{width:52px;height:52px;margin:0 auto;display:grid;place-items:center;border-radius:50%;color:var(--if-primary-dark);background:var(--primary-light)}
+.auth-modal-icon svg{width:24px;height:24px}
+.auth-modal h2{margin:0;font:800 20px var(--font-family)}
+.auth-modal>p{margin:-6px 0 4px;color:var(--muted);font-size:13px;line-height:19px}
+.auth-modal .auth-field{text-align:left}
+.auth-modal-success{display:grid;justify-items:center;gap:10px;padding:6px 0 4px}
+.auth-modal-success svg{width:44px;height:44px;color:var(--if-primary)}
+.auth-modal-success p{margin:0;color:#3b4a43;font-size:13px;line-height:19px}
+
+.reset-card{gap:16px;padding-top:34px}
+.reset-state{display:grid;justify-items:center;gap:8px;padding:10px 0 4px;text-align:center}
+.reset-state svg{width:46px;height:46px;color:var(--if-primary)}
+.reset-state.error svg{color:#dc2626}
+.reset-state h1{margin:0;font:800 21px var(--font-family)}
+.reset-state p{margin:0;max-width:300px;color:var(--muted);font-size:13px;line-height:19px}

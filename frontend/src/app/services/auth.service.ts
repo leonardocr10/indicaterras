@@ -72,6 +72,14 @@ export class AuthService {
     localStorage.removeItem(this.storageKey);
   }
 
+  forgotPassword(email: string) {
+    return this.http.post<ApiResponse<{ sent: boolean }>>(`${this.baseUrl}/auth/forgot-password`, { email }).pipe(map((response) => response.data));
+  }
+
+  resetPassword(token: string, password: string) {
+    return this.http.post<ApiResponse<{ success: boolean }>>(`${this.baseUrl}/auth/reset-password`, { token, password }).pipe(map((response) => response.data));
+  }
+
   private persist(session: AuthSession) {
     this.sessionState.set(session);
     localStorage.setItem(this.storageKey, JSON.stringify(session));

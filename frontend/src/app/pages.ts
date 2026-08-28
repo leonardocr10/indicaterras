@@ -40,7 +40,7 @@ import { brand } from './brand';
 @Component({
   selector: 'login-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideBadgeCheck, LucideClipboardList, LucideShieldCheck],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideBadgeCheck, LucideClipboardList, LucideShieldCheck, LucideX, LucideCheckCircle2],
   template: `
     <section class="auth-page resident-login-page">
       <aside class="login-showcase" aria-hidden="true">
@@ -75,6 +75,29 @@ import { brand } from './brand';
         <div class="separator">ou</div>
         <a routerLink="/cadastro" class="secondary-button"><svg lucideUserRound />Criar conta</a>
       </div>
+
+      <div class="auth-modal-backdrop" *ngIf="forgotOpen()" (click)="closeForgot()">
+        <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="forgot-title" (click)="$event.stopPropagation()">
+          <button type="button" class="auth-modal-close" aria-label="Fechar" (click)="closeForgot()"><svg lucideX /></button>
+          <span class="auth-modal-icon"><svg lucideLockKeyhole /></span>
+          <h2 id="forgot-title">Recuperar senha</h2>
+          <p>Informe o e-mail da sua conta. Enviaremos um link para você criar uma nova senha.</p>
+          <ng-container *ngIf="!forgotSent(); else forgotDone">
+            <label class="auth-field">E-mail
+              <span><svg lucideMail /><input type="email" placeholder="seu@email.com" [value]="forgotEmail()" (input)="forgotEmail.set($any($event.target).value)" (keydown.enter)="sendForgot()" /></span>
+            </label>
+            <p *ngIf="forgotError()" class="form-feedback error">{{ forgotError() }}</p>
+            <button type="button" class="primary-button full-width" [disabled]="forgotSending()" (click)="sendForgot()">{{ forgotSending() ? 'Enviando...' : 'Enviar link de recuperação' }}</button>
+          </ng-container>
+          <ng-template #forgotDone>
+            <div class="auth-modal-success">
+              <svg lucideCheckCircle2 />
+              <p>Se existir uma conta com <b>{{ forgotEmail() }}</b>, o link de recuperação chegará em instantes. Confira também a caixa de spam.</p>
+            </div>
+            <button type="button" class="secondary-button full-width" (click)="closeForgot()">Fechar</button>
+          </ng-template>
+        </section>
+      </div>
     </section>
   `,
 })
@@ -87,6 +110,11 @@ export class LoginPageComponent {
   protected readonly showPassword = signal(false);
   protected readonly feedback = signal('');
   protected readonly hasError = signal(false);
+  protected readonly forgotOpen = signal(false);
+  protected readonly forgotEmail = signal('');
+  protected readonly forgotSending = signal(false);
+  protected readonly forgotSent = signal(false);
+  protected readonly forgotError = signal('');
   protected readonly form = this.fb.nonNullable.group({
     email: ['leonardo@terrasalphas.com.br', [Validators.required, Validators.email]],
     password: ['123456', [Validators.required, Validators.minLength(6)]],
@@ -97,11 +125,35 @@ export class LoginPageComponent {
     this.showPassword.update((value) => !value);
   }
 
-  // A redefinicao automatica por e-mail ainda nao existe; sem isso o botao
-  // ficava mudo, entao ao menos orienta quem esqueceu a senha.
   forgotPassword() {
-    this.feedback.set('Para redefinir sua senha, fale com a administração pelo WhatsApp de suporte.');
-    this.hasError.set(false);
+    this.forgotEmail.set(this.form.controls.email.value ?? '');
+    this.forgotError.set('');
+    this.forgotSent.set(false);
+    this.forgotOpen.set(true);
+  }
+
+  closeForgot() {
+    this.forgotOpen.set(false);
+  }
+
+  sendForgot() {
+    const email = this.forgotEmail().trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      this.forgotError.set('Informe um e-mail válido.');
+      return;
+    }
+    this.forgotError.set('');
+    this.forgotSending.set(true);
+    this.auth.forgotPassword(email).subscribe({
+      next: () => {
+        this.forgotSending.set(false);
+        this.forgotSent.set(true);
+      },
+      error: () => {
+        this.forgotSending.set(false);
+        this.forgotError.set('Não foi possível enviar agora. Tente novamente em instantes.');
+      },
+    });
   }
 
   private connectionMessage(status?: number) {

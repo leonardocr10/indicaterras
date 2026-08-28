@@ -6,12 +6,13 @@ import { DataModule } from '../data/data.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { MailService } from './mail.service';
 import { RolesGuard } from './roles.guard';
 
 @Module({
   imports: [ConfigModule, DataModule, PassportModule, JwtModule.register({})],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RolesGuard],
+  providers: [AuthService, JwtStrategy, RolesGuard, MailService],
   exports: [JwtModule, PassportModule, RolesGuard],
 })
 export class AuthModule {}

@@ -23,10 +23,12 @@ import { AdminReportsPageComponent } from './admin-reports-page';
 import { AdminReportDetailsPageComponent } from './admin-report-details-page';
 import { AdminPendingPageComponent } from './admin-pending-page';
 import { LandingPageComponent } from './landing-page';
+import { ResetPasswordPageComponent } from './reset-password-page';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
   { path: 'cadastro', component: RegisterPageComponent },
+  { path: 'redefinir-senha', component: ResetPasswordPageComponent },
   { path: 'admin/login', component: AdminLoginPageComponent },
   {
     path: 'app',

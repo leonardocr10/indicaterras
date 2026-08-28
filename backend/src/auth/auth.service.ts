@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { randomBytes } from 'crypto';
 import { DataStoreService } from '../data/data-store.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterProfessionalDto } from './dto/register-professional.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { MailService } from './mail.service';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +18,28 @@ export class AuthService {
     private readonly dataStoreService: DataStoreService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
+
+  /**
+   * Sempre responde a mesma coisa, exista o e-mail ou nao: dizer "nao
+   * encontrado" deixaria qualquer um descobrir quem tem conta no sistema.
+   */
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = this.dataStoreService.findUserByEmail(dto.email);
+    if (user) {
+      const token = randomBytes(32).toString('hex');
+      await this.dataStoreService.createPasswordReset(user.id, token);
+      const base = (this.configService.get<string>('APP_URL') ?? 'https://indicafacil.pro').replace(/\/$/, '');
+      await this.mailService.enviarRecuperacaoDeSenha(user.email, `${base}/redefinir-senha?token=${token}`);
+    }
+    return { data: { sent: true } };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    await this.dataStoreService.consumePasswordReset(dto.token, dto.password);
+    return { data: { success: true } };
+  }
 
   async login(loginDto: LoginDto) {
     const user = await this.dataStoreService.validateUser(loginDto.email, loginDto.password);

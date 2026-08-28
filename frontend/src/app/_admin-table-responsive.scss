@@ -1,0 +1,12 @@
+/* Mantém status e ações compactos nas tabelas administrativas menores. */
+.admin-table-wrap table { min-width: 640px; }
+.admin-table-wrap td:has(.status-badge), .admin-table-wrap td:has(.report-status), .admin-table-wrap td:has(.review-status) { width: 132px; }
+.status-badge, .report-status, .review-status { max-width: 124px; padding-inline: 8px !important; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; white-space: nowrap; }
+.admin-actions, .report-actions, .review-row-actions { flex-wrap: nowrap; white-space: nowrap; }
+.admin-actions button, .report-actions a, .review-row-actions a, .review-row-actions button { min-height: 28px; padding: 5px 8px; }
+
+@media (max-width: 760px) {
+  .admin-table-wrap table { min-width: 590px; }
+  .admin-table-wrap td:has(.status-badge), .admin-table-wrap td:has(.report-status), .admin-table-wrap td:has(.review-status) { width: 114px; }
+  .status-badge, .report-status, .review-status { max-width: 106px; font-size: 10px; }
+}

@@ -368,9 +368,7 @@ export class DataStoreService implements OnModuleInit {
   }): Promise<Omit<DemoUser, 'password'>> {
     await this.usersReady;
     this.ensureDatabase('criar a conta do morador');
-    if (this.users.some((user) => user.email.toLowerCase() === payload.email.toLowerCase())) {
-      throw new ConflictException('Este e-mail já possui cadastro');
-    }
+    this.assertEmailAvailable(payload.email);
     const requireApproval = this.requiresUserApproval();
     const record = await this.prisma.user.create({
         data: {
@@ -435,9 +433,7 @@ export class DataStoreService implements OnModuleInit {
     await this.usersReady;
     this.ensureDatabase('criar a conta do profissional');
     if (!this.allowsProfessionalSignup()) throw new ForbiddenException('O cadastro de profissionais está desativado pelo condomínio.');
-    if (this.users.some((user) => user.email.toLowerCase() === payload.email.toLowerCase())) {
-      throw new ConflictException('Este e-mail já possui cadastro');
-    }
+    this.assertEmailAvailable(payload.email);
     const category = this.categories.find((item) => item.id === payload.categoryId || item.slug === payload.categoryId);
     if (!category) throw new ConflictException('Selecione uma categoria válida');
 
@@ -875,6 +871,7 @@ export class DataStoreService implements OnModuleInit {
     } else {
       const password = String(payload.password || '123456');
       const condominiumId = String(payload.condominiumId || this.condominiums[0]?.id || '');
+      this.assertEmailAvailable(String(payload.email ?? ''));
       const record = await this.prisma.user.create({
         data: {
           condominiumId: condominiumId || null,
@@ -970,6 +967,7 @@ export class DataStoreService implements OnModuleInit {
       });
     } else {
       const password = String(payload.password ?? '');
+      if (payload.email !== undefined) this.assertEmailAvailable(String(payload.email), id);
       await this.prisma.user.update({
         where: { id },
         data: {
@@ -1071,6 +1069,14 @@ export class DataStoreService implements OnModuleInit {
   private stringArray(value: unknown, fallback?: unknown): string[] {
     const source = Array.isArray(value) ? value : value ? [value] : Array.isArray(fallback) ? fallback : fallback ? [fallback] : [];
     return [...new Set(source.map(String).filter(Boolean))];
+  }
+
+  /** Mantém a mensagem consistente antes da validação única do banco. */
+  private assertEmailAvailable(email: string, currentUserId = '') {
+    const normalizedEmail = String(email ?? '').trim().toLowerCase();
+    if (!normalizedEmail) return;
+    const alreadyRegistered = this.users.some((user) => user.id !== currentUserId && user.email.trim().toLowerCase() === normalizedEmail);
+    if (alreadyRegistered) throw new ConflictException('Este e-mail já possui cadastro. Entre com a conta existente ou use outro e-mail.');
   }
 
   private normalize(value: string) {

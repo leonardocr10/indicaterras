@@ -25,7 +25,7 @@ import {
   LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideMapPin,
   LucideHouse, LucideHandshake, LucideX,
   LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideShieldCheck,
-  LucideBadgeCheck, LucideClipboardList,
+  LucideBadgeCheck, LucideClipboardList, LucidePencil, LucideTrash2,
 } from '@lucide/angular';
 import { Category, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
@@ -1936,7 +1936,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
 @Component({
   selector: 'admin-crud-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SearchableSelectComponent, PhoneMaskDirective, LucideSearch, LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideX],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SearchableSelectComponent, PhoneMaskDirective, LucideSearch, LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucidePencil, LucideTrash2, LucideX],
   template: `
     <main class="admin-content admin-crud-content">
         <header class="admin-topbar"><div><h1>{{ config.title }}</h1><p>Consulte, filtre, exporte e gerencie os registros.</p></div></header>
@@ -1955,7 +1955,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
               <tr *ngFor="let record of pagedRecords()"><td *ngFor="let key of config.columnKeys" [class.photo-cell]="isPhotoKey(key)" [class.cover-photo-cell]="key === 'coverImage'">
                 <img *ngIf="isPhotoKey(key)" [src]="recordPhoto(record, key)" [alt]="'Foto de ' + value(record, 'name')" (error)="$any($event.target).src=photoPlaceholder(key)" />
                 <span *ngIf="!isPhotoKey(key)">{{ value(record, key) }}</span>
-              </td><td class="admin-actions"><button type="button" (click)="editRecord(record)">Editar</button><button type="button" class="danger-action" (click)="deleteRecord(record)">Excluir</button></td></tr>
+              </td><td class="admin-actions"><button type="button" class="icon-action" aria-label="Editar registro" title="Editar" (click)="editRecord(record)"><svg lucidePencil /></button><button type="button" class="icon-action danger-action" aria-label="Excluir registro" title="Excluir" (click)="deleteRecord(record)"><svg lucideTrash2 /></button></td></tr>
               <tr *ngIf="!pagedRecords().length"><td class="admin-empty-row" [attr.colspan]="config.columns.length + 1">Nenhum cadastro encontrado com os filtros atuais.</td></tr>
           </tbody></table></div>
           <footer class="admin-pagination"><span>Mostrando {{ pageStart() }}–{{ pageEnd() }} de {{ filteredRecords().length }}</span><label>Itens por página <app-searchable-select class="page-size-select" [ngModel]="pageSize()" (ngModelChange)="setPageSize($event)" [items]="pageSizeOptions" searchPlaceholder="Pesquisar quantidade..." /></label><div><button type="button" [disabled]="page() === 1" (click)="setPage(page() - 1)"><svg lucideChevronLeft /></button><b>{{ page() }} / {{ totalPages() }}</b><button type="button" [disabled]="page() === totalPages()" (click)="setPage(page() + 1)"><svg lucideChevronRight /></button></div></footer>

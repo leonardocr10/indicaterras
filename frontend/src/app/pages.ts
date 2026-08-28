@@ -193,7 +193,7 @@ export class LoginPageComponent {
 @Component({
   selector: 'register-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, SearchableSelectComponent, PhoneMaskDirective, LucideArrowLeft, LucideBriefcaseBusiness, LucideEye, LucideEyeOff, LucideLockKeyhole, LucideMail, LucideMapPin, LucidePhone, LucideUserRound],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, SearchableSelectComponent, PhoneMaskDirective, LucideArrowLeft, LucideBriefcaseBusiness, LucideEye, LucideEyeOff, LucideLockKeyhole, LucideMail, LucideMapPin, LucidePhone, LucideSearch],
   template: `
     <section class="auth-page register-page">
       <div class="auth-card wide register-card">
@@ -202,7 +202,7 @@ export class LoginPageComponent {
         <p class="register-subtitle">{{ isProfessional() ? 'Cadastre seu perfil e comece a receber propostas.' : 'Crie sua conta e encontre quem resolve.' }}</p>
 
         <div *ngIf="professionalSignupEnabled()" class="account-type-switch" role="radiogroup" aria-label="Tipo de conta">
-          <button type="button" role="radio" [attr.aria-checked]="!isProfessional()" [class.active]="!isProfessional()" (click)="setAccountType('resident')"><svg lucideUserRound />Quero contratar</button>
+          <button type="button" role="radio" [attr.aria-checked]="!isProfessional()" [class.active]="!isProfessional()" (click)="setAccountType('resident')"><svg lucideSearch />Quero contratar</button>
           <button type="button" role="radio" [attr.aria-checked]="isProfessional()" [class.active]="isProfessional()" (click)="setAccountType('professional')"><svg lucideBriefcaseBusiness />Sou profissional</button>
         </div>
 

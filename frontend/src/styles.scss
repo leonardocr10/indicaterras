@@ -700,8 +700,9 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 /* Cadastro de profissional e área do prestador */
 .settings-hint{margin:9px 0 0;color:#67766e;font-size:11px;line-height:16px}
 .account-type-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;border:1px solid #e0e7e3;border-radius:8px;background:#f6f9f7}
-.account-type-switch button{min-height:38px;padding:8px 10px;border:0;border-radius:6px;color:#3b4a43;background:transparent;font-family:var(--font-family);font-size:13px;font-weight:600;cursor:pointer}
-.account-type-switch button.active{color:#fff;background:var(--primary)}
+.account-type-switch button{min-height:40px;padding:8px 10px;border:0;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:7px;color:#3b4a43;background:transparent;font-family:var(--font-family);font-size:13px;font-weight:700;cursor:pointer;transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+.account-type-switch button svg{width:16px;height:16px;flex:0 0 auto;stroke-width:2.2}
+.account-type-switch button.active{color:#fff;background:var(--if-primary-dark);box-shadow:0 4px 10px rgba(6,95,70,.2)}
 
 /* Área do profissional */
 .provider-page{min-height:100vh;padding:0 0 40px;background:#f5f6f8}

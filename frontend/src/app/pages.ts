@@ -22,7 +22,7 @@ import {
   LucideSearch, LucideShare2, LucideSlidersHorizontal, LucideUsersRound, LucideSparkles,
   LucideBriefcaseBusiness, LucideChevronDown, LucideFileText, LucideThumbsUp,
   LucideStar, LucideUserRoundPlus, LucideCircleAlert,
-  LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound,
+  LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideMapPin,
   LucideHouse, LucideHandshake, LucideX,
   LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideShieldCheck,
 } from '@lucide/angular';
@@ -121,52 +121,90 @@ export class LoginPageComponent {
 @Component({
   selector: 'register-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, SearchableSelectComponent, PhoneMaskDirective],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, SearchableSelectComponent, PhoneMaskDirective, LucideArrowLeft, LucideBriefcaseBusiness, LucideEye, LucideEyeOff, LucideLockKeyhole, LucideMail, LucideMapPin, LucidePhone, LucideUserRound],
   template: `
     <section class="auth-page register-page">
-      <div class="auth-card wide">
-        <a routerLink="/" class="back-link">←</a>
-        <h1>Criar conta</h1>
-        <p>{{ isProfessional() ? 'Cadastre seu perfil profissional para aparecer no aplicativo.' : 'Preencha seus dados para criar sua conta.' }}</p>
+      <div class="auth-card wide register-card">
+        <a routerLink="/" class="back-link" aria-label="Voltar para o início"><svg lucideArrowLeft /></a>
+        <img class="auth-logo" [src]="brand.assets.logoPrimary" [alt]="brand.name" />
+        <p class="register-subtitle">{{ isProfessional() ? 'Cadastre seu perfil e comece a receber propostas.' : 'Crie sua conta e encontre quem resolve.' }}</p>
+
         <div *ngIf="professionalSignupEnabled()" class="account-type-switch" role="radiogroup" aria-label="Tipo de conta">
-          <button type="button" role="radio" [attr.aria-checked]="!isProfessional()" [class.active]="!isProfessional()" (click)="setAccountType('resident')">Sou morador</button>
-          <button type="button" role="radio" [attr.aria-checked]="isProfessional()" [class.active]="isProfessional()" (click)="setAccountType('professional')">Sou profissional</button>
+          <button type="button" role="radio" [attr.aria-checked]="!isProfessional()" [class.active]="!isProfessional()" (click)="setAccountType('resident')"><svg lucideUserRound />Quero contratar</button>
+          <button type="button" role="radio" [attr.aria-checked]="isProfessional()" [class.active]="isProfessional()" (click)="setAccountType('professional')"><svg lucideBriefcaseBusiness />Sou profissional</button>
         </div>
+
         <form [formGroup]="form" (ngSubmit)="submit()">
-          <input placeholder="Nome completo" formControlName="name" />
-          <input type="email" placeholder="E-mail" formControlName="email" />
-          <input type="tel" inputmode="tel" maxlength="15" placeholder="Telefone (WhatsApp)" formControlName="phone" appPhoneMask />
+          <span class="register-legend">Seus dados</span>
+          <label class="auth-field">Nome completo
+            <span><svg lucideUserRound /><input placeholder="Como você se chama" formControlName="name" /></span>
+          </label>
+          <div class="grid-2">
+            <label class="auth-field">E-mail
+              <span><svg lucideMail /><input type="email" placeholder="seu@email.com" formControlName="email" /></span>
+            </label>
+            <label class="auth-field">Telefone (WhatsApp)
+              <span><svg lucidePhone /><input type="tel" inputmode="tel" maxlength="15" placeholder="(00) 00000-0000" formControlName="phone" appPhoneMask /></span>
+            </label>
+          </div>
 
           <ng-container *ngIf="!isProfessional()">
-            <div class="cep-field">
-              <input placeholder="CEP" formControlName="zipCode" inputmode="numeric" maxlength="9" (input)="onZipCodeInput($event)" />
-              <small *ngIf="zipStatus()" [class.error]="zipStatus() === 'Não encontramos esse CEP.'">{{ zipStatus() }}</small>
-            </div>
-            <input placeholder="Rua" formControlName="street" />
+            <span class="register-legend">Seu endereço</span>
+            <label class="auth-field">CEP
+              <span><svg lucideMapPin /><input placeholder="00000-000" formControlName="zipCode" inputmode="numeric" maxlength="9" (input)="onZipCodeInput($event)" /></span>
+              <small class="field-hint" *ngIf="zipStatus()" [class.error]="zipFailed()">{{ zipStatus() }}</small>
+            </label>
+            <label class="auth-field">Rua
+              <span><input placeholder="Nome da rua" formControlName="street" /></span>
+            </label>
             <div class="grid-2">
-              <input placeholder="Número" formControlName="number" />
-              <input placeholder="Complemento (opcional)" formControlName="complement" />
+              <label class="auth-field">Número<span><input placeholder="123" formControlName="number" /></span></label>
+              <label class="auth-field">Complemento<span><input placeholder="Apto, bloco (opcional)" formControlName="complement" /></span></label>
             </div>
-            <input placeholder="Bairro" formControlName="neighborhood" />
+            <label class="auth-field">Bairro<span><input placeholder="Seu bairro" formControlName="neighborhood" /></span></label>
             <div class="grid-2">
-              <input placeholder="Cidade" formControlName="city" />
-              <input placeholder="Estado" formControlName="state" maxlength="2" />
+              <label class="auth-field">Cidade<span><input placeholder="Sua cidade" formControlName="city" /></span></label>
+              <label class="auth-field">Estado<span><input placeholder="UF" formControlName="state" maxlength="2" /></span></label>
             </div>
           </ng-container>
 
           <ng-container *ngIf="isProfessional()">
-            <input placeholder="Empresa (opcional)" formControlName="companyName" />
-            <app-searchable-select formControlName="categoryId" [items]="activeCategories()" valueKey="id" labelKey="name" placeholder="Selecione sua categoria" searchPlaceholder="Pesquisar categoria..." />
-            <app-searchable-select formControlName="city" [items]="cities()" valueKey="name" labelKey="label" [placeholder]="loadingCities() ? 'Carregando cidades...' : 'Selecione a cidade'" searchPlaceholder="Pesquisar cidade..." />
-            <app-searchable-select *ngIf="neighborhoodOptions().length; else bairroLivre" formControlName="neighborhood" [items]="neighborhoodOptions()" placeholder="Selecione o bairro" searchPlaceholder="Pesquisar bairro..." />
-            <ng-template #bairroLivre><input placeholder="Bairro" formControlName="neighborhood" /></ng-template>
-            <textarea placeholder="Conte sobre o seu trabalho (opcional)" formControlName="bio" maxlength="600"></textarea>
+            <span class="register-legend">Seu trabalho</span>
+            <label class="auth-field">Empresa
+              <span><svg lucideBriefcaseBusiness /><input placeholder="Nome da empresa (opcional)" formControlName="companyName" /></span>
+            </label>
+            <label class="auth-field">Categoria
+              <app-searchable-select formControlName="categoryId" [items]="activeCategories()" valueKey="id" labelKey="name" placeholder="Selecione sua categoria" searchPlaceholder="Pesquisar categoria..." />
+            </label>
+            <div class="grid-2">
+              <label class="auth-field">Cidade
+                <app-searchable-select formControlName="city" [items]="cities()" valueKey="name" labelKey="label" [placeholder]="loadingCities() ? 'Carregando cidades...' : 'Selecione a cidade'" searchPlaceholder="Pesquisar cidade..." />
+              </label>
+              <label class="auth-field">Bairro
+                <app-searchable-select *ngIf="neighborhoodOptions().length; else bairroLivre" formControlName="neighborhood" [items]="neighborhoodOptions()" placeholder="Selecione o bairro" searchPlaceholder="Pesquisar bairro..." />
+                <ng-template #bairroLivre><span><input placeholder="Seu bairro" formControlName="neighborhood" /></span></ng-template>
+              </label>
+            </div>
+            <label class="auth-field">Sobre o seu trabalho
+              <textarea placeholder="Conte sua experiência, especialidades e diferenciais (opcional)" formControlName="bio" maxlength="600"></textarea>
+            </label>
           </ng-container>
 
-          <input type="password" placeholder="Senha" formControlName="password" />
+          <span class="register-legend">Segurança</span>
+          <label class="auth-field">Senha
+            <span><svg lucideLockKeyhole /><input [type]="showPassword() ? 'text' : 'password'" placeholder="Crie uma senha" formControlName="password" /><button type="button" aria-label="Mostrar ou ocultar senha" (click)="showPassword.set(!showPassword())"><svg *ngIf="!showPassword()" lucideEye /><svg *ngIf="showPassword()" lucideEyeOff /></button></span>
+          </label>
+          <div class="password-strength" *ngIf="form.controls.password.value" [attr.data-level]="passwordScore()">
+            <div class="password-strength-bar" role="progressbar" [attr.aria-valuenow]="passwordScore()" aria-valuemin="0" aria-valuemax="4" [attr.aria-label]="'Força da senha: ' + passwordLabel()">
+              <i *ngFor="let step of [1, 2, 3, 4]" [class.on]="passwordScore() >= step"></i>
+            </div>
+            <small><b>{{ passwordLabel() }}</b>{{ passwordHint() ? ' · ' + passwordHint() : '' }}</small>
+          </div>
+
           <button class="primary-button" type="submit">{{ isProfessional() ? 'Criar conta de profissional' : 'Criar conta' }}</button>
           <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
         </form>
+        <p class="register-login-link">Já tem conta? <a routerLink="/login">Entrar</a></p>
       </div>
     </section>
   `,
@@ -178,11 +216,14 @@ export class RegisterPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
 
+  protected readonly brand = brand;
   protected readonly condominiums = signal<Condominium[]>([]);
   protected readonly categories = signal<Category[]>([]);
   protected readonly activeCategories = computed(() => this.categories().filter((category) => category.active));
   protected readonly professionalSignupEnabled = signal(false);
   protected readonly isProfessional = signal(false);
+  protected readonly showPassword = signal(false);
+  protected readonly password = signal('');
   protected readonly feedback = signal('');
   protected readonly hasError = signal(false);
   protected readonly cities = signal<Array<{ name: string; label: string }>>([]);
@@ -190,6 +231,30 @@ export class RegisterPageComponent implements OnInit {
   protected readonly selectedCity = signal('');
   protected readonly neighborhoodOptions = computed(() => neighborhoodsForCity(this.selectedCity()));
   protected readonly zipStatus = signal('');
+  protected readonly zipFailed = signal(false);
+
+  /** Pontua de 0 a 4: comprimento, mistura de maiuscula/minuscula, numero e simbolo. */
+  protected readonly passwordScore = computed(() => {
+    const value = this.password();
+    if (!value) return 0;
+    let score = 0;
+    if (value.length >= 8) score++;
+    if (value.length >= 12) score++;
+    if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++;
+    if (/\d/.test(value) && /[^A-Za-z0-9]/.test(value)) score++;
+    return Math.min(4, value.length < 6 ? 1 : Math.max(1, score));
+  });
+  protected readonly passwordLabel = computed(() => ['Muito fraca', 'Fraca', 'Razoável', 'Boa', 'Forte'][this.passwordScore()]);
+  protected readonly passwordHint = computed(() => {
+    const value = this.password();
+    if (!value || this.passwordScore() >= 4) return '';
+    if (value.length < 8) return 'use ao menos 8 caracteres';
+    if (!/[a-z]/.test(value) || !/[A-Z]/.test(value)) return 'misture maiúsculas e minúsculas';
+    if (!/\d/.test(value)) return 'inclua um número';
+    if (!/[^A-Za-z0-9]/.test(value)) return 'inclua um símbolo';
+    return 'deixe-a mais longa';
+  });
+
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
@@ -219,6 +284,7 @@ export class RegisterPageComponent implements OnInit {
       // vem preenchida pelo CEP junto com o bairro, que não pode ser apagado aqui.
       if (this.isProfessional()) this.form.controls.neighborhood.setValue('');
     });
+    this.form.controls.password.valueChanges.subscribe((value) => this.password.set(value ?? ''));
   }
 
   private loadCities() {
@@ -259,12 +325,15 @@ export class RegisterPageComponent implements OnInit {
     input.value = masked;
     if (digits.length !== 8) {
       this.zipStatus.set('');
+      this.zipFailed.set(false);
       return;
     }
     this.zipStatus.set('Buscando endereço...');
+    this.zipFailed.set(false);
     fetchAddressByZipCode(this.http, digits).subscribe({
       next: (address) => {
-        this.zipStatus.set('');
+        this.zipStatus.set('Endereço encontrado.');
+        this.zipFailed.set(false);
         this.form.patchValue({
           street: address.street || this.form.controls.street.value,
           neighborhood: address.neighborhood || this.form.controls.neighborhood.value,
@@ -272,7 +341,10 @@ export class RegisterPageComponent implements OnInit {
           state: address.state,
         });
       },
-      error: () => this.zipStatus.set('Não encontramos esse CEP.'),
+      error: () => {
+        this.zipStatus.set('Não encontramos esse CEP.');
+        this.zipFailed.set(true);
+      },
     });
   }
 

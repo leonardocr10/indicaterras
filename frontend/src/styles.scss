@@ -1509,6 +1509,21 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
 .nearby-map{height:min(70vh,520px);border:1px solid #dde5e0;border-radius:10px;overflow:hidden}
 .nearby-map.hidden{display:none}
 
+
+/* Marcador do mapa: card com foto e profissao, ponta verde sobre a coordenada. */
+.map-pin{position:absolute;transform:translate(-50%,-100%);display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border:0;border-radius:999px;background:#fff;font-family:var(--font-family);cursor:pointer;filter:drop-shadow(0 6px 14px rgba(9,40,28,.22));transition:transform .14s ease}
+.map-pin::after{content:'';position:absolute;left:50%;bottom:-9px;width:0;height:0;transform:translateX(-50%);border-left:8px solid transparent;border-right:8px solid transparent;border-top:11px solid #065f46}
+.map-pin-avatar{width:34px;height:34px;flex:none;border-radius:50%;object-fit:cover;background:#eef2ef}
+.map-pin-body{display:flex;align-items:center;gap:6px}
+.map-pin-icon{width:17px;height:17px;flex:none}
+.map-pin-label{color:#1f2937;font-size:13px;font-weight:700;line-height:17px;white-space:nowrap}
+.map-pin:hover{transform:translate(-50%,-100%) scale(1.03)}
+.map-pin.ativo{outline:2px solid #22c55e;outline-offset:2px;z-index:3}
+/* Afastado, so a foto: os cards se sobrepunham e nada ficava legivel. */
+.map-pin.compacto{padding:4px;gap:0}
+.map-pin.compacto .map-pin-body{display:none}
+.map-pin.compacto .map-pin-avatar{width:30px;height:30px}
+
 /* Card do marcador: bottom sheet sobre o mapa, com o mapa visivel atras. */
 .map-sheet{position:absolute;left:0;right:0;bottom:0;z-index:5;max-height:92%;overflow-y:auto;padding:14px 16px 16px;border-radius:18px 18px 10px 10px;background:#fff;box-shadow:0 -10px 34px rgba(9,40,28,.22)}
 .map-sheet-handle{width:44px;height:4px;margin:0 auto 12px;border-radius:999px;background:#e4e8e5}

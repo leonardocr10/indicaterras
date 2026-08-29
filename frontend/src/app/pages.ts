@@ -32,10 +32,17 @@ import { SpreadsheetService } from './services/spreadsheet.service';
 import { matchesSearch } from './search.util';
 import { fetchAddressByZipCode, fetchBrazilianCities, neighborhoodsForCity } from './brazil-locations';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
-import { categoryAvatar, categoryCover } from './category-art.util';
+import { categoryAvatar, categoryCover, categoryIconUrl } from './category-art.util';
 
-/** O pouco que precisamos do marcador do Google para destacá-lo. */
-type MarcadorDestacavel = { setAnimation?(valor: unknown): void; setZIndex?(valor: number): void };
+/** O pouco que usamos de `google.maps.OverlayView` para o marcador próprio. */
+interface OverlayViewLike {
+  setMap(mapa: unknown): void;
+  getPanes(): { floatPane: HTMLElement } | null;
+  getProjection(): { fromLatLngToDivPixel(posicao: unknown): { x: number; y: number } | null } | null;
+  onAdd?(): void;
+  draw?(): void;
+  onRemove?(): void;
+}
 import { SearchableSelectComponent } from './searchable-select';
 import { GoogleMapsLoaderService } from './services/google-maps-loader.service';
 import { LocationService, RADIUS_OPTIONS } from './services/location.service';
@@ -1376,6 +1383,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
   private readonly mapsLoader = inject(GoogleMapsLoaderService);
   private mapa: unknown = null;
   private marcadores: Array<{ setMap(valor: unknown): void }> = [];
+  private readonly elementosDosMarcadores = new Map<string, HTMLElement>();
   protected readonly location = this.locationService.location;
   protected readonly radius = this.locationService.radius;
   protected readonly locating = this.locationService.requesting;
@@ -1561,14 +1569,20 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 
     // O balão do Google foi substituído pelo card inferior: cabe muito mais
     // informação e o toque não tira a pessoa do mapa.
+    this.elementosDosMarcadores.clear();
+    const Marcador = this.classeDoMarcador(maps as unknown as { OverlayView: new () => OverlayViewLike });
     for (const profissional of this.nearbyItems()) {
       if (profissional.latitude === null || profissional.longitude === null) continue;
       const posicao = { lat: profissional.latitude, lng: profissional.longitude };
-      const marcador = new maps.Marker({ position: posicao, map: mapa, title: profissional.name });
-      marcador.addListener('click', () => this.selecionarNoMapa(profissional, marcador as unknown as MarcadorDestacavel));
+      const elemento = this.montarMarcador(profissional);
+      elemento.addEventListener('click', () => this.selecionarNoMapa(profissional));
+      this.elementosDosMarcadores.set(profissional.id, elemento);
+      const marcador = new Marcador(posicao, elemento);
+      marcador.setMap(mapa);
       this.marcadores.push(marcador as unknown as { setMap(v: unknown): void });
       limites.extend(posicao);
     }
+    this.ajustarDetalheDosMarcadores(mapa as unknown as { getZoom?(): number | undefined; addListener(evento: string, callback: () => void): void });
 
     if (this.marcadores.length > 1) mapa.fitBounds(limites);
     else mapa.setZoom(13);
@@ -1584,22 +1598,105 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     }, 1200);
   }
 
-  /** Destaca o marcador tocado e abre o card, sem navegar para outra tela. */
-  private selecionarNoMapa(profissional: NearbyProfessional, marcador: MarcadorDestacavel) {
-    this.selecionado.set(profissional);
-    const maps = (window as unknown as { google?: { maps?: Record<string, unknown> } }).google?.maps;
-    // O destaque é um detalhe: se a API mudar, o card continua abrindo.
-    for (const outro of this.marcadores as Array<{ setZIndex?(valor: number): void }>) outro.setZIndex?.(1);
-    marcador.setZIndex?.(999);
-    const animacao = (maps?.['Animation'] as { BOUNCE?: unknown } | undefined)?.BOUNCE;
-    if (animacao !== undefined && marcador.setAnimation) {
-      marcador.setAnimation(animacao);
-      setTimeout(() => marcador.setAnimation?.(null), 1400);
+  /**
+   * Marcador proprio em HTML. O `Marker` padrao so aceita imagem, e o mockup
+   * pede foto + icone + profissao: `OverlayView` deixa posicionar um elemento
+   * comum sobre o mapa, sem exigir Map ID nem biblioteca externa.
+   */
+  private classeDoMarcador(maps: { OverlayView: new () => OverlayViewLike }) {
+    const Base = maps.OverlayView;
+    return class MarcadorHtml extends Base {
+      constructor(
+        private readonly posicao: { lat: number; lng: number },
+        private readonly elemento: HTMLElement,
+      ) {
+        super();
+      }
+
+      override onAdd() {
+        this.getPanes()?.floatPane.appendChild(this.elemento);
+      }
+
+      override draw() {
+        const projecao = this.getProjection();
+        const ponto = projecao?.fromLatLngToDivPixel(new (window as unknown as { google: { maps: { LatLng: new (lat: number, lng: number) => unknown } } }).google.maps.LatLng(this.posicao.lat, this.posicao.lng));
+        if (!ponto) return;
+        // A ponta do marcador fica exatamente sobre a coordenada.
+        this.elemento.style.left = `${ponto.x}px`;
+        this.elemento.style.top = `${ponto.y}px`;
+      }
+
+      override onRemove() {
+        this.elemento.remove();
+      }
+    };
+  }
+
+  /** Card branco com foto, ícone da categoria e profissão, mais a ponta verde. */
+  private montarMarcador(profissional: NearbyProfessional) {
+    const elemento = document.createElement('button');
+    elemento.type = 'button';
+    elemento.className = 'map-pin';
+    elemento.setAttribute('aria-label', `${profissional.name}, ${profissional.category}`);
+
+    const foto = document.createElement('img');
+    foto.className = 'map-pin-avatar';
+    foto.src = this.avatarDe(profissional);
+    foto.alt = '';
+    // Sem foto propria entra a arte da categoria, nunca um espaço vazio.
+    foto.addEventListener('error', () => (foto.src = categoryAvatar(profissional)));
+
+    const corpo = document.createElement('span');
+    corpo.className = 'map-pin-body';
+
+    const icone = this.iconeDaCategoria(profissional);
+    if (icone) {
+      const imagemDoIcone = document.createElement('img');
+      imagemDoIcone.className = 'map-pin-icon';
+      imagemDoIcone.src = icone;
+      imagemDoIcone.alt = '';
+      imagemDoIcone.addEventListener('error', () => imagemDoIcone.remove());
+      corpo.appendChild(imagemDoIcone);
     }
+
+    const rotulo = document.createElement('span');
+    rotulo.className = 'map-pin-label';
+    rotulo.textContent = profissional.category || 'Profissional';
+    corpo.appendChild(rotulo);
+
+    elemento.append(foto, corpo);
+    return elemento;
+  }
+
+  /** Ícone da categoria pelo slug, reaproveitando o catálogo já carregado. */
+  private iconeDaCategoria(profissional: NearbyProfessional) {
+    const slug = profissional.categories?.[0]?.slug ?? '';
+    const categoria = this.categories().find((item) => item.slug === slug);
+    return categoryIconUrl(categoria?.icon);
+  }
+
+  /**
+   * Com o mapa afastado os cards se sobrepõem e nada fica legível. Abaixo de um
+   * certo zoom eles viram só a foto; ao aproximar, voltam completos.
+   */
+  private ajustarDetalheDosMarcadores(mapa: { getZoom?(): number | undefined; addListener(evento: string, callback: () => void): void }) {
+    const aplicar = () => {
+      const compacto = (mapa.getZoom?.() ?? 13) < 13;
+      for (const elemento of this.elementosDosMarcadores.values()) elemento.classList.toggle('compacto', compacto);
+    };
+    aplicar();
+    mapa.addListener('zoom_changed', aplicar);
+  }
+
+  /** Destaca o marcador tocado e abre o card, sem navegar para outra tela. */
+  private selecionarNoMapa(profissional: NearbyProfessional) {
+    this.selecionado.set(profissional);
+    for (const [id, elemento] of this.elementosDosMarcadores) elemento.classList.toggle('ativo', id === profissional.id);
   }
 
   protected fecharCard() {
     this.selecionado.set(null);
+    for (const elemento of this.elementosDosMarcadores.values()) elemento.classList.remove('ativo');
   }
 
   protected avatarDe(profissional: NearbyProfessional) {

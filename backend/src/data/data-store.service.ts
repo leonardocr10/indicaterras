@@ -173,6 +173,14 @@ export class DataStoreService implements OnModuleInit {
     );
     this.categoryServices.splice(0, this.categoryServices.length, ...this.categories.flatMap((category) => category.services ?? []));
 
+    // Sem este vínculo, "Meu perfil" do profissional respondia que não havia
+    // perfil ligado à conta: o mapa era lido em vários pontos, mas nunca
+    // preenchido, então vivia vazio.
+    this.professionalByUserId.clear();
+    for (const item of professionals) {
+      if (item.userId) this.professionalByUserId.set(item.userId, item.id);
+    }
+
     this.professionals.splice(
       0,
       this.professionals.length,

@@ -2721,7 +2721,7 @@ export class AdminCrudPageComponent implements OnInit {
 
   value(record: Record<string, unknown>, key: string) {
     const value = record[key];
-    if (key === 'role') return ({ RESIDENT: 'Cliente', CONDO_ADMIN: 'Administrador', SUPER_ADMIN: 'Super administrador' } as Record<string, string>)[String(value)] ?? String(value ?? '-');
+    if (key === 'role') return ({ RESIDENT: 'Cliente', PROFESSIONAL: 'Profissional', CONDO_ADMIN: 'Administrador', SUPER_ADMIN: 'Super administrador' } as Record<string, string>)[String(value)] ?? String(value ?? '-');
     if (key === 'approvalStatus') return ({ PENDING: 'Pendente', APPROVED: 'Aprovado', REJECTED: 'Recusado' } as Record<string, string>)[String(value)] ?? String(value ?? '-');
     if (key === 'emailVerified' || key === 'active') return value ? 'Sim' : 'Não';
     return String(value ?? '-');

@@ -4,16 +4,21 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin, map, of, switchMap } from 'rxjs';
 import {
+  LucideAtSign,
   LucideBriefcaseBusiness,
   LucideCalendarCheck,
   LucideCamera,
   LucideCheckCircle2,
+  LucideChevronDown,
   LucideChevronRight,
+  LucideClock,
   LucideEye,
   LucideFileCheck,
   LucideFileText,
   LucideHeart,
   LucideImagePlus,
+  LucideInfo,
+  LucideLayoutGrid,
   LucideLogOut,
   LucideMail,
   LucideMapPin,
@@ -23,6 +28,7 @@ import {
   LucideShare2,
   LucideStar,
   LucideTrash2,
+  LucideUserRound,
   LucideUsers,
 } from '@lucide/angular';
 import { Category, CategoryService, Professional, ProfessionalDashboard, ProfessionalWork } from './models';
@@ -39,16 +45,21 @@ import { ToastService } from './services/toast.service';
     ReactiveFormsModule,
     RouterLink,
     PhoneMaskDirective,
+    LucideAtSign,
     LucideBriefcaseBusiness,
     LucideCalendarCheck,
     LucideCamera,
     LucideCheckCircle2,
+    LucideChevronDown,
     LucideChevronRight,
+    LucideClock,
     LucideEye,
     LucideFileCheck,
     LucideFileText,
     LucideHeart,
     LucideImagePlus,
+    LucideInfo,
+    LucideLayoutGrid,
     LucideLogOut,
     LucideMail,
     LucideMapPin,
@@ -58,6 +69,7 @@ import { ToastService } from './services/toast.service';
     LucideShare2,
     LucideStar,
     LucideTrash2,
+    LucideUserRound,
     LucideUsers,
   ],
   template: `
@@ -116,7 +128,10 @@ import { ToastService } from './services/toast.service';
         </section>
 
         <section class="provider-block" *ngIf="dashboard() as painel">
-          <header class="provider-block-header"><h2>Visão geral</h2></header>
+          <header class="provider-block-header">
+            <h2>Visão geral</h2>
+            <button type="button" class="provider-block-link" (click)="mostrarPendencias()">{{ pendenciasVisiveis() ? 'Ocultar' : 'Ver tudo' }}<svg lucideChevronRight /></button>
+          </header>
           <div class="provider-overview-grid">
             <button type="button" class="provider-overview-card mensagens" (click)="abrirMensagens()">
               <span class="provider-overview-badge" *ngIf="painel.overview.unreadMessages">{{ painel.overview.unreadMessages }}</span>
@@ -137,7 +152,7 @@ import { ToastService } from './services/toast.service';
             </button>
             <button type="button" class="provider-overview-card disponibilidade" (click)="scrollToHours()">
               <svg lucideCalendarCheck />
-              <strong>{{ painel.overview.availableToday ? 'Disponível hoje' : 'Sem atendimento hoje' }}</strong>
+              <strong>{{ painel.overview.availableToday ? 'Disponível hoje' : 'Atendimento hoje' }}</strong>
               <small>{{ painel.overview.availabilityText }}</small>
             </button>
           </div>
@@ -157,7 +172,10 @@ import { ToastService } from './services/toast.service';
         </section>
 
         <section class="provider-block provider-works">
-          <header class="provider-block-header"><h2>Meus trabalhos</h2></header>
+          <header class="provider-block-header">
+            <h2>Meus trabalhos</h2>
+            <a *ngIf="professional() as perfil" [routerLink]="['/app/profissional', perfil.id]">Ver tudo</a>
+          </header>
           <p class="provider-hint">Publique fotos dos serviços que você já fez. Elas aparecem no seu perfil para os clientes.</p>
           <div *ngIf="works().length" class="provider-work-grid">
             <figure *ngFor="let work of works()">
@@ -174,46 +192,50 @@ import { ToastService } from './services/toast.service';
 
         <!-- So quantidade e iniciais: o app nao guarda foto de cliente, e nome
              completo, telefone ou e-mail nao tem por que aparecer aqui. -->
-        <section class="provider-block" *ngIf="dashboard() as painel">
-          <header class="provider-block-header"><h2>Clientes que favoritaram você</h2></header>
-          <div class="provider-favorites" *ngIf="painel.favoriteClients.total; else semFavoritos">
-            <div class="provider-favorite-avatars">
-              <span *ngFor="let cliente of painel.favoriteClients.preview">{{ cliente.initial }}</span>
-              <span class="mais" *ngIf="painel.favoriteClients.total > painel.favoriteClients.preview.length">+{{ painel.favoriteClients.total - painel.favoriteClients.preview.length }}</span>
+        <div class="provider-summary-pair" *ngIf="dashboard() as painel">
+          <section class="provider-block provider-mini">
+            <header class="provider-block-header">
+              <h2><svg lucideHeart />Clientes que favoritaram você</h2>
+            </header>
+            <div class="provider-favorites" *ngIf="painel.favoriteClients.total; else semFavoritos">
+              <div class="provider-favorite-avatars">
+                <span *ngFor="let cliente of painel.favoriteClients.preview">{{ cliente.initial }}</span>
+                <span class="mais" *ngIf="painel.favoriteClients.total > painel.favoriteClients.preview.length">+{{ painel.favoriteClients.total - painel.favoriteClients.preview.length }}</span>
+              </div>
+              <div>
+                <strong>{{ painel.favoriteClients.total }} {{ painel.favoriteClients.total === 1 ? 'cliente salvou' : 'clientes salvaram' }} seu perfil</strong>
+                <p>Mostre seu trabalho e conquiste ainda mais clientes.</p>
+              </div>
             </div>
-            <div>
-              <strong>{{ painel.favoriteClients.total }} {{ painel.favoriteClients.total === 1 ? 'cliente salvou' : 'clientes salvaram' }} seu perfil</strong>
-              <p>Mostre seu trabalho e conquiste ainda mais clientes.</p>
-            </div>
-          </div>
-          <ng-template #semFavoritos>
-            <p class="provider-empty">Ninguém favoritou seu perfil ainda. Publique fotos dos seus trabalhos para aparecer melhor.</p>
-          </ng-template>
-        </section>
+            <ng-template #semFavoritos>
+              <p class="provider-empty">Ninguém favoritou seu perfil ainda. Publique fotos dos seus trabalhos para aparecer melhor.</p>
+            </ng-template>
+          </section>
 
-        <section class="provider-block" *ngIf="dashboard() as painel">
-          <header class="provider-block-header">
-            <h2>Avaliações recentes</h2>
-            <a *ngIf="painel.recentReviews.length" [routerLink]="['/app/profissional', painel.profile.id, 'comentarios']">Ver todas</a>
-          </header>
-          <div class="provider-reviews" *ngIf="painel.recentReviews.length; else semAvaliacoes">
-            <article *ngFor="let review of painel.recentReviews">
-              <header>
-                <span class="provider-review-avatar">{{ review.author.charAt(0) }}</span>
-                <div>
-                  <strong>{{ review.author }}</strong>
-                  <div class="provider-review-stars"><svg lucideStar *ngFor="let estrela of estrelasDe(review.rating)" /></div>
-                </div>
-                <b>{{ review.rating | number: '1.1-1' }}</b>
-              </header>
-              <p>{{ review.comment }}</p>
-              <time>{{ review.createdAt | date: 'dd/MM/yyyy' }}</time>
-            </article>
-          </div>
-          <ng-template #semAvaliacoes>
-            <p class="provider-empty">Ainda não há avaliações. As avaliações dos seus clientes aparecerão aqui depois dos serviços realizados.</p>
-          </ng-template>
-        </section>
+          <section class="provider-block provider-mini">
+            <header class="provider-block-header">
+              <h2><svg lucideStar />Avaliações recentes</h2>
+              <a *ngIf="painel.recentReviews.length" [routerLink]="['/app/profissional', painel.profile.id, 'comentarios']">Ver todas</a>
+            </header>
+            <div class="provider-reviews" *ngIf="painel.recentReviews.length; else semAvaliacoes">
+              <article *ngFor="let review of painel.recentReviews">
+                <header>
+                  <span class="provider-review-avatar">{{ review.author.charAt(0) }}</span>
+                  <div>
+                    <strong>{{ review.author }}</strong>
+                    <div class="provider-review-stars"><svg lucideStar *ngFor="let estrela of estrelasDe(review.rating)" /></div>
+                  </div>
+                  <b>{{ review.rating | number: '1.1-1' }}</b>
+                </header>
+                <p>{{ review.comment }}</p>
+                <time>{{ review.createdAt | date: 'dd/MM/yyyy' }}</time>
+              </article>
+            </div>
+            <ng-template #semAvaliacoes>
+              <p class="provider-empty">Ainda não há avaliações. As avaliações dos seus clientes aparecerão aqui depois dos serviços realizados.</p>
+            </ng-template>
+          </section>
+        </div>
 
         <section class="provider-shortcuts">
           <button type="button" (click)="compartilharPerfil()">
@@ -227,51 +249,110 @@ import { ToastService } from './services/toast.service';
           </button>
         </section>
 
-        <form [formGroup]="form" class="stack-form provider-form" (ngSubmit)="save()">
-          <h2 #formAnchor>Dados do perfil</h2>
-          <label><span>Nome <i>*</i></span><input formControlName="name" placeholder="Como você aparece no app" /></label>
-          <label><span>Empresa</span><input formControlName="companyName" placeholder="Nome da empresa (opcional)" /></label>
-          <div class="grid-2">
-            <label><span>Telefone <i>*</i></span><input type="tel" inputmode="tel" maxlength="15" formControlName="phone" appPhoneMask /></label>
-            <label><span>WhatsApp</span><input type="tel" inputmode="tel" maxlength="15" formControlName="whatsapp" appPhoneMask /></label>
-          </div>
-          <div class="grid-2">
-            <label><span>Cidade <i>*</i></span><input formControlName="city" /></label>
-            <label><span>Bairro</span><input formControlName="neighborhood" /></label>
-          </div>
-          <label><span>Instagram</span><input formControlName="instagram" placeholder="@seuperfil" /></label>
-          <label><span>Sobre o seu trabalho</span><textarea formControlName="bio" maxlength="600" placeholder="Conte sua experiência, especialidades e diferenciais"></textarea></label>
-
-          <h2>Categorias</h2>
-          <p class="provider-hint">Escolha em quais categorias você quer aparecer.</p>
-          <div class="provider-chips">
-            <button *ngFor="let category of categories()" type="button" [class.active]="selectedCategoryIds().includes(category.id)" (click)="toggleCategory(category.id)">
-              <svg *ngIf="selectedCategoryIds().includes(category.id)" lucideCheckCircle2 />{{ category.name }}
+        <form [formGroup]="form" class="provider-sections" (ngSubmit)="save()">
+          <!-- Cada bloco abre e fecha: a tela abre no painel, nao num formulario longo. -->
+          <section class="provider-accordion" [class.open]="secaoAberta() === 'dados'">
+            <button type="button" class="provider-accordion-head" [attr.aria-expanded]="secaoAberta() === 'dados'" (click)="alternarSecao('dados')">
+              <span class="provider-accordion-icon"><svg lucideUserRound /></span>
+              <span class="provider-accordion-title">
+                <strong #formAnchor>Dados do perfil</strong>
+                <small>Nome, empresa, contato e localização</small>
+              </span>
+              <svg lucideChevronDown class="provider-accordion-chevron" />
             </button>
-          </div>
+            <div class="provider-accordion-body" *ngIf="secaoAberta() === 'dados'">
+              <label><span>Nome <i>*</i></span><input formControlName="name" placeholder="Como você aparece no app" /></label>
+              <label><span>Empresa</span><input formControlName="companyName" placeholder="Nome da empresa (opcional)" /></label>
+              <div class="grid-2">
+                <label><span>Telefone <i>*</i></span><input type="tel" inputmode="tel" maxlength="15" formControlName="phone" appPhoneMask /></label>
+                <label><span>WhatsApp</span><input type="tel" inputmode="tel" maxlength="15" formControlName="whatsapp" appPhoneMask /></label>
+              </div>
+              <div class="grid-2">
+                <label><span>Cidade <i>*</i></span><input formControlName="city" /></label>
+                <label><span>Bairro</span><input formControlName="neighborhood" /></label>
+              </div>
+            </div>
+          </section>
 
-          <ng-container *ngIf="availableServices().length">
-            <h2>Serviços que você faz</h2>
-            <div class="provider-chips">
-              <button *ngFor="let service of availableServices()" type="button" [class.active]="selectedServiceIds().includes(service.id)" (click)="toggleService(service.id)">
-                <svg *ngIf="selectedServiceIds().includes(service.id)" lucideCheckCircle2 />{{ service.name }}
-              </button>
+          <section class="provider-accordion" [class.open]="secaoAberta() === 'categorias'">
+            <button type="button" class="provider-accordion-head" [attr.aria-expanded]="secaoAberta() === 'categorias'" (click)="alternarSecao('categorias')">
+              <span class="provider-accordion-icon"><svg lucideLayoutGrid /></span>
+              <span class="provider-accordion-title">
+                <strong>Categorias e serviços</strong>
+                <small>{{ resumoCategorias() }}</small>
+              </span>
+              <svg lucideChevronDown class="provider-accordion-chevron" />
+            </button>
+            <div class="provider-accordion-body" *ngIf="secaoAberta() === 'categorias'">
+              <p class="provider-hint">Escolha em quais categorias você quer aparecer.</p>
+              <div class="provider-chips">
+                <button *ngFor="let category of categories()" type="button" [class.active]="selectedCategoryIds().includes(category.id)" (click)="toggleCategory(category.id)">
+                  <svg *ngIf="selectedCategoryIds().includes(category.id)" lucideCheckCircle2 />{{ category.name }}
+                </button>
+              </div>
+              <ng-container *ngIf="availableServices().length">
+                <p class="provider-hint provider-hint-spaced">Serviços que você faz.</p>
+                <div class="provider-chips">
+                  <button *ngFor="let service of availableServices()" type="button" [class.active]="selectedServiceIds().includes(service.id)" (click)="toggleService(service.id)">
+                    <svg *ngIf="selectedServiceIds().includes(service.id)" lucideCheckCircle2 />{{ service.name }}
+                  </button>
+                </div>
+              </ng-container>
             </div>
-          </ng-container>
+          </section>
 
-          <h2 #jornadaAnchor>Disponibilidade</h2>
-          <p class="provider-hint">Os horários em que você atende. É o que aparece como "Disponível hoje" no seu painel.</p>
-          <div class="provider-hours" *ngFor="let bloco of workingHours(); let indice = index">
-            <div class="provider-hours-days">
-              <button *ngFor="let dia of diasDaSemana" type="button" [class.active]="bloco.days.includes(dia.value)" (click)="toggleDia(indice, dia.value)">{{ dia.label }}</button>
+          <section class="provider-accordion" [class.open]="secaoAberta() === 'jornada'">
+            <button type="button" class="provider-accordion-head" [attr.aria-expanded]="secaoAberta() === 'jornada'" (click)="alternarSecao('jornada')">
+              <span class="provider-accordion-icon"><svg lucideClock /></span>
+              <span class="provider-accordion-title">
+                <strong #jornadaAnchor>Disponibilidade</strong>
+                <small>{{ resumoJornada() }}</small>
+              </span>
+              <svg lucideChevronDown class="provider-accordion-chevron" />
+            </button>
+            <div class="provider-accordion-body" *ngIf="secaoAberta() === 'jornada'">
+              <p class="provider-hint">Os horários em que você atende. É o que aparece como "Atendimento hoje" no seu painel.</p>
+              <div class="provider-hours" *ngFor="let bloco of workingHours(); let indice = index">
+                <div class="provider-hours-days">
+                  <button *ngFor="let dia of diasDaSemana" type="button" [class.active]="bloco.days.includes(dia.value)" (click)="toggleDia(indice, dia.value)">{{ dia.label }}</button>
+                </div>
+                <div class="provider-hours-range">
+                  <label><span>Início</span><input type="time" [value]="bloco.start" (change)="setHora(indice, 'start', $event)" /></label>
+                  <label><span>Fim</span><input type="time" [value]="bloco.end" (change)="setHora(indice, 'end', $event)" /></label>
+                  <button *ngIf="workingHours().length > 1" type="button" class="provider-hours-remove" aria-label="Remover horário" (click)="removerBloco(indice)"><svg lucideTrash2 /></button>
+                </div>
+              </div>
+              <button type="button" class="provider-hours-add" (click)="adicionarBloco()">Adicionar outro horário</button>
             </div>
-            <div class="provider-hours-range">
-              <label><span>Início</span><input type="time" [value]="bloco.start" (change)="setHora(indice, 'start', $event)" /></label>
-              <label><span>Fim</span><input type="time" [value]="bloco.end" (change)="setHora(indice, 'end', $event)" /></label>
-              <button *ngIf="workingHours().length > 1" type="button" class="provider-hours-remove" aria-label="Remover horário" (click)="removerBloco(indice)"><svg lucideTrash2 /></button>
+          </section>
+
+          <section class="provider-accordion" [class.open]="secaoAberta() === 'sobre'">
+            <button type="button" class="provider-accordion-head" [attr.aria-expanded]="secaoAberta() === 'sobre'" (click)="alternarSecao('sobre')">
+              <span class="provider-accordion-icon"><svg lucideInfo /></span>
+              <span class="provider-accordion-title">
+                <strong>Sobre o trabalho</strong>
+                <small>Experiência, especialidades e diferenciais</small>
+              </span>
+              <svg lucideChevronDown class="provider-accordion-chevron" />
+            </button>
+            <div class="provider-accordion-body" *ngIf="secaoAberta() === 'sobre'">
+              <label><span>Sobre o seu trabalho</span><textarea formControlName="bio" maxlength="600" placeholder="Conte sua experiência, especialidades e diferenciais"></textarea></label>
             </div>
-          </div>
-          <button type="button" class="provider-hours-add" (click)="adicionarBloco()">Adicionar outro horário</button>
+          </section>
+
+          <section class="provider-accordion" [class.open]="secaoAberta() === 'redes'">
+            <button type="button" class="provider-accordion-head" [attr.aria-expanded]="secaoAberta() === 'redes'" (click)="alternarSecao('redes')">
+              <span class="provider-accordion-icon"><svg lucideAtSign /></span>
+              <span class="provider-accordion-title">
+                <strong>Redes sociais</strong>
+                <small>{{ resumoRedes() }}</small>
+              </span>
+              <svg lucideChevronDown class="provider-accordion-chevron" />
+            </button>
+            <div class="provider-accordion-body" *ngIf="secaoAberta() === 'redes'">
+              <label><span>Instagram</span><input formControlName="instagram" placeholder="@seuperfil" /></label>
+            </div>
+          </section>
 
           <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
           <button class="primary-button full-width" type="submit" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar perfil' }}</button>
@@ -290,6 +371,8 @@ export class ProfessionalAccountPageComponent implements OnInit {
   protected readonly professional = signal<Professional | null>(null);
   protected readonly dashboard = signal<ProfessionalDashboard | null>(null);
   protected readonly pendenciasVisiveis = signal(false);
+  /** Vazio = tudo recolhido. Só uma seção fica aberta por vez. */
+  protected readonly secaoAberta = signal('');
   protected readonly workingHours = signal<Array<{ days: number[]; start: string; end: string }>>([]);
   @ViewChild('formAnchor') private formAnchor?: ElementRef<HTMLElement>;
   @ViewChild('jornadaAnchor') private jornadaAnchor?: ElementRef<HTMLElement>;
@@ -511,6 +594,41 @@ export class ProfessionalAccountPageComponent implements OnInit {
     return faltam === 1 ? '1 item pendente' : `${faltam} itens pendentes`;
   }
 
+  protected alternarSecao(secao: string) {
+    this.secaoAberta.update((atual) => (atual === secao ? '' : secao));
+  }
+
+  /** Resumos do cabeçalho fechado: dizem o que há dentro sem precisar abrir. */
+  protected resumoCategorias() {
+    const nomes = this.categories()
+      .filter((categoria) => this.selectedCategoryIds().includes(categoria.id))
+      .map((categoria) => categoria.name);
+    if (!nomes.length) return 'Nenhuma categoria selecionada';
+    const servicos = this.selectedServiceIds().length;
+    const rotulo = servicos === 1 ? '1 serviço selecionado' : `${servicos} serviços selecionados`;
+    return `${nomes.join(', ')} • ${servicos ? rotulo : 'nenhum serviço selecionado'}`;
+  }
+
+  protected resumoJornada() {
+    const blocos = this.workingHours().filter((bloco) => bloco.days.length && bloco.start && bloco.end);
+    if (!blocos.length) return 'Sem horário definido';
+    const nomes = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    return blocos
+      .map((bloco) => {
+        const dias = [...bloco.days].sort((esquerda, direita) => ((esquerda + 6) % 7) - ((direita + 6) % 7));
+        // Dias seguidos viram intervalo ("Seg a Sex"); o resto fica listado.
+        const seguidos = dias.every((dia, indice) => indice === 0 || (dia + 6) % 7 === (dias[indice - 1] + 6) % 7 + 1);
+        const rotuloDias = seguidos && dias.length > 2 ? `${nomes[dias[0]]} a ${nomes[dias[dias.length - 1]]}` : dias.map((dia) => nomes[dia]).join(', ');
+        return `${rotuloDias} • ${bloco.start} às ${bloco.end}`;
+      })
+      .join(' | ');
+  }
+
+  protected resumoRedes() {
+    const instagram = (this.form.controls.instagram.value ?? '').trim();
+    return instagram ? `Instagram • ${instagram.startsWith('@') ? instagram : '@' + instagram}` : 'Nenhuma rede cadastrada';
+  }
+
   protected estrelasDe(nota: number) {
     return Array.from({ length: Math.max(0, Math.min(5, Math.round(nota))) });
   }
@@ -519,12 +637,15 @@ export class ProfessionalAccountPageComponent implements OnInit {
     this.pendenciasVisiveis.update((visivel) => !visivel);
   }
 
+  /** Abre a seção antes de rolar: fechada, não haveria o que mostrar. */
   protected scrollToForm() {
-    this.formAnchor?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    this.secaoAberta.set('dados');
+    setTimeout(() => this.formAnchor?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
   }
 
   protected scrollToHours() {
-    this.jornadaAnchor?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    this.secaoAberta.set('jornada');
+    setTimeout(() => this.jornadaAnchor?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
   }
 
   protected abrirMensagens() {

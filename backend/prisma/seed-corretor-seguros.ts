@@ -21,7 +21,7 @@ const GRUPO = { nome: 'Serviços profissionais', slug: 'servicos-profissionais',
 const CATEGORIA = {
   nome: 'Corretor de Seguros',
   slug: 'corretor-seguros',
-  icone: 'Shield',
+  icone: 'shield',
   descricao:
     'Profissionais que auxiliam na cotação, contratação e renovação de seguros para pessoas, empresas, veículos, imóveis, máquinas e atividades do agronegócio.',
 };

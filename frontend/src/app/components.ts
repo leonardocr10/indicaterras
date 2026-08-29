@@ -270,7 +270,7 @@ export class ProfessionalCardComponent {
 @Component({
   selector: 'mobile-topbar',
   standalone: true,
-  imports: [CommonModule, RouterLink, LucideMenu, LucideBell, LucideMapPin, LucideX, LucideHouse, LucideSearch, LucideHandshake, LucideHeart, LucideBriefcaseBusiness, LucideUserRound],
+  imports: [CommonModule, RouterLink, LucideMenu, LucideBell, LucideMapPin, LucideX, LucideHouse, LucideSearch, LucideHandshake, LucideHeart, LucideBriefcaseBusiness, LucideUserRound, LucideClipboardCheck],
   template: `
     <div class="home-topbar">
       <button type="button" aria-label="Menu" [attr.aria-expanded]="menuOpen()" (click)="openMenu()"><svg lucideMenu /></button>

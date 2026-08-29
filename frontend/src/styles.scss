@@ -804,6 +804,13 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .provider-overview-badge.alerta{background:#e08a2b}
 .provider-progress{width:46px;height:46px;margin-bottom:4px;border-radius:50%;display:grid;place-items:center;color:#065f46;background:#fff;border:3px solid #065f46;font-size:13px;font-weight:800}
 
+.icon-action.approve-action{border-color:#bfe3d0;color:#0a6a45;background:#f1faf5}
+.icon-action.approve-action:disabled{opacity:.5;cursor:progress}
+.provider-pending{margin-top:12px;padding:13px 14px;border:1px solid #dbe7ff;border-radius:10px;background:#f4f8ff}
+.provider-pending strong{display:block;color:#1e3a5f;font-size:13px;line-height:18px}
+.provider-pending p{margin:4px 0 0;color:#4a5f78;font-size:12px;line-height:17px}
+.provider-pending ul{margin:8px 0 0;padding-left:18px;color:#4a5f78;font-size:12px;line-height:19px}
+.provider-pending button{min-height:36px;margin-top:10px;padding:8px 14px;border:1px solid #1e3a5f;border-radius:8px;background:#fff;color:#1e3a5f;font-family:var(--font-family);font-size:12px;font-weight:700;cursor:pointer}
 .provider-favorites{display:flex;align-items:center;gap:12px}
 .provider-favorites>div:last-child{min-width:0}
 .provider-favorite-avatars{display:flex}

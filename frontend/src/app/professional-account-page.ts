@@ -133,7 +133,7 @@ import { ToastService } from './services/toast.service';
             <button type="button" class="provider-overview-card completude" (click)="mostrarPendencias()">
               <span class="provider-progress">{{ painel.overview.profileCompletion }}%</span>
               <strong>Perfil completo</strong>
-              <small>{{ painel.overview.profileCompletion === 100 ? 'Tudo preenchido' : 'Falta pouco!' }}</small>
+              <small>{{ textoDaCompletude(painel.overview) }}</small>
             </button>
             <button type="button" class="provider-overview-card disponibilidade" (click)="scrollToHours()">
               <svg lucideCalendarCheck />
@@ -141,9 +141,19 @@ import { ToastService } from './services/toast.service';
               <small>{{ painel.overview.availabilityText }}</small>
             </button>
           </div>
-          <p class="provider-hint" *ngIf="pendenciasVisiveis() && painel.overview.missingProfileItems.length">
-            Falta preencher: {{ painel.overview.missingProfileItems.join(', ') }}.
-          </p>
+          <div class="provider-pending" *ngIf="pendenciasVisiveis()">
+            <div *ngIf="painel.overview.missingProfileItems.length; else perfilCompleto">
+              <strong>Falta preencher para chegar a 100%</strong>
+              <ul>
+                <li *ngFor="let item of painel.overview.missingProfileItems">{{ item }}</li>
+              </ul>
+              <button type="button" (click)="scrollToForm()">Completar agora</button>
+            </div>
+            <ng-template #perfilCompleto>
+              <strong>Seu perfil está completo.</strong>
+              <p>Mantenha suas fotos e horários atualizados para continuar aparecendo bem nas buscas.</p>
+            </ng-template>
+          </div>
         </section>
 
         <section class="provider-block provider-works">
@@ -491,6 +501,14 @@ export class ProfessionalAccountPageComponent implements OnInit {
         this.hasError.set(true);
       },
     });
+  }
+
+  /** Evita "Falta pouco!" quando ainda falta muito. */
+  protected textoDaCompletude(overview: { profileCompletion: number; missingProfileItems: string[] }) {
+    if (overview.profileCompletion === 100) return 'Tudo preenchido';
+    const faltam = overview.missingProfileItems.length;
+    if (overview.profileCompletion >= 80) return 'Falta pouco!';
+    return faltam === 1 ? '1 item pendente' : `${faltam} itens pendentes`;
   }
 
   protected estrelasDe(nota: number) {

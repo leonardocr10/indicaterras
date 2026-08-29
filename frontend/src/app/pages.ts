@@ -25,7 +25,7 @@ import {
   LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideMapPin,
   LucideHouse, LucideHandshake, LucideX,
   LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideShieldCheck,
-  LucideBadgeCheck, LucideClipboardList, LucidePencil, LucideTrash2, LucideCheck,
+  LucideBadgeCheck, LucideClipboardList, LucidePencil, LucideTrash2, LucideCheck, LucideBan,
 } from '@lucide/angular';
 import { AiProblemAnalysisResult, AiPublicConfig, Category, NearbyResult, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
@@ -2724,7 +2724,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
 @Component({
   selector: 'admin-crud-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SearchableSelectComponent, PhoneMaskDirective, LucideSearch, LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucidePencil, LucideTrash2, LucideX, LucideUserRound, LucideMail, LucidePhone, LucideLockKeyhole, LucideMapPin],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, SearchableSelectComponent, PhoneMaskDirective, LucideSearch, LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucidePencil, LucideTrash2, LucideX, LucideUserRound, LucideMail, LucidePhone, LucideLockKeyhole, LucideMapPin, LucideCheck, LucideBan],
   template: `
     <main class="admin-content admin-crud-content">
         <header class="admin-topbar"><div><p class="admin-eyebrow">Gestão IndicaFácil</p><h1>{{ config.title }}</h1><p>Consulte, filtre, exporte e gerencie os registros.</p></div></header>
@@ -2744,7 +2744,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
                 <img *ngIf="isPhotoKey(key)" [src]="recordPhoto(record, key)" [alt]="'Foto de ' + value(record, 'name')" (error)="$any($event.target).src=photoPlaceholder(key)" />
                 <span *ngIf="key === 'approvalStatus'" class="approval-badge" [ngClass]="approvalClass(record)">{{ approvalLabel(record) }}</span>
                 <span *ngIf="!isPhotoKey(key) && key !== 'approvalStatus'">{{ value(record, key) }}</span>
-              </td><td class="admin-actions"><button type="button" class="icon-action" aria-label="Editar registro" title="Editar" (click)="editRecord(record)"><svg lucidePencil /></button><button type="button" class="icon-action danger-action" aria-label="Excluir registro" title="Excluir" (click)="deleteRecord(record)"><svg lucideTrash2 /></button></td></tr>
+              </td><td class="admin-actions"><button *ngIf="podeAprovar(record)" type="button" class="icon-action approve-action" aria-label="Aprovar cadastro" title="Aprovar" [disabled]="decidindo() === record['id']" (click)="decidirAprovacao(record, 'APPROVED')"><svg lucideCheck /></button><button *ngIf="podeRecusar(record)" type="button" class="icon-action danger-action" aria-label="Recusar cadastro" title="Recusar" [disabled]="decidindo() === record['id']" (click)="decidirAprovacao(record, 'REJECTED')"><svg lucideBan /></button><button type="button" class="icon-action" aria-label="Editar registro" title="Editar" (click)="editRecord(record)"><svg lucidePencil /></button><button type="button" class="icon-action danger-action" aria-label="Excluir registro" title="Excluir" (click)="deleteRecord(record)"><svg lucideTrash2 /></button></td></tr>
               <tr *ngIf="!pagedRecords().length"><td class="admin-empty-row" [attr.colspan]="config.columns.length + 1">Nenhum cadastro encontrado com os filtros atuais.</td></tr>
           </tbody></table></div>
           <footer class="admin-pagination"><span>Mostrando {{ pageStart() }}–{{ pageEnd() }} de {{ filteredRecords().length }}</span><label>Itens por página <app-searchable-select class="page-size-select" [ngModel]="pageSize()" (ngModelChange)="setPageSize($event)" [items]="pageSizeOptions" searchPlaceholder="Pesquisar quantidade..." /></label><div><button type="button" [disabled]="page() === 1" (click)="setPage(page() - 1)"><svg lucideChevronLeft /></button><b>{{ page() }} / {{ totalPages() }}</b><button type="button" [disabled]="page() === totalPages()" (click)="setPage(page() + 1)"><svg lucideChevronRight /></button></div></footer>
@@ -2837,6 +2837,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
 })
 export class AdminCrudPageComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly toast = inject(ToastService);
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
@@ -3287,6 +3288,42 @@ export class AdminCrudPageComponent implements OnInit {
   }
 
   private load() { this.api.getAdminRecords(this.resource()).subscribe({ next: (records) => { this.records.set(records); this.setPage(this.page()); }, error: () => { this.feedback.set('Não foi possível carregar os cadastros.'); this.hasError.set(true); } }); }
+
+  protected readonly decidindo = signal('');
+
+  /** Aprovar direto da listagem só faz sentido onde existe aprovação. */
+  protected podeAprovar(record: Record<string, unknown>) {
+    if (this.resource() !== 'professionals' && this.resource() !== 'users') return false;
+    return record['approvalStatus'] !== 'APPROVED';
+  }
+
+  protected podeRecusar(record: Record<string, unknown>) {
+    if (this.resource() !== 'professionals' && this.resource() !== 'users') return false;
+    return record['approvalStatus'] === 'PENDING';
+  }
+
+  protected decidirAprovacao(record: Record<string, unknown>, approvalStatus: 'APPROVED' | 'REJECTED') {
+    const id = String(record['id'] ?? '');
+    if (!id) return;
+    this.decidindo.set(id);
+    this.api.updateAdminRecord(this.resource(), id, { approvalStatus }).subscribe({
+      next: () => {
+        this.decidindo.set('');
+        this.load();
+        this.toast.success(
+          approvalStatus === 'APPROVED'
+            ? this.resource() === 'professionals'
+              ? 'Profissional aprovado. Ele já aparece nas buscas.'
+              : 'Cadastro aprovado.'
+            : 'Cadastro recusado.',
+        );
+      },
+      error: () => {
+        this.decidindo.set('');
+        this.toast.error('Não foi possível registrar a decisão.');
+      },
+    });
+  }
 
   private filterKey() { return ({ condominiums: 'state', residents: 'role', users: 'approvalStatus', professionals: 'category', categories: 'active' } as const)[this.resource()]; }
   private normalize(value: string) { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }

@@ -95,7 +95,7 @@ export class ProfessionalDashboardService {
         profileCompletion: completude.percent,
         missingProfileItems: completude.missing,
         availableToday: Boolean(hoje),
-        availabilityText: hoje ? `${hoje.start} – ${hoje.end}` : 'Sem horário definido',
+        availabilityText: this.textoDeDisponibilidade(jornada, hoje),
       },
       portfolio: profissional.images.map((imagem) => ({ id: imagem.id, image: imagem.url, title: imagem.title ?? '' })),
       favoriteClients: {
@@ -140,6 +140,29 @@ export class ProfessionalDashboardService {
       const bloco = item as Partial<BlocoDeJornada>;
       return Array.isArray(bloco?.days) && typeof bloco?.start === 'string' && typeof bloco?.end === 'string';
     });
+  }
+
+  /**
+   * Sem atendimento hoje nao e o mesmo que sem jornada cadastrada: quem atende
+   * de segunda a sexta precisa ver isso no sabado, e nao "sem horario definido".
+   */
+  private textoDeDisponibilidade(blocos: BlocoDeJornada[], hoje: BlocoDeJornada | null) {
+    if (hoje) return `${hoje.start} – ${hoje.end}`;
+    if (!blocos.length) return 'Nenhum horário cadastrado';
+    const proximo = this.proximoBloco(blocos);
+    return proximo ? `Atende ${proximo.dia}, ${proximo.bloco.start} – ${proximo.bloco.end}` : 'Nenhum horário cadastrado';
+  }
+
+  /** Primeiro bloco a partir de amanha, olhando no maximo uma semana adiante. */
+  private proximoBloco(blocos: BlocoDeJornada[]) {
+    const nomes = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+    const hoje = new Date().getDay();
+    for (let adiante = 1; adiante <= 7; adiante++) {
+      const dia = (hoje + adiante) % 7;
+      const bloco = blocos.find((item) => item.days.includes(dia));
+      if (bloco) return { dia: nomes[dia], bloco };
+    }
+    return null;
   }
 
   private jornadaDeHoje(blocos: BlocoDeJornada[]) {

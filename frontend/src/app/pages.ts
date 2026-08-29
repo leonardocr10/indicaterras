@@ -12,7 +12,7 @@ import {
   RatingStarsComponent,
   RecommendationBadgeComponent,
 } from './components';
-import { ApiService } from './services/api.service';
+import { ApiService, MyAccount } from './services/api.service';
 import { ThemeService } from './services/theme.service';
 import { AuthService } from './services/auth.service';
 import { ToastService } from './services/toast.service';
@@ -559,10 +559,46 @@ export class RegisterPageComponent implements OnInit {
     LucideArrowRight,
     LucideSparkles,
     LucideCheck,
+    LucideMapPin,
+    LucideX,
   ],
   template: `
       <section class="mobile-page home-page" *ngIf="payload() as home">
       <mobile-topbar />
+
+      <!-- O endereço deixou de ser burocracia: e a busca por proximidade depende
+           dele. Por isso o aviso explica para que serve, em vez de so cobrar. -->
+      <aside class="home-address-prompt" *ngIf="addressMissing() && !addressFormOpen()">
+        <div>
+          <svg lucideMapPin aria-hidden="true" />
+          <div>
+            <strong>Complete seu endereço</strong>
+            <small>Usamos para mostrar os profissionais mais próximos de você.</small>
+          </div>
+        </div>
+        <div class="home-address-prompt-actions">
+          <button type="button" class="primary-button" (click)="addressFormOpen.set(true)">Completar agora</button>
+          <button type="button" class="ghost-button" (click)="dismissAddressPrompt()">Agora não</button>
+        </div>
+      </aside>
+
+      <aside class="home-address-form" *ngIf="addressFormOpen()">
+        <header>
+          <strong>Seu endereço</strong>
+          <button type="button" aria-label="Fechar" (click)="addressFormOpen.set(false)"><svg lucideX /></button>
+        </header>
+        <label>CEP
+          <input [(ngModel)]="addressZip" name="addressZip" inputmode="numeric" maxlength="9" placeholder="00000-000" (ngModelChange)="lookupZip($event)" />
+        </label>
+        <small *ngIf="addressStatus()">{{ addressStatus() }}</small>
+        <div class="home-address-grid">
+          <label>Número<input [(ngModel)]="addressNumber" name="addressNumber" placeholder="123" /></label>
+          <label>Complemento<input [(ngModel)]="addressComplement" name="addressComplement" placeholder="Apto, bloco" /></label>
+        </div>
+        <p class="home-address-preview" *ngIf="addressPreview()">{{ addressPreview() }}</p>
+        <button type="button" class="primary-button full-width" (click)="saveAddress()" [disabled]="savingAddress()">{{ savingAddress() ? 'Salvando...' : 'Salvar endereço' }}</button>
+      </aside>
+
       <section class="home-surface">
         <ng-container *ngIf="aiEnabled(); else classicHero">
           <div class="home-ai-hero">
@@ -677,6 +713,17 @@ export class HomePageComponent implements OnInit {
     return result && !result.needsClarification ? result.category : null;
   });
   protected readonly aiExamples = ['Meu chuveiro queimou', 'Minha pia está vazando', 'Meu ar não gela', 'Preciso de psicóloga', 'Minha internet está caindo'];
+  private readonly http = inject(HttpClient);
+  protected readonly addressMissing = signal(false);
+  protected readonly addressFormOpen = signal(false);
+  protected readonly addressStatus = signal('');
+  protected readonly addressPreview = signal('');
+  protected readonly savingAddress = signal(false);
+  protected addressZip = '';
+  protected addressNumber = '';
+  protected addressComplement = '';
+  private conta: MyAccount | null = null;
+  private enderecoEncontrado: { street: string; neighborhood: string; city: string; state: string } | null = null;
   protected searchText = '';
   private suggestionTimer?: ReturnType<typeof setTimeout>;
 
@@ -692,6 +739,86 @@ export class HomePageComponent implements OnInit {
     });
     // Sem a configuração pública a Home simplesmente mantém a experiência clássica, sem IA.
     this.api.getPublicSettings().subscribe({ next: (settings) => this.aiConfig.set(settings.ai ?? null) });
+    this.checarEndereco();
+  }
+
+  /**
+   * O endereço alimenta a busca por proximidade, então vale pedir a quem se
+   * cadastrou antes do campo existir. Fica dispensável de propósito: o app
+   * funciona sem ele, só sem ordenar por distância.
+   */
+  private checarEndereco() {
+    if (localStorage.getItem('indicafacil-endereco-dispensado') === '1') return;
+    this.api.getMyAccount().subscribe({
+      next: (conta) => {
+        this.conta = conta;
+        const incompleto = !(conta.zipCode ?? '').trim() || !(conta.city ?? '').trim() || !(conta.neighborhood ?? '').trim();
+        this.addressMissing.set(incompleto);
+      },
+      error: () => undefined,
+    });
+  }
+
+  protected dismissAddressPrompt() {
+    this.addressMissing.set(false);
+    try {
+      localStorage.setItem('indicafacil-endereco-dispensado', '1');
+    } catch {
+      // Sem armazenamento o aviso volta na próxima visita; não é problema.
+    }
+  }
+
+  /** O CEP preenche rua, bairro, cidade e estado, como no cadastro. */
+  protected lookupZip(valor: string) {
+    const digitos = String(valor ?? '').replace(/\D/g, '');
+    this.addressPreview.set('');
+    this.enderecoEncontrado = null;
+    if (digitos.length !== 8) {
+      this.addressStatus.set('');
+      return;
+    }
+    this.addressStatus.set('Buscando endereço...');
+    fetchAddressByZipCode(this.http, digitos).subscribe({
+      next: (endereco) => {
+        this.enderecoEncontrado = { street: endereco.street, neighborhood: endereco.neighborhood, city: endereco.city, state: endereco.state };
+        this.addressStatus.set('');
+        this.addressPreview.set([endereco.street, endereco.neighborhood, `${endereco.city} - ${endereco.state}`].filter(Boolean).join(', '));
+      },
+      error: () => this.addressStatus.set('Não encontramos esse CEP. Confira os números.'),
+    });
+  }
+
+  protected saveAddress() {
+    const conta = this.conta;
+    if (!conta || !this.enderecoEncontrado) {
+      this.addressStatus.set('Informe um CEP válido antes de salvar.');
+      return;
+    }
+    this.savingAddress.set(true);
+    this.api
+      .updateMyAccount({
+        name: conta.name,
+        email: conta.email,
+        phone: conta.phone ?? '',
+        zipCode: this.addressZip,
+        street: this.enderecoEncontrado.street,
+        number: this.addressNumber,
+        complement: this.addressComplement,
+        neighborhood: this.enderecoEncontrado.neighborhood,
+        city: this.enderecoEncontrado.city,
+        state: this.enderecoEncontrado.state,
+      })
+      .subscribe({
+        next: () => {
+          this.savingAddress.set(false);
+          this.addressFormOpen.set(false);
+          this.addressMissing.set(false);
+        },
+        error: () => {
+          this.savingAddress.set(false);
+          this.addressStatus.set('Não foi possível salvar. Tente novamente.');
+        },
+      });
   }
 
   protected aiTexts() {

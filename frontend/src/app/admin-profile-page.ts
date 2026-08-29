@@ -50,7 +50,8 @@ export class AdminProfilePageComponent implements OnInit {
   ngOnInit() { this.api.getMyAccount().subscribe({ next: (user) => this.profile = { name: user.name, email: user.email, phone: user.phone ?? '' } }); }
   protected saveProfile() {
     this.savingProfile.set(true); this.feedback.set('');
-    this.api.updateMyAccount(this.profile).subscribe({ next: (user) => { this.auth.updateSessionUser({ ...user, phone: user.phone ?? '' }); this.savingProfile.set(false); this.feedback.set('Dados atualizados com sucesso.'); }, error: (error) => { this.savingProfile.set(false); this.feedback.set(error.error?.message ?? 'Não foi possível salvar os dados.'); } });
+    // Só os campos que a sessão conhece: o perfil devolve mais do que ela guarda.
+    this.api.updateMyAccount(this.profile).subscribe({ next: (user) => { this.auth.updateSessionUser({ name: user.name, email: user.email, phone: user.phone ?? '' }); this.savingProfile.set(false); this.feedback.set('Dados atualizados com sucesso.'); }, error: (error) => { this.savingProfile.set(false); this.feedback.set(error.error?.message ?? 'Não foi possível salvar os dados.'); } });
   }
   protected changePassword() {
     this.passwordError.set('');

@@ -1204,9 +1204,23 @@ export class DataStoreService implements OnModuleInit {
     const name = String(payload.name ?? '').trim();
     const email = String(payload.email ?? '').trim().toLowerCase();
     if (!name || !email) throw new ConflictException('Informe nome e e-mail.');
+    // O endereço é opcional aqui: só grava o que vier, para o cliente poder
+    // completar aos poucos sem apagar o que já estava salvo.
+    const texto = (campo: unknown) => (campo === undefined ? undefined : String(campo ?? '').trim() || null);
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { name, email, phone: String(payload.phone ?? '').trim() || null },
+      data: {
+        name,
+        email,
+        phone: String(payload.phone ?? '').trim() || null,
+        zipCode: texto(payload.zipCode),
+        street: texto(payload.street),
+        number: texto(payload.number),
+        complement: texto(payload.complement),
+        neighborhood: texto(payload.neighborhood),
+        city: texto(payload.city),
+        state: texto(payload.state),
+      },
     });
     await this.loadDatabaseData();
     return this.accountPayload(user);

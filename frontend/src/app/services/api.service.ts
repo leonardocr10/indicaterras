@@ -181,8 +181,8 @@ export class ApiService {
     return this.http.get<ApiResponse<MyAccount>>(`${this.baseUrl}/me/account?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
   }
 
-  updateMyAccount(payload: { name: string; email: string; phone: string }) {
-    return this.http.patch<ApiResponse<{ id: string; name: string; email: string; phone: string | null }>>(`${this.baseUrl}/me/account`, { userId: this.auth.user()?.id, ...payload }).pipe(map((response) => response.data));
+  updateMyAccount(payload: { name: string; email: string; phone: string } & Partial<Pick<MyAccount, 'zipCode' | 'street' | 'number' | 'complement' | 'neighborhood' | 'city' | 'state'>>) {
+    return this.http.patch<ApiResponse<MyAccount>>(`${this.baseUrl}/me/account`, { userId: this.auth.user()?.id, ...payload }).pipe(map((response) => response.data));
   }
 
   changeMyPassword(currentPassword: string, newPassword: string) {

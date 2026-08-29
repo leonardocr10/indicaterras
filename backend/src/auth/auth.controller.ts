@@ -7,6 +7,7 @@ import { RegisterDto } from './dto/register.dto';
 import { RegisterProfessionalDto } from './dto/register-professional.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -26,6 +27,16 @@ export class AuthController {
   @Post('register-professional')
   registerProfessional(@Body() dto: RegisterProfessionalDto) {
     return this.authService.registerProfessional(dto);
+  }
+
+  @Post('verify-email')
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto);
+  }
+
+  @Post('resend-verification')
+  resendVerification(@Body('email') email: string) {
+    return this.authService.resendVerification(email);
   }
 
   @Post('refresh')

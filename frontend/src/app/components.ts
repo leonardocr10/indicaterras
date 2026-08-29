@@ -312,7 +312,7 @@ export class MobileTopbarComponent implements OnDestroy, OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly menuOpen = signal(false);
-  protected readonly userName = computed(() => this.auth.user()?.name ?? 'Morador');
+  protected readonly userName = computed(() => this.auth.user()?.name ?? 'Cliente');
   protected readonly placeName = signal('');
   protected readonly notifications = signal(0);
   protected readonly notificationsOpen = signal(false);

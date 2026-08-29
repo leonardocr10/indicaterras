@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomInt } from 'crypto';
 import { DataStoreService } from '../data/data-store.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -11,6 +11,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { MailService } from './mail.service';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Injectable()
 export class AuthService {
@@ -41,9 +42,30 @@ export class AuthService {
     return { data: { success: true } };
   }
 
+  async verifyEmail(dto: VerifyEmailDto) {
+    const user = await this.dataStoreService.verifyEmailCode(dto.email, dto.code);
+    const canAccess = user.approvalStatus === 'APPROVED';
+    return {
+      data: {
+        email: user.email,
+        requiresApproval: !canAccess,
+        session: canAccess ? this.buildTokens(user).data : null,
+      },
+    };
+  }
+
+  async resendVerification(email: string) {
+    const user = this.dataStoreService.findUserByEmail(email);
+    if (user && !user.emailVerified) await this.enviarCodigoDeConfirmacao(user);
+    // Mantém a mesma resposta para não revelar se o endereço tem conta.
+    return { data: { sent: true } };
+  }
+
   async login(loginDto: LoginDto) {
     const user = await this.dataStoreService.validateUser(loginDto.email, loginDto.password);
-    return this.buildTokens(user);
+    // "Lembrar-me" estende a sessao: sem isso o checkbox nao tinha efeito nenhum
+    // e quem instalava o app precisava entrar de novo a cada semana.
+    return this.buildTokens(user, loginDto.rememberMe === true);
   }
 
   async register(registerDto: RegisterDto) {
@@ -61,24 +83,25 @@ export class AuthService {
       city: registerDto.city,
       state: registerDto.state,
     });
-    const canAccess = !this.dataStoreService.requiresUserApproval() || user.approvalStatus === 'APPROVED';
+    await this.enviarCodigoDeConfirmacao(user);
     return {
       data: {
         email: user.email,
-        requiresApproval: !canAccess,
-        session: canAccess ? this.buildTokens(user).data : null,
+        requiresApproval: false,
+        session: null,
       },
     };
   }
 
   async registerProfessional(dto: RegisterProfessionalDto) {
     const result = await this.dataStoreService.createProfessionalAccount(dto);
+    await this.enviarCodigoDeConfirmacao(result.user);
     return {
       data: {
         email: result.user.email,
-        requiresApproval: false,
+        requiresApproval: true,
         professionalId: result.professionalId,
-        session: this.buildTokens(result.user).data,
+        session: null,
       },
     };
   }
@@ -90,20 +113,30 @@ export class AuthService {
 
     const foundUser = this.dataStoreService.findUserById(payload.sub);
     const user = foundUser ? this.dataStoreService.ensureUserCanAccess(foundUser) : undefined;
-    return { data: user ? this.buildTokens(user).data : null };
+    // Mantem a duracao escolhida no login: renovar nao pode encurtar a sessao.
+    return { data: user ? this.buildTokens(user, payload.remember === true).data : null };
   }
 
   logout() {
     return { data: { success: true } };
   }
 
-  private buildTokens(user: {
-    id: string;
-    condominiumId: string;
-    role: string;
-    email: string;
-    name: string;
-  }) {
+  private async enviarCodigoDeConfirmacao(user: { id: string; email: string; name: string }) {
+    const codigo = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    await this.dataStoreService.createEmailVerification(user.id, codigo);
+    await this.mailService.enviarCodigoDeAtivacao(user.email, user.name, codigo);
+  }
+
+  private buildTokens(
+    user: {
+      id: string;
+      condominiumId: string;
+      role: string;
+      email: string;
+      name: string;
+    },
+    rememberMe = false,
+  ) {
     const payload: JwtPayload = {
       sub: user.id,
       condominiumId: user.condominiumId,
@@ -117,8 +150,8 @@ export class AuthService {
           expiresIn: '15m',
           secret: this.configService.get<string>('JWT_ACCESS_SECRET', 'access-secret-dev'),
         }),
-        refreshToken: this.jwtService.sign(payload, {
-          expiresIn: '7d',
+        refreshToken: this.jwtService.sign({ ...payload, remember: rememberMe }, {
+          expiresIn: rememberMe ? '90d' : '7d',
           secret: this.configService.get<string>('JWT_REFRESH_SECRET', 'refresh-secret-dev'),
         }),
         user,

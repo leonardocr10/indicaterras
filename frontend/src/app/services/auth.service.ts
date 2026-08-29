@@ -62,6 +62,7 @@ export class AuthService {
     bio?: string;
     password: string;
     workingHours?: Array<{ days: number[]; start: string; end: string }>;
+    serviceIds?: string[];
   }) {
     return this.http.post<ApiResponse<RegistrationResult>>(`${this.baseUrl}/auth/register-professional`, payload).pipe(
       map((response) => response.data),
@@ -97,6 +98,17 @@ export class AuthService {
 
   resetPassword(token: string, password: string) {
     return this.http.post<ApiResponse<{ success: boolean }>>(`${this.baseUrl}/auth/reset-password`, { token, password }).pipe(map((response) => response.data));
+  }
+
+  verifyEmail(email: string, code: string) {
+    return this.http.post<ApiResponse<RegistrationResult>>(`${this.baseUrl}/auth/verify-email`, { email, code }).pipe(
+      map((response) => response.data),
+      tap((result) => { if (result.session) this.persist(result.session); }),
+    );
+  }
+
+  resendVerification(email: string) {
+    return this.http.post<ApiResponse<{ sent: boolean }>>(`${this.baseUrl}/auth/resend-verification`, { email }).pipe(map((response) => response.data));
   }
 
   updateSessionUser(user: Partial<SessionUser>) {

@@ -62,6 +62,11 @@ export interface Professional {
   coverImage: string;
   featured: boolean;
   matchesLocation?: boolean;
+  /** PENDING enquanto a administração não liberou o cadastro. */
+  approvalStatus?: string;
+  /** Falso quando ainda faltam serviços ou jornada para entrar na fila. */
+  profileComplete?: boolean;
+  workingHours?: Array<{ days: number[]; start: string; end: string }>;
 }
 
 export interface Review {

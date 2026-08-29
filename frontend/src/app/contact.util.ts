@@ -13,7 +13,7 @@ export function whatsappGreeting(professionalName: string, residentName: string,
   const firstName = String(professionalName ?? '').split(' ')[0] || 'Olá';
   const condominium = condominiumName?.trim() || 'nosso condomínio';
   const resident = residentName?.trim();
-  const identification = resident ? `Meu nome é ${resident} e sou morador` : 'Sou morador';
+  const identification = resident ? `Meu nome é ${resident} e sou cliente` : 'Sou cliente';
   return [
     `Olá, ${firstName}!`,
     `${identification} do ${condominium}.`,

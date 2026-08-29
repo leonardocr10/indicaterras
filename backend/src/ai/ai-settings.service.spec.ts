@@ -18,6 +18,8 @@ const settingsRow = (overrides: Record<string, unknown> = {}) => ({
   summaryEnabled: true,
   clarificationEnabled: true,
   fallbackKeywordsEnabled: true,
+  keywordFirstEnabled: true,
+  keywordFirstConfidence: decimal(0.8),
   minimumConfidence: decimal(0.75),
   autoApplyConfidence: decimal(0.85),
   dailyLimit: 500,

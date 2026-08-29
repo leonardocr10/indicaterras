@@ -191,7 +191,7 @@ async function main() {
 
     const recommendation = await prisma.recommendation.findFirst({ where: { condominiumId: condominium.id, userId: resident.id, professionalId: professional.id } });
     if (!recommendation) await prisma.recommendation.create({
-      data: { condominiumId: condominium.id, userId: resident.id, professionalId: professional.id, comment: 'Profissional muito recomendado pelos moradores.', recommended: true },
+      data: { condominiumId: condominium.id, userId: resident.id, professionalId: professional.id, comment: 'Profissional muito recomendado pelos clientes.', recommended: true },
     });
     const review = await prisma.review.findFirst({ where: { condominiumId: condominium.id, userId: resident.id, professionalId: professional.id } });
     if (!review) await prisma.review.create({

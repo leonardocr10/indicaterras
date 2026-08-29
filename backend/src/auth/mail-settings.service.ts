@@ -8,7 +8,7 @@ const DEFAULTS: Prisma.MailSettingsCreateInput = {
   enabled: false,
   host: null,
   port: 587,
-  secure: true,
+  secure: false,
   username: null,
   password: null,
   fromName: 'IndicaFácil',

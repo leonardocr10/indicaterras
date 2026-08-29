@@ -37,6 +37,8 @@ const settings = (overrides: Record<string, unknown> = {}) => ({
   problemAnalysisEnabled: true,
   clarificationEnabled: true,
   fallbackKeywordsEnabled: true,
+  keywordFirstEnabled: false,
+  keywordFirstConfidence: decimal(0.8),
   minimumConfidence: decimal(0.75),
   autoApplyConfidence: decimal(0.85),
   dailyLimit: 500,
@@ -289,5 +291,63 @@ describe('ProblemAnalysisService', () => {
     await service.analyze('a'.repeat(500));
 
     expect(analyze).toHaveBeenCalledWith(expect.objectContaining({ text: 'a'.repeat(20) }));
+  });
+});
+
+describe('ProblemAnalysisService com palavra-chave primeiro', () => {
+  it('resolve pelo matcher local e nao chama a IA quando a confianca e alta', async () => {
+    const analyze = jest.fn();
+    const { service, logsService } = build({ analyze, settings: { keywordFirstEnabled: true } });
+
+    const resultado = await service.analyze('meu chuveiro queimou');
+
+    // O matcher local devolve 0.9, acima do limite de 0.8.
+    expect(analyze).not.toHaveBeenCalled();
+    expect(resultado.category?.name).toBe('Eletricista');
+    expect(resultado.usedAi).toBe(false);
+    expect(logsService.record).toHaveBeenCalledWith(expect.objectContaining({ status: 'keyword_hit' }));
+  });
+
+  it('usa a mensagem de sucesso, e nao a de fallback, quando a palavra-chave resolve', async () => {
+    const { service } = build({ analyze: jest.fn(), settings: { keywordFirstEnabled: true } });
+
+    const resultado = await service.analyze('meu chuveiro queimou');
+
+    expect(resultado.message).toBe('Entendi o que você precisa.');
+  });
+
+  it('chama a IA quando o matcher local nao tem confianca suficiente', async () => {
+    const analyze = jest.fn().mockResolvedValue({
+      categoryId: 'electrician',
+      serviceIds: ['service-shower'],
+      normalizedProblem: 'x',
+      confidence: 0.95,
+      needsClarification: false,
+      clarificationQuestion: null,
+    });
+    const { service, catalogService } = build({ analyze, settings: { keywordFirstEnabled: true, keywordFirstConfidence: decimal(0.95) } });
+
+    const resultado = await service.analyze('aquilo la de casa parou');
+
+    // 0.9 do matcher fica abaixo do limite de 0.95, entao a IA entra.
+    expect(catalogService.match).toHaveBeenCalled();
+    expect(analyze).toHaveBeenCalled();
+    expect(resultado.usedAi).toBe(true);
+  });
+
+  it('com a opcao desligada, sempre passa pela IA', async () => {
+    const analyze = jest.fn().mockResolvedValue({
+      categoryId: 'electrician',
+      serviceIds: [],
+      normalizedProblem: 'x',
+      confidence: 0.9,
+      needsClarification: false,
+      clarificationQuestion: null,
+    });
+    const { service } = build({ analyze, settings: { keywordFirstEnabled: false } });
+
+    await service.analyze('meu chuveiro queimou');
+
+    expect(analyze).toHaveBeenCalled();
   });
 });

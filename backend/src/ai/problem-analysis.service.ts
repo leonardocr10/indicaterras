@@ -31,6 +31,23 @@ export class ProblemAnalysisService {
       return this.buildEmptyResponse(settings);
     }
 
+    // Palavra-chave primeiro: "meu chuveiro queimou" o matcher local resolve
+    // sozinho, com a mesma resposta que a IA daria. Chamar o provedor nesses
+    // casos só gastaria token, então a IA fica para o que ele não reconhece.
+    if (settings.keywordFirstEnabled) {
+      const local = await this.fallback(trimmed, settings, null);
+      if (local.response.category && local.response.confidence >= settings.keywordFirstConfidence.toNumber()) {
+        const resolvido = {
+          response: { ...local.response, message: settings.successMessage },
+          logInput: { ...local.logInput, status: 'keyword_hit' },
+        };
+        if (!options.dryRun) {
+          await this.persistLog({ settings, text: trimmed, startedAt, options, ...resolvido });
+        }
+        return resolvido.response;
+      }
+    }
+
     const eligibility = await this.aiEligibility(settings);
     if (eligibility.eligible) {
       try {

@@ -5,7 +5,7 @@ import { MailSettingsService } from './mail-settings.service';
 /**
  * Envio de e-mail por SMTP. Funciona com qualquer provedor (Hostinger, Gmail,
  * Brevo, Resend...). A configuracao vem do painel administrativo; as variaveis
- * SMTP_HOST, SMTP_USER e SMTP_PASSWORD continuam valendo e tem prioridade.
+ * SMTP_HOST, SMTP_USER e SMTP_PASSWORD continuam valendo e têm prioridade.
  *
  * Sem SMTP o sistema nao quebra: o conteudo do e-mail vai para o log do
  * servidor, para a administracao repassar manualmente.
@@ -42,7 +42,7 @@ export class MailService {
       await transporte.transporter.verify();
       return { ok: true, message: 'Conexão com o servidor de e-mail estabelecida.' };
     } catch (erro) {
-      return { ok: false, message: erro instanceof Error ? erro.message : 'Não foi possível conectar ao servidor de e-mail.' };
+      return { ok: false, message: await this.formatarErroDeConexao(erro) };
     }
   }
 
@@ -61,35 +61,21 @@ export class MailService {
 
   async enviarCodigoDeAtivacao(email: string, nome: string, codigo: string) {
     return this.enviar(email, 'Seu código de ativação - IndicaFácil', {
-      texto: `Olá, ${nome}!\n\nSeu código de ativação do IndicaFácil é ${codigo}.\n\nEle vale por 30 minutos. Se não foi você quem se cadastrou, ignore este e-mail.`,
-      html: `
-        <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:auto;color:#1f2937">
-          <h2 style="color:#065f46">Confirme seu e-mail</h2>
-          <p>Olá, <b>${nome}</b>! Use o código abaixo para ativar sua conta no IndicaFácil:</p>
-          <p style="font-size:32px;font-weight:700;letter-spacing:8px;color:#065f46;background:#f1faf5;padding:16px;border-radius:10px;text-align:center">${codigo}</p>
-          <p style="color:#64748b;font-size:13px">O código vale por 30 minutos.</p>
-          <p style="color:#64748b;font-size:13px">Se não foi você quem se cadastrou, ignore este e-mail.</p>
-        </div>
-      `,
+      texto: `Olá, ${nome}!\n\nSeu código de confirmação do IndicaFácil é ${codigo}.\n\nEle vale por 30 minutos. Se não foi você quem se cadastrou, ignore este e-mail.`,
+      html: this.templateEmail({
+        titulo: 'Confirme seu e-mail',
+        conteudo: `<p>Olá, <strong>${this.escaparHtml(nome)}</strong>! Para concluir seu cadastro, informe este código no aplicativo:</p><div style="margin:26px 0;padding:18px;border:1px solid #c9e8d8;border-radius:12px;background:#f1faf5;color:#065f46;font-size:30px;font-weight:800;letter-spacing:8px;text-align:center">${codigo}</div><p style="margin:0;color:#5b6b63;font-size:13px;line-height:20px">O código vale por 30 minutos. Se não foi você quem se cadastrou, ignore esta mensagem.</p>`,
+      }),
     });
   }
 
   async enviarRecuperacaoDeSenha(email: string, link: string) {
     return this.enviar(email, 'Redefinição de senha - IndicaFácil', {
       texto: `Recebemos um pedido para redefinir sua senha no IndicaFácil.\n\nAbra o link abaixo para criar uma nova senha. Ele vale por 1 hora e só pode ser usado uma vez:\n${link}\n\nSe não foi você quem pediu, ignore este e-mail: sua senha continua a mesma.`,
-      html: `
-        <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:auto;color:#1f2937">
-          <h2 style="color:#065f46">Redefinição de senha</h2>
-          <p>Recebemos um pedido para redefinir sua senha no <b>IndicaFácil</b>.</p>
-          <p>
-            <a href="${link}" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#065f46;color:#fff;text-decoration:none;font-weight:700">
-              Criar nova senha
-            </a>
-          </p>
-          <p style="color:#64748b;font-size:13px">O link vale por 1 hora e só pode ser usado uma vez.</p>
-          <p style="color:#64748b;font-size:13px">Se não foi você quem pediu, ignore este e-mail: sua senha continua a mesma.</p>
-        </div>
-      `,
+      html: this.templateEmail({
+        titulo: 'Redefinição de senha',
+        conteudo: `<p>Recebemos um pedido para redefinir sua senha no <strong>IndicaFácil</strong>.</p><p style="margin:26px 0"><a href="${this.escaparHtml(link)}" style="display:inline-block;padding:13px 22px;border-radius:8px;background:#065f46;color:#ffffff;text-decoration:none;font-weight:700">Criar nova senha</a></p><p style="margin:0;color:#5b6b63;font-size:13px;line-height:20px">O link vale por 1 hora e só pode ser usado uma vez. Se não foi você quem pediu, ignore esta mensagem: sua senha continua a mesma.</p>`,
+      }),
       registroSemSmtp: `Link de redefinicao para ${email}: ${link}`,
     });
   }
@@ -109,5 +95,29 @@ export class MailService {
       if (corpo.registroSemSmtp) this.logger.warn(corpo.registroSemSmtp);
       return false;
     }
+  }
+
+  private templateEmail({ titulo, conteudo }: { titulo: string; conteudo: string }) {
+    return `<div style="margin:0;padding:32px 16px;background:#f5f8f6;font-family:Arial,Helvetica,sans-serif;color:#173427"><div style="max-width:520px;margin:0 auto;overflow:hidden;border:1px solid #dce7e0;border-radius:16px;background:#ffffff"><div style="padding:26px 30px;background:#065f46;color:#ffffff"><div style="font-size:20px;font-weight:800">IndicaFácil</div><div style="margin-top:5px;font-size:13px;opacity:.85">Sua comunidade de indicações</div></div><div style="padding:30px"><h1 style="margin:0 0 16px;color:#173427;font-size:23px;line-height:30px">${titulo}</h1><div style="font-size:15px;line-height:23px">${conteudo}</div></div><div style="padding:16px 30px;border-top:1px solid #edf2ee;color:#718078;font-size:12px;line-height:18px">Este é um e-mail automático. Não responda esta mensagem.</div></div></div>`;
+  }
+
+  private escaparHtml(valor: string) {
+    return valor.replace(/[&<>'"]/g, (caractere) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[caractere] ?? caractere);
+  }
+
+  private async formatarErroDeConexao(erro: unknown) {
+    if (!(erro instanceof Error)) return 'Não foi possível conectar ao servidor de e-mail.';
+    const mensagem = erro.message || '';
+    if (mensagem.includes('ssl3_get_record:wrong version number')) {
+      const config = await this.mailSettings.getEffective();
+      if (config.port === 587 && config.secure) {
+        return 'A porta 587 normalmente usa STARTTLS. Desligue "Conexão segura (TLS/SSL)" e teste novamente.';
+      }
+      if (config.port === 465 && !config.secure) {
+        return 'A porta 465 normalmente usa TLS direto. Ligue "Conexão segura (TLS/SSL)" e teste novamente.';
+      }
+      return 'O servidor recusou a negociação SSL/TLS. Revise a combinação entre porta e modo seguro.';
+    }
+    return mensagem;
   }
 }

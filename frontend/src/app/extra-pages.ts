@@ -42,7 +42,7 @@ const ADMIN_MODULES: Array<{ key: string; label: string }> = [
           <button class="primary-button" type="submit">Entrar no painel</button>
           <p *ngIf="feedback()" class="form-feedback error">{{ feedback() }}</p>
         </form>
-        <a routerLink="/login" class="text-button">Voltar ao aplicativo do morador</a>
+        <a routerLink="/login" class="text-button">Voltar ao aplicativo do cliente</a>
       </div>
     </section>
   `,
@@ -161,7 +161,7 @@ type AdminSection = 'reviews' | 'recommendations' | 'reports' | 'settings' | 're
       <form class="settings-grid" [formGroup]="settingsForm" *ngIf="section() === 'settings'" (ngSubmit)="saveSettings()">
         <section class="settings-card" *ngIf="settingsTab() === 'geral'"><h2>Geral</h2><label>Nome do sistema<input formControlName="systemName" /></label><label>Nome do condomínio<input formControlName="condominiumName" /></label><label>Telefone<input type="tel" inputmode="tel" maxlength="15" formControlName="phone" appPhoneMask /></label><label>E-mail<input formControlName="email" /></label></section>
         <section class="settings-card" *ngIf="settingsTab() === 'geral'"><h2>Identidade visual</h2><label class="file-drop-field"><span>Logo</span><input type="file" accept="image/*" /><small>Arraste um arquivo ou clique para selecionar</small></label><label class="file-drop-field"><span>Imagem de capa</span><input type="file" accept="image/*" /><small>Arraste um arquivo ou clique para selecionar</small></label><div class="color-fields"><label>Cor principal<input type="color" formControlName="primaryColor" /></label><label>Cor secundária<input type="color" formControlName="secondaryColor" /></label></div></section>
-        <section class="settings-card" *ngIf="settingsTab() === 'acesso'"><h2>Usuários e acesso</h2><label class="switch-row"><input type="checkbox" formControlName="selfRegistration" /> Permitir auto cadastro</label><label class="switch-row"><input type="checkbox" formControlName="requireUserApproval" /> Exigir aprovação administrativa após validar o código do e-mail</label><small>Quando ativo, confirmar o e-mail não libera o acesso até um administrador aprovar o usuário.</small><label class="switch-row"><input type="checkbox" formControlName="showBlock" /> Mostrar bloco e unidade</label></section>
+        <section class="settings-card" *ngIf="settingsTab() === 'acesso'"><h2>Usuários e acesso</h2><label class="switch-row"><input type="checkbox" formControlName="selfRegistration" /> Permitir auto cadastro</label><small>Clientes entram no aplicativo assim que confirmam o e-mail. Cadastros de prestadores seguem para aprovação administrativa.</small><label class="switch-row"><input type="checkbox" formControlName="showBlock" /> Mostrar bloco e unidade</label></section>
         <section class="settings-card" *ngIf="settingsTab() === 'acesso'"><h2>Cadastro de profissionais</h2><label class="switch-row"><input type="checkbox" formControlName="professionalSelfRegistration" /> Permitir que profissionais criem a própria conta</label><p class="settings-hint">Com a opção ligada, a tela de criar conta passa a oferecer "Sou profissional". O profissional cria o cadastro e já passa a editar o próprio perfil no app. Você continua podendo editar ou excluir o perfil dele em Profissionais.</p></section>
         <section class="settings-card" *ngIf="settingsTab() === 'moderacao'"><h2>Indicações e avaliações</h2><label class="switch-row"><input type="checkbox" formControlName="allowRecommendations" /> Permitir indicação</label><label class="switch-row"><input type="checkbox" formControlName="recommendationApproval" /> Exigir aprovação da indicação</label><label class="switch-row"><input type="checkbox" formControlName="allowReviews" /> Permitir avaliações</label><label class="switch-row"><input type="checkbox" formControlName="requireComment" /> Exigir comentário</label></section>
         <section class="settings-card mail-settings-card" *ngIf="settingsTab() === 'email'">
@@ -173,7 +173,7 @@ type AdminSection = 'reviews' | 'recommendations' | 'reports' | 'settings' | 're
             <label>Porta<input type="number" [(ngModel)]="mail.port" [ngModelOptions]="{standalone: true}" placeholder="465" /></label>
           </div>
           <label class="switch-row"><input type="checkbox" [(ngModel)]="mail.secure" [ngModelOptions]="{standalone: true}" /> Conexão segura (TLS/SSL)</label>
-          <small class="settings-hint">Porta 465 usa TLS direto; 587 costuma usar STARTTLS, com esta opção desligada.</small>
+          <small class="settings-hint">{{ mailSecurityHint() }}</small>
           <label>Usuário<input [(ngModel)]="mail.username" [ngModelOptions]="{standalone: true}" placeholder="contato@seudominio.com.br" autocomplete="off" /></label>
           <label>Senha<input type="password" [(ngModel)]="mail.password" [ngModelOptions]="{standalone: true}" [placeholder]="mailPasswordPlaceholder()" autocomplete="new-password" /></label>
           <small class="settings-hint">{{ mailPasswordHint() }}</small>
@@ -248,7 +248,7 @@ export class AdminSectionPageComponent implements OnInit {
     { id: 'seguranca' as const, label: 'Segurança' },
   ];
   /** Configuração de SMTP: mora em tabela própria, separada das do condomínio. */
-  protected mail: Record<string, unknown> & { enabled?: boolean; host?: string; port?: number; secure?: boolean; username?: string; password?: string; fromName?: string; fromEmail?: string; envOverride?: boolean; passwordSource?: string } = { port: 587, secure: true };
+  protected mail: Record<string, unknown> & { enabled?: boolean; host?: string; port?: number; secure?: boolean; username?: string; password?: string; fromName?: string; fromEmail?: string; envOverride?: boolean; passwordSource?: string } = { port: 587, secure: false };
   protected mailTestTo = '';
   protected readonly savingMail = signal(false);
   protected readonly testingMail = signal(false);
@@ -307,7 +307,7 @@ export class AdminSectionPageComponent implements OnInit {
   }
 
   description() {
-    return ({ reviews: 'Modere avaliações publicadas pelos moradores.', recommendations: 'Acompanhe e aprove indicações.', reports: 'Analise ocorrências reportadas.', settings: 'Configure o condomínio e as regras da plataforma.', 'reports-dashboard': 'Acompanhe indicadores e exporte dados.' } as const)[this.section()];
+    return ({ reviews: 'Modere avaliações publicadas pelos clientes.', recommendations: 'Acompanhe e aprove indicações.', reports: 'Analise ocorrências reportadas.', settings: 'Configure o condomínio e as regras da plataforma.', 'reports-dashboard': 'Acompanhe indicadores e exporte dados.' } as const)[this.section()];
   }
 
   setStatus(section: 'reviews' | 'recommendations' | 'reports', id: string, value: string) {
@@ -325,6 +325,13 @@ export class AdminSectionPageComponent implements OnInit {
   protected mailPasswordPlaceholder() {
     if (this.mail.passwordSource === 'env') return 'Definida pela variável de ambiente';
     return this.mail.passwordSource === 'database' ? 'Senha salva (deixe em branco para manter)' : 'Senha do e-mail';
+  }
+
+  protected mailSecurityHint() {
+    const port = Number(this.mail.port ?? 0);
+    if (port === 465) return 'Porta 465 usa TLS direto, normalmente com esta opção ligada.';
+    if (port === 587) return 'Porta 587 costuma usar STARTTLS, normalmente com esta opção desligada.';
+    return 'Confirme com seu provedor se a porta escolhida usa TLS direto ou STARTTLS.';
   }
 
   protected mailPasswordHint() {
@@ -404,8 +411,8 @@ export class AdminSectionPageComponent implements OnInit {
           Telefone: user['phone'] ?? '',
           Status: user['approvalStatus'] === 'PENDING' ? 'Pendente' : user['approvalStatus'] === 'REJECTED' ? 'Rejeitado' : 'Aprovado',
         }));
-      this.spreadsheet.export('moradores-por-condominio', 'Moradores', rows);
-      this.reportFeedback.set('Relatório "Moradores por condomínio" baixado.');
+      this.spreadsheet.export('clientes-por-condominio', 'Clientes', rows);
+      this.reportFeedback.set('Relatório "Clientes por condomínio" baixado.');
     });
   }
 
@@ -419,7 +426,7 @@ export class AdminSectionPageComponent implements OnInit {
 
   exportReviewsReport() {
     this.api.getAdminSection('reviews').subscribe((rows) => {
-      const sheetRows = rows.map((row) => ({ Morador: row['resident'], Profissional: row['professional'], Nota: row['rating'], Data: row['date'], Status: row['status'] }));
+      const sheetRows = rows.map((row) => ({ Cliente: row['resident'], Profissional: row['professional'], Nota: row['rating'], Data: row['date'], Status: row['status'] }));
       this.spreadsheet.export('avaliacoes-por-periodo', 'Avaliações', sheetRows);
       this.reportFeedback.set('Relatório "Avaliações por período" baixado.');
     });
@@ -438,9 +445,9 @@ export class AdminSectionPageComponent implements OnInit {
             Status: user['approvalStatus'] === 'PENDING' ? 'Pendente' : user['approvalStatus'] === 'REJECTED' ? 'Rejeitado' : 'Aprovado',
           }));
         const professionalRows = dashboard.topProfessionals.map((item) => ({ Profissional: item.name, Categoria: item.category, Indicações: item.total }));
-        const reviewRows = reviews.map((row) => ({ Morador: row['resident'], Profissional: row['professional'], Nota: row['rating'], Data: row['date'], Status: row['status'] }));
+        const reviewRows = reviews.map((row) => ({ Cliente: row['resident'], Profissional: row['professional'], Nota: row['rating'], Data: row['date'], Status: row['status'] }));
         this.spreadsheet.exportMultiple('relatorios-terras-alphas', [
-          { name: 'Moradores', rows: residentRows },
+          { name: 'Clientes', rows: residentRows },
           { name: 'Profissionais', rows: professionalRows },
           { name: 'Avaliações', rows: reviewRows },
         ]);

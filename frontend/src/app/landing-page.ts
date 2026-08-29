@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, OnInit, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from './services/auth.service';
 import {
   LucideArrowRight,
   LucideCheck,
@@ -493,9 +494,31 @@ import { brand } from './brand';
     </main>
   `,
 })
-export class LandingPageComponent {
+export class LandingPageComponent implements OnInit {
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   protected readonly brand = brand;
   protected mobileMenuOpen = false;
+
+  /**
+   * A landing e a porta de entrada do site, mas nao do aplicativo instalado.
+   * Quem abre o app pelo icone quer usar o produto, nao ler a apresentacao -
+   * e se ja tem sessao, nao deve precisar entrar de novo.
+   */
+  ngOnInit() {
+    const instalado =
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      (window.navigator as { standalone?: boolean }).standalone === true;
+    if (!instalado) return;
+    const papel = this.auth.user()?.role;
+    if (!this.auth.isAuthenticated() || !papel) {
+      void this.router.navigateByUrl('/login');
+      return;
+    }
+    void this.router.navigateByUrl(
+      papel === 'PROFESSIONAL' ? '/profissional/perfil' : papel === 'RESIDENT' ? '/app/home' : '/admin/dashboard',
+    );
+  }
 
   protected readonly navItems = [
     { label: 'Como funciona', href: '#como-funciona' },

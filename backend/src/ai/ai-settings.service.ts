@@ -20,6 +20,8 @@ const DEFAULTS: Prisma.AiSettingsCreateInput = {
   summaryEnabled: true,
   clarificationEnabled: true,
   fallbackKeywordsEnabled: true,
+  keywordFirstEnabled: true,
+  keywordFirstConfidence: 0.8,
   minimumConfidence: 0.75,
   autoApplyConfidence: 0.85,
   dailyLimit: 500,
@@ -48,6 +50,7 @@ function toPlainNumbers(settings: AiSettings) {
     temperature: settings.temperature.toNumber(),
     minimumConfidence: settings.minimumConfidence.toNumber(),
     autoApplyConfidence: settings.autoApplyConfidence.toNumber(),
+    keywordFirstConfidence: settings.keywordFirstConfidence.toNumber(),
   };
 }
 
@@ -84,6 +87,7 @@ export class AiSettingsService {
       id: 'unavailable',
       enabled: false,
       temperature: decimal(0.2),
+      keywordFirstConfidence: decimal(0.8),
       minimumConfidence: decimal(0.75),
       autoApplyConfidence: decimal(0.85),
       createdAt: new Date(),

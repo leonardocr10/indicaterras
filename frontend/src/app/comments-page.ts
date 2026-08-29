@@ -42,7 +42,7 @@ import { ToastService } from './services/toast.service';
           </div>
         </div>
       </section>
-      <p class="comments-helper">Compartilhe sua experiência com todos os moradores.</p>
+      <p class="comments-helper">Compartilhe sua experiência com todos os clientes.</p>
 
       <div *ngIf="loading()" class="comments-empty">Carregando comentários...</div>
       <div *ngIf="!loading() && !comments().length" class="comments-empty"><svg lucideImage /><h2>Seja o primeiro a comentar</h2><p>Conte como foi sua experiência com este profissional.</p></div>
@@ -93,7 +93,7 @@ export class CommentsPageComponent implements OnInit, OnDestroy {
   protected readonly photoPreviews = signal<string[]>([]);
   protected readonly replyingTo = signal('');
   protected readonly lightboxImage = signal('');
-  protected readonly currentUserInitials = computed(() => this.initials(this.auth.user()?.name ?? 'Morador'));
+  protected readonly currentUserInitials = computed(() => this.initials(this.auth.user()?.name ?? 'Cliente'));
   protected readonly stars = [1, 2, 3, 4, 5];
   protected readonly emojis = ['😊', '👏', '👍', '⭐', '💚', '🙏'];
   protected readonly composer = viewChild<ElementRef<HTMLTextAreaElement>>('composer');
@@ -185,7 +185,7 @@ export class CommentsPageComponent implements OnInit, OnDestroy {
         this.resetComposerHeight();
         this.rating.set(5);
         this.submitting.set(false);
-        this.toast.success('Comentário publicado para os moradores.');
+        this.toast.success('Comentário publicado para os clientes.');
         this.loadComments();
       },
       error: () => {

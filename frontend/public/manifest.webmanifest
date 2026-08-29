@@ -5,8 +5,8 @@
   "lang": "pt-BR",
   "display": "standalone",
   "orientation": "portrait",
-  "scope": "./",
-  "start_url": "./?app=indicafacil-20260828",
+  "scope": "/",
+  "start_url": "/app/home?app=indicafacil-20260829",
   "theme_color": "#065F46",
   "background_color": "#ffffff",
   "icons": [

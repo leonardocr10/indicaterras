@@ -28,11 +28,23 @@ import { ToastService } from './services/toast.service';
       </div>
 
       <ng-container *ngIf="!loading() && !loadError() && professional() as profile">
+        <!-- Enquanto aguarda liberação, o profissional precisa saber em que pé
+             está e o que falta, em vez de estranhar não aparecer nas buscas. -->
+        <div *ngIf="profile.approvalStatus === 'PENDING'" class="provider-approval">
+          <strong>Seu cadastro está em análise</strong>
+          <p *ngIf="profile.profileComplete">Enviamos para a administração aprovar. Assim que for liberado, você passa a aparecer nas buscas do aplicativo.</p>
+          <p *ngIf="!profile.profileComplete">Para entrar na fila de aprovação, complete os serviços que você realiza e a sua jornada de atendimento abaixo.</p>
+        </div>
+        <div *ngIf="profile.approvalStatus === 'REJECTED'" class="provider-approval rejected">
+          <strong>Cadastro não aprovado</strong>
+          <p>A administração não liberou este cadastro. Fale com o suporte para entender o motivo.</p>
+        </div>
+
         <div *ngIf="missingMedia().length" class="provider-onboarding">
           <svg lucideTriangleAlert />
           <div>
             <strong>Complete seu perfil</strong>
-            <p>Falta {{ missingMedia().join(' e ') }}. Perfis completos aparecem melhor para os moradores.</p>
+            <p>Falta {{ missingMedia().join(' e ') }}. Perfis completos aparecem melhor para os clientes.</p>
           </div>
         </div>
 
@@ -55,7 +67,7 @@ import { ToastService } from './services/toast.service';
 
         <section class="provider-form provider-works">
           <h2>Meus trabalhos</h2>
-          <p class="provider-hint">Publique fotos dos serviços que você já fez. Elas aparecem no seu perfil para os moradores.</p>
+          <p class="provider-hint">Publique fotos dos serviços que você já fez. Elas aparecem no seu perfil para os clientes.</p>
           <div *ngIf="works().length" class="provider-work-grid">
             <figure *ngFor="let work of works()">
               <img [src]="assetUrl(work.image)" [alt]="work.title || 'Trabalho publicado'" />

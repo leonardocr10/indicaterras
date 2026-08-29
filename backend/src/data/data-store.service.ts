@@ -390,9 +390,8 @@ export class DataStoreService implements OnModuleInit {
     state?: string;
   }): Promise<Omit<DemoUser, 'password'>> {
     await this.usersReady;
-    this.ensureDatabase('criar a conta do morador');
+    this.ensureDatabase('criar a conta do cliente');
     this.assertEmailAvailable(payload.email);
-    const requireApproval = this.requiresUserApproval();
     const record = await this.prisma.user.create({
         data: {
           condominiumId: payload.condominiumId || null,
@@ -408,9 +407,10 @@ export class DataStoreService implements OnModuleInit {
           neighborhood: payload.neighborhood || null,
           city: payload.city || null,
           state: payload.state || null,
-          emailVerified: true,
-          approvalStatus: requireApproval ? 'PENDING' : 'APPROVED',
-          approvedAt: requireApproval ? null : new Date(),
+          emailVerified: false,
+          // Clientes podem usar o app assim que confirmarem o e-mail.
+          approvalStatus: 'APPROVED',
+          approvedAt: new Date(),
           active: true,
         },
     });
@@ -499,10 +499,11 @@ export class DataStoreService implements OnModuleInit {
             phone: payload.phone || null,
             passwordHash: await bcrypt.hash(payload.password, 10),
             role: 'PROFESSIONAL',
-            emailVerified: true,
-            emailVerifiedAt: new Date(),
-            approvalStatus: 'APPROVED',
-            approvedAt: new Date(),
+            emailVerified: false,
+            emailVerifiedAt: null,
+            // Prestadores só entram após a conferência da administração.
+            approvalStatus: 'PENDING',
+            approvedAt: null,
             active: true,
           },
         });
@@ -530,11 +531,16 @@ export class DataStoreService implements OnModuleInit {
     await this.loadDatabaseData();
   }
 
+  /**
+   * O dono sempre enxerga o próprio cadastro, mesmo pendente, oculto ou
+   * suspenso: é aqui que ele completa o perfil para ser aprovado. O filtro de
+   * visibilidade vale para quem procura profissionais, não para o titular.
+   */
   getOwnProfessional(userId: string) {
     const professionalId = this.professionalByUserId.get(userId);
     if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
-    const professional = this.getProfessionalById(professionalId);
-    if (!professional) throw new NotFoundException('Perfil profissional em análise ou indisponível');
+    const professional = this.professionals.find((item) => item.id === professionalId);
+    if (!professional) throw new NotFoundException('Perfil profissional não encontrado');
     return professional;
   }
 
@@ -680,6 +686,43 @@ export class DataStoreService implements OnModuleInit {
     }
   }
 
+  /** Cria um codigo de uso unico para confirmar um novo endereco de e-mail. */
+  async createEmailVerification(userId: string, code: string) {
+    this.ensureDatabase('gerar o código de confirmação de e-mail');
+    await this.prisma.emailVerification.updateMany({
+      where: { userId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    await this.prisma.emailVerification.create({
+      data: { userId, code, expiresAt: new Date(Date.now() + 30 * 60 * 1000) },
+    });
+  }
+
+  /** Confirma o codigo, desde que pertença ao usuário e ainda esteja válido. */
+  async verifyEmailCode(email: string, code: string): Promise<Omit<DemoUser, 'password'>> {
+    this.ensureDatabase('confirmar o e-mail');
+    const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (!user) throw new ConflictException('Código inválido ou expirado. Solicite um novo cadastro.');
+    if (user.emailVerified) {
+      const verifiedUser = this.findUserById(user.id);
+      if (!verifiedUser) throw new NotFoundException('Usuário confirmado não encontrado');
+      return verifiedUser;
+    }
+    const registro = await this.prisma.emailVerification.findFirst({
+      where: { userId: user.id, code, usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!registro) throw new ConflictException('Código inválido ou expirado. Confira o e-mail e tente novamente.');
+    await this.prisma.$transaction([
+      this.prisma.emailVerification.update({ where: { id: registro.id }, data: { usedAt: new Date() } }),
+      this.prisma.user.update({ where: { id: user.id }, data: { emailVerified: true, emailVerifiedAt: new Date() } }),
+    ]);
+    await this.loadDatabaseData();
+    const verified = this.findUserById(user.id);
+    if (!verified) throw new NotFoundException('Usuário confirmado não encontrado');
+    return verified;
+  }
+
   ensureUserCanAccess(user: Omit<DemoUser, 'password'>) {
     this.assertUserAccess(user);
     return user;
@@ -687,7 +730,8 @@ export class DataStoreService implements OnModuleInit {
 
   private assertUserAccess(user: Pick<DemoUser, 'active' | 'emailVerified' | 'approvalStatus'>) {
     if (!user.active) throw new ForbiddenException('Esta conta está inativa. Procure a administração.');
-    if (this.requiresUserApproval() && user.approvalStatus !== 'APPROVED') {
+    if (!user.emailVerified) throw new ForbiddenException('Confirme o código enviado para seu e-mail antes de entrar.');
+    if (user.approvalStatus !== 'APPROVED') {
       throw new ForbiddenException(user.approvalStatus === 'REJECTED' ? 'O acesso desta conta foi recusado pela administração.' : 'Cadastro confirmado e aguardando aprovação da administração.');
     }
   }
@@ -793,7 +837,7 @@ export class DataStoreService implements OnModuleInit {
       serviceDate: review.serviceDate,
       status: this.moderationStatuses.get(review.id) ?? 'Publicado',
       recommends: review.rating >= 4,
-      origin: 'App do morador',
+      origin: 'App do cliente',
       reports: 0,
       images: [] as string[],
       adminResponse: response?.response ?? '',
@@ -820,7 +864,7 @@ export class DataStoreService implements OnModuleInit {
     if (!review) return [];
     return [
       { action: 'Publicado', status: 'Publicado', note: 'Avaliação publicada automaticamente pelo sistema.', createdAt: review.createdAt },
-      { action: 'Recebida', status: 'Recebida', note: 'Avaliação recebida do morador.', createdAt: new Date(new Date(review.createdAt).getTime() - 120000).toISOString() },
+      { action: 'Recebida', status: 'Recebida', note: 'Avaliação recebida do cliente.', createdAt: new Date(new Date(review.createdAt).getTime() - 120000).toISOString() },
     ];
   }
 
@@ -950,7 +994,7 @@ export class DataStoreService implements OnModuleInit {
       const record = await this.prisma.user.create({
         data: {
           condominiumId: condominiumId || null,
-          name: String(payload.name ?? 'Novo morador'),
+          name: String(payload.name ?? 'Novo cliente'),
           email: String(payload.email ?? ''),
           phone: String(payload.phone ?? '') || null,
           passwordHash: await bcrypt.hash(password, 10),
@@ -1011,8 +1055,9 @@ export class DataStoreService implements OnModuleInit {
       const categoryIds = this.stringArray(payload.categoryIds, payload.categoryId);
       const serviceIds = await this.validServiceIds(categoryIds, this.stringArray(payload.serviceIds));
       const portfolioImages = this.stringArray(payload.portfolioImages).slice(0, 10);
+      const approvalStatus = payload.approvalStatus === undefined ? undefined : this.approvalStatus(payload.approvalStatus);
       await this.prisma.$transaction(async (transaction) => {
-        await transaction.professional.update({
+        const professional = await transaction.professional.update({
           where: { id },
           data: {
             name: String(payload.name ?? '') || undefined,
@@ -1028,10 +1073,17 @@ export class DataStoreService implements OnModuleInit {
             // Sem isto, ocultar/suspender/bloquear pela moderação não tinha efeito:
             // o valor era descartado aqui e o profissional continuava no app.
             active: payload.active === undefined ? undefined : Boolean(payload.active),
-            approvalStatus: payload.approvalStatus === undefined ? undefined : String(payload.approvalStatus),
+            approvalStatus,
             workingHours: payload.workingHours === undefined ? undefined : (this.parseWorkingHours(payload.workingHours) as never),
           },
         });
+        // A aprovação do perfil também controla a conta de login do prestador.
+        if (approvalStatus && professional.userId) {
+          await transaction.user.update({
+            where: { id: professional.userId },
+            data: { approvalStatus, approvedAt: approvalStatus === 'APPROVED' ? new Date() : null },
+          });
+        }
         if (categoryIds.length) {
           await transaction.professionalCategory.deleteMany({ where: { professionalId: id } });
           await transaction.professionalCategory.createMany({ data: categoryIds.map((categoryId) => ({ professionalId: id, categoryId })) });
@@ -1257,7 +1309,7 @@ export class DataStoreService implements OnModuleInit {
     const condominium = condominiumId ? this.condominiums.find((item) => item.id === condominiumId) : undefined;
     if (!condominium) return filtered;
 
-    // Prioriza quem atende perto do morador: bairro+cidade primeiro, depois só cidade, depois o resto.
+    // Prioriza quem atende perto do cliente: bairro+cidade primeiro, depois só cidade, depois o resto.
     // A ordem relativa dentro de cada camada é preservada (sort é estável).
     const condoCity = this.normalize(condominium.city);
     const condoNeighborhood = this.normalize(condominium.neighborhood);
@@ -1847,7 +1899,7 @@ export class DataStoreService implements OnModuleInit {
         reportId: id,
         kind: 'note',
         label: 'Parecer administrativo registrado',
-        detail: notify ? 'Morador e prestador serão notificados.' : undefined,
+        detail: notify ? 'Cliente e prestador serão notificados.' : undefined,
       },
     });
     return this.getComplaintDetails(id);
@@ -1890,7 +1942,7 @@ export class DataStoreService implements OnModuleInit {
     return this.getComplaintDetails(id);
   }
 
-  /** Denúncia enviada pelo morador contra um profissional, feita pelo app. */
+  /** Denúncia enviada pelo cliente contra um profissional, feita pelo app. */
   async submitComplaint(payload: { userId: string; professionalId: string; reason: string; description: string; images?: string[] }) {
     const user = this.findUserById(payload.userId);
     if (!user) throw new UnauthorizedException('Sessão inválida');
@@ -1911,7 +1963,7 @@ export class DataStoreService implements OnModuleInit {
         reason,
         details: description || null,
         status: 'PENDENTE',
-        channel: 'App do morador',
+        channel: 'App do cliente',
       },
     });
 
@@ -1947,7 +1999,7 @@ export class DataStoreService implements OnModuleInit {
 
   private toPublicName(name: string) {
     const [first, second] = name.trim().split(' ').filter(Boolean);
-    return second ? `${first} ${second[0]}.` : (first ?? 'Morador');
+    return second ? `${first} ${second[0]}.` : (first ?? 'Cliente');
   }
 
   getProfessionalComments(professionalId: string, userId?: string) {
@@ -2096,7 +2148,7 @@ export class DataStoreService implements OnModuleInit {
         city: payload.city,
         neighborhood: payload.neighborhood,
         condominiumId: payload.condominiumId,
-        bio: payload.company ? `Profissional da empresa ${payload.company}.` : 'Profissional indicado por moradores.',
+        bio: payload.company ? `Profissional da empresa ${payload.company}.` : 'Profissional indicado por clientes.',
         whatsapp: payload.phone.replace(/\D/g, ''),
         phone: payload.phone,
         instagram: '',
@@ -2306,7 +2358,7 @@ export class DataStoreService implements OnModuleInit {
       .map((user) => ({
         id: `resident-${user.id}`,
         type: 'NEW_RESIDENT' as const,
-        title: 'Novo morador aguardando aprovação',
+        title: 'Novo cliente aguardando aprovação',
         subtitle: [user.name, user.email, condominiumName(user.condominiumId), user.unit].filter(Boolean).join(' · '),
         link: '/admin/clientes',
         // Permite aprovar ou recusar direto da lista, sem abrir o cadastro.
@@ -2326,7 +2378,7 @@ export class DataStoreService implements OnModuleInit {
         targetId: professional.id,
       }));
 
-    // Denúncias exigem banco de dados; se ele estiver indisponível, apenas os moradores pendentes aparecem na lista.
+    // Denúncias exigem banco de dados; se ele estiver indisponível, apenas os clientes pendentes aparecem na lista.
     let pendingReports: Array<{ id: string; type: 'REPORT'; title: string; subtitle: string; link: string }> = [];
     if (this.databaseAvailable) {
       pendingReports = (await this.getComplaints())

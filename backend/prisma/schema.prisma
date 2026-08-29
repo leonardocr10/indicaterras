@@ -134,6 +134,7 @@ model User {
   reportHistory   ReportHistory[]
   refreshTokens   RefreshToken[]
   passwordResets  PasswordReset[]
+  emailVerifications EmailVerification[]
   serviceRequests ServiceRequest[]
   notifications   Notification[]
   sentMessages    DirectMessage[]    @relation("MessageSender")
@@ -154,6 +155,20 @@ model PasswordReset {
 
   @@index([userId])
   @@map("password_resets")
+}
+
+/// Codigo enviado ao e-mail para confirmar um novo cadastro.
+model EmailVerification {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String   @db.VarChar(6)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, code])
+  @@map("email_verifications")
 }
 
 model CategoryGroup {
@@ -372,7 +387,7 @@ model Review {
   @@index([professionalId, hidden])
 }
 
-/// Fotos que o morador anexa ao comentário.
+/// Fotos que o cliente anexa ao comentário.
 model ReviewImage {
   id        String   @id @default(cuid())
   reviewId  String
@@ -429,7 +444,7 @@ model Report {
   reason         String
   details        String?              @db.Text
   status         ReportStatus         @default(PENDENTE)
-  channel        String               @default("App do morador")
+  channel        String               @default("App do cliente")
   adminNote      String?              @db.Text
   notifyParties  Boolean              @default(true)
   reviewedAt     DateTime?
@@ -446,7 +461,7 @@ model Report {
   @@index([status, createdAt])
 }
 
-/// Evidências anexadas pelo morador na denúncia.
+/// Evidências anexadas pelo cliente na denúncia.
 model ReportImage {
   id        String   @id @default(cuid())
   reportId  String
@@ -626,6 +641,10 @@ model AiSettings {
   summaryEnabled            Boolean  @default(true)
   clarificationEnabled      Boolean  @default(true)
   fallbackKeywordsEnabled   Boolean  @default(true)
+  // Palavra-chave primeiro: quando o matcher local ja resolve com confianca
+  // alta, nao ha motivo para pagar uma chamada de IA.
+  keywordFirstEnabled       Boolean  @default(true)
+  keywordFirstConfidence    Decimal  @default(0.80) @db.Decimal(5, 2)
   minimumConfidence         Decimal  @default(0.75) @db.Decimal(5, 2)
   autoApplyConfidence       Decimal  @default(0.85) @db.Decimal(5, 2)
   dailyLimit                Int?     @default(500)

@@ -97,6 +97,8 @@ export class AiLogsService {
       aiCalls: rows.filter((row) => row.usedAi).length,
       fallbackCalls: rows.filter((row) => row.usedFallback).length,
       errors: rows.filter((row) => row.status === 'error').length,
+      // Resolvidos pela palavra-chave: cada um e uma chamada de IA economizada.
+      keywordHits: rows.filter((row) => row.status === 'keyword_hit').length,
     });
 
     const confidences = today.map((row) => row.confidence).filter((value): value is NonNullable<typeof value> => value !== null);

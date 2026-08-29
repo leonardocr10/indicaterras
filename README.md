@@ -87,7 +87,7 @@ deploy na hospedagem.
 ## Confirmação de e-mail (opcional)
 
 Por padrão o cadastro **não** exige confirmação: quem cria a conta entra direto no aplicativo
-(o morador ainda passa pela aprovação da administração, se esse parâmetro estiver ligado).
+(o cliente ainda passa pela aprovação da administração, se esse parâmetro estiver ligado).
 
 Para exigir o código por e-mail, ligue **Exigir confirmação de e-mail no cadastro** em
 Admin > Configurações. Aí o Supabase Auth envia um código de 6 dígitos e a pessoa só acessa
@@ -101,7 +101,7 @@ provedor e pode ser ajustado em **Authentication > Rate Limits**.
 
 ## Credenciais demo
 
-- Morador: `leonardo@terrasalphas.com.br`
+- Cliente: `leonardo@terrasalphas.com.br`
 - Admin: `admin@terrasalphas.com.br`
 - Senha: `123456`
 

@@ -69,6 +69,16 @@ export class UpdateAiSettingsDto {
   fallbackKeywordsEnabled?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  keywordFirstEnabled?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  keywordFirstConfidence?: number;
+
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(1)

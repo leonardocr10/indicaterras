@@ -225,10 +225,25 @@ export class LoginPageComponent {
              recebia "e-mail já cadastrado" como se tivesse falhado. -->
         <section class="register-done" *ngIf="registeredEmail() as email">
           <span><svg lucideCheckCircle2 aria-hidden="true" /></span>
-          <h2>Cadastro enviado!</h2>
-          <p>Criamos sua conta com o e-mail <strong>{{ email }}</strong>.</p>
-          <p class="register-done-note">Ela está aguardando a aprovação da administração. Assim que for aprovada, você poderá entrar no aplicativo.</p>
-          <a class="primary-button full-width" routerLink="/login">Ir para o login</a>
+          <ng-container *ngIf="!emailConfirmed(); else registrationConfirmed">
+            <h2>Confirme seu e-mail</h2>
+            <p>Enviamos um código de seis dígitos para <strong>{{ email }}</strong>.</p>
+            <form (ngSubmit)="confirmEmail()" class="register-confirm-form">
+              <label class="auth-field">Código de confirmação
+                <span><input #verificationInput type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" [value]="verificationCode()" (input)="updateVerificationCode(verificationInput.value)" /></span>
+              </label>
+              <button class="primary-button full-width" type="submit" [disabled]="confirmingEmail()">{{ confirmingEmail() ? 'Confirmando...' : 'Confirmar e-mail' }}</button>
+            </form>
+            <p class="register-done-note">Confira também a pasta de spam. O código vale por 30 minutos.</p>
+            <button type="button" class="text-button" [disabled]="resendingCode()" (click)="resendCode()">{{ resendingCode() ? 'Enviando código...' : 'Reenviar código' }}</button>
+            <p *ngIf="resendMessage()" class="register-done-note">{{ resendMessage() }}</p>
+            <p *ngIf="verificationError()" class="form-feedback error">{{ verificationError() }}</p>
+          </ng-container>
+          <ng-template #registrationConfirmed>
+            <h2>E-mail confirmado!</h2>
+            <p class="register-done-note">{{ confirmedMessage() }}</p>
+            <a class="primary-button full-width" routerLink="/login">Ir para o login</a>
+          </ng-template>
         </section>
 
         <ng-container *ngIf="!registeredEmail()">
@@ -288,6 +303,13 @@ export class LoginPageComponent {
             <label class="auth-field">Categoria
               <app-searchable-select formControlName="categoryId" [items]="activeCategories()" valueKey="id" labelKey="name" iconKey="icon" placeholder="Selecione sua categoria" searchPlaceholder="Pesquisar categoria..." />
             </label>
+            <section class="register-specialties" *ngIf="professionalServices().length">
+              <span class="register-legend">Especialidades e serviços</span>
+              <p>Selecione um ou mais serviços que você oferece.</p>
+              <div class="admin-check-grid">
+                <label *ngFor="let service of professionalServices()"><input type="checkbox" [checked]="selectedProfessionalServiceIds().includes(service.id)" (change)="toggleProfessionalService(service.id)" />{{ service.name }}</label>
+              </div>
+            </section>
             <div class="grid-2">
               <label class="auth-field">Cidade
                 <app-searchable-select formControlName="city" [items]="cities()" valueKey="name" labelKey="label" [placeholder]="loadingCities() ? 'Carregando cidades...' : 'Selecione a cidade'" searchPlaceholder="Pesquisar cidade..." />
@@ -356,11 +378,20 @@ export class RegisterPageComponent implements OnInit {
   protected readonly condominiums = signal<Condominium[]>([]);
   protected readonly categories = signal<Category[]>([]);
   protected readonly activeCategories = computed(() => this.categories().filter((category) => category.active));
+  protected readonly professionalServices = signal<CategoryService[]>([]);
+  protected readonly selectedProfessionalServiceIds = signal<string[]>([]);
   protected readonly professionalSignupEnabled = signal(false);
   protected readonly isProfessional = signal(false);
   protected readonly registrationStep = signal(1);
   /** E-mail confirmado no cadastro; troca o formulario pela tela de sucesso. */
   protected readonly registeredEmail = signal('');
+  protected readonly verificationCode = signal('');
+  protected readonly verificationError = signal('');
+  protected readonly confirmingEmail = signal(false);
+  protected readonly emailConfirmed = signal(false);
+  protected readonly confirmedMessage = signal('');
+  protected readonly resendingCode = signal(false);
+  protected readonly resendMessage = signal('');
   protected readonly weekDays = [
     { value: 1, label: 'S', full: 'Segunda' },
     { value: 2, label: 'T', full: 'Terça' },
@@ -425,18 +456,22 @@ export class RegisterPageComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.api.getCategories().subscribe((categories) => this.categories.set(categories));
+    this.api.getCategories().subscribe((categories) => {
+      this.categories.set(categories);
+      this.updateProfessionalServices(this.form.controls.categoryId.value);
+    });
     this.api.getPublicSettings().subscribe({
       next: (settings) => this.professionalSignupEnabled.set(settings.professionalSelfRegistration),
       error: () => this.professionalSignupEnabled.set(false),
     });
     this.form.controls.city.valueChanges.subscribe((city) => {
       this.selectedCity.set(city ?? '');
-      // Só o profissional escolhe bairro numa lista por cidade; no morador a cidade
+      // Só o profissional escolhe bairro numa lista por cidade; no cliente a cidade
       // vem preenchida pelo CEP junto com o bairro, que não pode ser apagado aqui.
       if (this.isProfessional()) this.form.controls.neighborhood.setValue('');
     });
     this.form.controls.password.valueChanges.subscribe((value) => this.password.set(value ?? ''));
+    this.form.controls.categoryId.valueChanges.subscribe((categoryId) => this.updateProfessionalServices(categoryId));
   }
 
   private loadCities() {
@@ -454,10 +489,11 @@ export class RegisterPageComponent implements OnInit {
     const professional = type === 'professional';
     this.isProfessional.set(professional);
     this.registrationStep.set(1);
+    this.selectedProfessionalServiceIds.set([]);
     this.feedback.set('');
     this.hasError.set(false);
     const { categoryId, zipCode, street, number, state } = this.form.controls;
-    // Profissional escolhe cidade/bairro numa lista; morador informa o endereço completo pelo CEP.
+    // Profissional escolhe cidade/bairro numa lista; cliente informa o endereço completo pelo CEP.
     const enderecoCompleto = [zipCode, street, number, state];
     if (professional) {
       categoryId.setValidators(Validators.required);
@@ -572,6 +608,7 @@ export class RegisterPageComponent implements OnInit {
           bio: values.bio,
           password: values.password,
           workingHours: this.jornadaValida(),
+          serviceIds: this.selectedProfessionalServiceIds(),
         })
       : this.auth.register({
           name: values.name,
@@ -596,6 +633,9 @@ export class RegisterPageComponent implements OnInit {
         // Sem sessão significa cadastro criado aguardando aprovação: mostramos a
         // confirmação no lugar do formulário, para não parecer que falhou.
         this.registeredEmail.set(result.email || this.form.getRawValue().email);
+        this.verificationCode.set('');
+        this.verificationError.set('');
+        this.resendMessage.set('');
         this.feedback.set('');
         this.hasError.set(false);
       },
@@ -603,6 +643,67 @@ export class RegisterPageComponent implements OnInit {
         const message = error.error?.message;
         this.feedback.set(Array.isArray(message) ? message.join(', ') : message ?? 'Não foi possível criar sua conta.');
         this.hasError.set(true);
+      },
+    });
+  }
+
+  protected toggleProfessionalService(serviceId: string) {
+    this.selectedProfessionalServiceIds.update((selected) =>
+      selected.includes(serviceId) ? selected.filter((id) => id !== serviceId) : [...selected, serviceId],
+    );
+  }
+
+  private updateProfessionalServices(categoryId: string) {
+    const services = this.categories().find((category) => category.id === categoryId)?.services ?? [];
+    this.professionalServices.set(services);
+    this.selectedProfessionalServiceIds.update((selected) => selected.filter((serviceId) => services.some((service) => service.id === serviceId)));
+  }
+
+  protected updateVerificationCode(value: string) {
+    this.verificationCode.set(value.replace(/\D/g, '').slice(0, 6));
+    this.verificationError.set('');
+  }
+
+  protected confirmEmail() {
+    const code = this.verificationCode();
+    if (code.length !== 6) {
+      this.verificationError.set('Informe os seis dígitos enviados para seu e-mail.');
+      return;
+    }
+    this.confirmingEmail.set(true);
+    this.auth.verifyEmail(this.registeredEmail(), code).subscribe({
+      next: (result) => {
+        this.confirmingEmail.set(false);
+        if (result.session) {
+          const role = result.session.user.role;
+          void this.router.navigateByUrl(role === 'PROFESSIONAL' ? '/profissional/perfil' : role === 'RESIDENT' ? '/app/home' : '/admin/dashboard');
+          return;
+        }
+        this.emailConfirmed.set(true);
+        this.confirmedMessage.set(result.requiresApproval
+          ? 'Seu cadastro foi confirmado e agora aguarda a aprovação da administração. Assim que for aprovado, você poderá entrar no aplicativo.'
+          : 'Sua conta está pronta para uso. Você já pode entrar no aplicativo.');
+      },
+      error: (error: { error?: { message?: string | string[] } }) => {
+        this.confirmingEmail.set(false);
+        const message = error.error?.message;
+        this.verificationError.set(Array.isArray(message) ? message.join(', ') : message ?? 'Não foi possível confirmar o código. Tente novamente.');
+      },
+    });
+  }
+
+  protected resendCode() {
+    this.resendingCode.set(true);
+    this.resendMessage.set('');
+    this.auth.resendVerification(this.registeredEmail()).subscribe({
+      next: () => {
+        this.resendingCode.set(false);
+        this.verificationCode.set('');
+        this.resendMessage.set('Se existir uma conta pendente para este e-mail, enviamos um novo código.');
+      },
+      error: () => {
+        this.resendingCode.set(false);
+        this.verificationError.set('Não foi possível reenviar o código agora. Tente novamente em instantes.');
       },
     });
   }
@@ -919,7 +1020,7 @@ export class HomePageComponent implements OnInit {
         this.analysis.set(result);
         this.analyzing.set(false);
       },
-      // O erro técnico fica no log administrativo; aqui o morador segue pelo caminho manual.
+      // O erro técnico fica no log administrativo; aqui o cliente segue pelo caminho manual.
       error: () => {
         this.analyzing.set(false);
         this.findProfessionalsForProblem(text);
@@ -1232,13 +1333,13 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     if (!category) return 'Profissionais';
     const titles: Record<string, string> = {
       eletricista: 'Eletricistas',
-      encanador: 'Encanadores',
-      pedreiro: 'Pedreiros',
-      pintor: 'Pintores',
+      encanador: 'Encanadores(as)',
+      pedreiro: 'Pedreiros(as)',
+      pintor: 'Pintores(as)',
       diarista: 'Diaristas',
       'ar-condicionado': 'Ar-condicionado',
-      jardineiro: 'Jardineiros',
-      montador: 'Montadores',
+      jardineiro: 'Jardineiros(as)',
+      montador: 'Montadores(as)',
     };
     return titles[slug] ?? category.name;
   });
@@ -2373,7 +2474,7 @@ export class FavoritesPageComponent implements OnInit {
             <strong>{{ professionalName(item.professionalId) }}</strong>
             <p>{{ professionalDetails(item.professionalId).category }}</p>
             <p><svg lucideCalendarDays />Indicado em {{ item.createdAt | date: 'dd/MM/yyyy' }}</p>
-            <p><svg lucideUsersRound />{{ professionalDetails(item.professionalId).recommendations }} moradores recomendam</p>
+            <p><svg lucideUsersRound />{{ professionalDetails(item.professionalId).recommendations }} clientes recomendam</p>
             <span><svg lucideCheckCircle2 />Você indicou</span>
           </div>
           <div class="indication-actions"><a><svg lucideMessageCircle /></a><button class="favorite-button"><svg lucideEllipsis /></button></div>
@@ -2530,7 +2631,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
             </div>
           </header>
           <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
-          <div class="admin-table-wrap"><table><thead><tr><th *ngFor="let column of config.columns">{{ column }}</th><th>Ações</th></tr></thead><tbody>
+          <div class="admin-table-wrap"><table><thead><tr><th *ngFor="let column of config.columns; let index = index"><button type="button" class="grid-sort-button" [disabled]="isPhotoKey(config.columnKeys[index])" (click)="setGridSort(config.columnKeys[index])">{{ column }} <span *ngIf="!isPhotoKey(config.columnKeys[index])">{{ gridSortIndicator(config.columnKeys[index]) }}</span></button></th><th>Ações</th></tr></thead><tbody>
               <tr *ngFor="let record of pagedRecords()"><td *ngFor="let key of config.columnKeys" [class.photo-cell]="isPhotoKey(key)" [class.cover-photo-cell]="key === 'coverImage'">
                 <img *ngIf="isPhotoKey(key)" [src]="recordPhoto(record, key)" [alt]="'Foto de ' + value(record, 'name')" (error)="$any($event.target).src=photoPlaceholder(key)" />
                 <span *ngIf="key === 'approvalStatus'" class="approval-badge" [ngClass]="approvalClass(record)">{{ approvalLabel(record) }}</span>
@@ -2662,6 +2763,8 @@ export class AdminCrudPageComponent implements OnInit {
   protected readonly page = signal(1);
   protected readonly pageSize = signal(10);
   protected readonly pageSizeOptions = [5, 10, 25, 50];
+  protected readonly gridSortKey = signal('');
+  protected readonly gridSortDirection = signal<'asc' | 'desc'>('asc');
   protected serviceAliasesText = '';
   protected serviceDraft: Partial<CategoryService> & { id?: string } = {};
   private selectedPhoto: File | null = null;
@@ -2699,11 +2802,15 @@ export class AdminCrudPageComponent implements OnInit {
     const search = this.searchTerm();
     const filter = this.normalize(this.filterValue());
     const filterKey = this.filterKey();
-    return this.records().filter((record) => {
+    const filtered = this.records().filter((record) => {
       const searchable = Object.values(record).map((entry) => (Array.isArray(entry) ? entry.join(' ') : String(entry ?? ''))).join(' ');
       const matchesFilter = !filter || this.normalize(String(record[filterKey] ?? '')).includes(filter);
       return matchesSearch(searchable, search) && matchesFilter;
     });
+    const key = this.gridSortKey();
+    if (!key) return filtered;
+    const direction = this.gridSortDirection() === 'asc' ? 1 : -1;
+    return [...filtered].sort((first, second) => this.compareGridValues(first[key], second[key]) * direction);
   });
   protected readonly filterOptions = computed(() => {
     const key = this.filterKey();
@@ -2723,6 +2830,8 @@ export class AdminCrudPageComponent implements OnInit {
     this.route.data.subscribe((data) => {
       const value = (data['resource'] ?? this.route.snapshot.paramMap.get('entity')) as AdminResource;
       this.resource.set(value in this.configs ? value : 'condominiums');
+      this.gridSortKey.set('');
+      this.gridSortDirection.set('asc');
       this.newRecord(false);
       this.load();
     });
@@ -2735,6 +2844,25 @@ export class AdminCrudPageComponent implements OnInit {
 
   protected approvalClass(record: Record<string, unknown>) {
     return String(record['approvalStatus'] ?? '').toLowerCase();
+  }
+
+  protected setGridSort(key: string) {
+    if (this.isPhotoKey(key)) return;
+    if (this.gridSortKey() === key) this.gridSortDirection.update((direction) => direction === 'asc' ? 'desc' : 'asc');
+    else { this.gridSortKey.set(key); this.gridSortDirection.set('asc'); }
+    this.page.set(1);
+  }
+
+  protected gridSortIndicator(key: string) {
+    return this.gridSortKey() === key ? this.gridSortDirection() === 'asc' ? '↑' : '↓' : '↕';
+  }
+
+  private compareGridValues(first: unknown, second: unknown) {
+    if (typeof first === 'boolean' && typeof second === 'boolean') return Number(first) - Number(second);
+    const firstNumber = Number(first);
+    const secondNumber = Number(second);
+    if (String(first).trim() !== '' && String(second).trim() !== '' && Number.isFinite(firstNumber) && Number.isFinite(secondNumber)) return firstNumber - secondNumber;
+    return String(first ?? '').localeCompare(String(second ?? ''), 'pt-BR', { numeric: true, sensitivity: 'base' });
   }
 
   visibleFields(): AdminField[] {

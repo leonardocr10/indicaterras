@@ -19,6 +19,17 @@ const CORRECOES: Array<{ slug: string; de: string; para: string; motivo: string 
   { slug: 'portoes-automacao', de: 'Fence', para: 'fence', motivo: 'nome em CamelCase nao existia como arquivo' },
   { slug: 'corretor-seguros', de: 'Shield', para: 'shield', motivo: 'o arquivo existe, mas em minusculas' },
   { slug: 'churrasqueiro', de: 'cooking', para: 'grill', motivo: 'panela nao representa churrasco' },
+  // Estas apareciam certas na Home so porque ha um mapa de imagem por slug no
+  // frontend; em qualquer outra lista (como o select do cadastro) ficavam sem
+  // icone. Corrigir o dado resolve para todas as telas de uma vez.
+  { slug: 'eletricista', de: 'Zap', para: 'bolt', motivo: 'CamelCase do Lucide' },
+  { slug: 'encanador', de: 'Wrench', para: 'wrench', motivo: 'CamelCase do Lucide' },
+  { slug: 'ar-condicionado', de: 'AirVent', para: 'air-vent', motivo: 'CamelCase do Lucide' },
+  { slug: 'chaveiro', de: 'KeyRound', para: 'key', motivo: 'CamelCase do Lucide' },
+  { slug: 'cameras-seguranca', de: 'Cctv', para: 'camera', motivo: 'CamelCase do Lucide' },
+  { slug: 'montador', de: 'tool', para: 'wrench', motivo: 'nao existe arquivo "tool"' },
+  { slug: 'mecanico', de: 'grid', para: 'car', motivo: 'grade generica no lugar do carro' },
+  { slug: 'energia-solar', de: 'grid', para: 'panels-top-left', motivo: 'grade generica no lugar dos paineis' },
 ];
 
 async function main() {

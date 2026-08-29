@@ -52,7 +52,7 @@ const STEP_LABELS = ['Problema', 'Fotos', 'Preferências', 'Local', 'Confirmar']
 
       <div class="request-field">
         <span>Categoria</span>
-        <app-searchable-select [ngModel]="draft.categoryId" (ngModelChange)="patch.emit({ categoryId: $event })" [items]="categories" valueKey="id" labelKey="name" emptyLabel="Selecione uma categoria" searchPlaceholder="Pesquisar categoria..." />
+        <app-searchable-select [ngModel]="draft.categoryId" (ngModelChange)="patch.emit({ categoryId: $event })" [items]="categories" valueKey="id" labelKey="name" iconKey="icon" emptyLabel="Selecione uma categoria" searchPlaceholder="Pesquisar categoria..." />
       </div>
 
       <div class="request-field">

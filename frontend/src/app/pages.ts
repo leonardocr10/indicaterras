@@ -286,7 +286,7 @@ export class LoginPageComponent {
               <span><svg lucideBriefcaseBusiness /><input placeholder="Nome da empresa (opcional)" formControlName="companyName" /></span>
             </label>
             <label class="auth-field">Categoria
-              <app-searchable-select formControlName="categoryId" [items]="activeCategories()" valueKey="id" labelKey="name" placeholder="Selecione sua categoria" searchPlaceholder="Pesquisar categoria..." />
+              <app-searchable-select formControlName="categoryId" [items]="activeCategories()" valueKey="id" labelKey="name" iconKey="icon" placeholder="Selecione sua categoria" searchPlaceholder="Pesquisar categoria..." />
             </label>
             <div class="grid-2">
               <label class="auth-field">Cidade
@@ -1080,7 +1080,7 @@ export class HomePageComponent implements OnInit {
           </label>
 
           <label>Categoria
-            <app-searchable-select [ngModel]="selectedCategory()" (ngModelChange)="selectedCategory.set($event)" [items]="categories()" valueKey="slug" labelKey="name" emptyLabel="Todas as categorias" searchPlaceholder="Pesquisar categoria..." />
+            <app-searchable-select [ngModel]="selectedCategory()" (ngModelChange)="selectedCategory.set($event)" [items]="categories()" valueKey="slug" labelKey="name" iconKey="icon" emptyLabel="Todas as categorias" searchPlaceholder="Pesquisar categoria..." />
           </label>
 
           <div class="professional-filter-grid">
@@ -2511,7 +2511,7 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
             <ng-container *ngFor="let field of visibleFields()">
             <label [class.field-wide]="field.wide">{{ field.label }}
               <textarea *ngIf="field.type === 'textarea'" [formControlName]="field.key"></textarea>
-              <app-searchable-select *ngIf="field.select === 'category'" [formControlName]="field.key" [items]="categories()" valueKey="id" labelKey="name" emptyLabel="Selecione" searchPlaceholder="Pesquisar categoria..." />
+              <app-searchable-select *ngIf="field.select === 'category'" [formControlName]="field.key" [items]="categories()" valueKey="id" labelKey="name" iconKey="icon" emptyLabel="Selecione" searchPlaceholder="Pesquisar categoria..." />
               <app-searchable-select *ngIf="field.select === 'condominium'" [formControlName]="field.key" [items]="condominiums()" valueKey="id" labelKey="name" emptyLabel="Selecione" searchPlaceholder="Pesquisar condomínio..." />
               <app-searchable-select *ngIf="field.select === 'options'" [formControlName]="field.key" [items]="field.options" valueKey="value" labelKey="label" searchPlaceholder="Pesquisar opção..." />
               <app-searchable-select *ngIf="field.select === 'city'" [formControlName]="field.key" [items]="cities()" valueKey="name" labelKey="label" [emptyLabel]="loadingCities() ? 'Carregando cidades...' : 'Selecione a cidade'" searchPlaceholder="Pesquisar cidade..." />

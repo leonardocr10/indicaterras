@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { matchesSearch } from './search.util';
+import { categoryIconUrl } from './category-art.util';
 import {
   AfterViewInit,
   Component,
@@ -16,6 +17,7 @@ import { LucideCheck, LucideChevronDown, LucideSearch } from '@lucide/angular';
 type SelectOption = {
   value: unknown;
   label: string;
+  icon?: string;
   disabled: boolean;
 };
 
@@ -72,11 +74,17 @@ let searchableSelectId = 0;
           [attr.aria-selected]="valuesEqual(option.value, value)"
           (click)="choose(option)"
         >
-          <span>{{ option.label }}</span>
+          <span class="select-option-label">
+            <img *ngIf="option.icon" [src]="option.icon" alt="" (error)="$any($event.target).style.visibility='hidden'" />
+            {{ option.label }}
+          </span>
           <svg *ngIf="valuesEqual(option.value, value)" lucideCheck />
         </button>
         <p *ngIf="!filteredOptions.length">Nenhuma opção encontrada.</p>
       </div>
+      <!-- Sem isto a lista parecia truncada: o painel cortava no limite da tela
+           sem nenhum sinal de que havia mais opções abaixo. -->
+      <small class="select-count" *ngIf="filteredOptions.length > 7">{{ filteredOptions.length }} opções · role para ver todas</small>
     </section>
   `,
   styles: [`
@@ -89,18 +97,21 @@ let searchableSelectId = 0;
     .select-trigger span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .select-trigger svg { width: 17px; height: 17px; flex: 0 0 auto; transition: transform .18s ease; }
     :host(.is-open) .select-trigger svg { transform: rotate(180deg); }
-    .select-panel { position: fixed; z-index: 12000; max-height: min(330px, calc(100dvh - 24px)); padding: 8px; border: 1px solid #d7e1dc; border-radius: 8px; display: grid; gap: 7px; color: #18231e; background: #fff; box-shadow: 0 18px 48px rgba(2,38,25,.2); animation: select-in .14s ease-out; }
-    .select-search { min-height: 40px; padding: 0 10px; border: 1px solid #dce4df; border-radius: 6px; display: flex; align-items: center; gap: 8px; background: #f8faf9; }
+    .select-panel { position: fixed; z-index: 12000; max-height: min(330px, calc(100dvh - 24px)); padding: 8px; border: 1px solid #d7e1dc; border-radius: 8px; display: flex; flex-direction: column; gap: 7px; overflow: hidden; color: #18231e; background: #fff; box-shadow: 0 18px 48px rgba(2,38,25,.2); animation: select-in .14s ease-out; }
+    .select-search { flex: 0 0 auto; min-height: 40px; padding: 0 10px; border: 1px solid #dce4df; border-radius: 6px; display: flex; align-items: center; gap: 8px; background: #f8faf9; }
     .select-search:focus-within { border-color: #065F46; box-shadow: var(--if-focus-ring); }
     .select-search svg { width: 17px; height: 17px; color: #607068; }
     .select-search input { min-width: 0; width: 100%; height: 38px; padding: 0; border: 0; outline: 0; color: #1f2925; background: transparent; font: 400 13px/18px var(--if-font, 'Nunito', sans-serif); box-shadow: none; }
-    .select-options { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 2px; }
+    .select-options { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 2px; align-content: start; }
     .select-options button { width: 100%; min-height: 38px; padding: 8px 10px; border: 0; border-radius: 5px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #25352e; background: transparent; font: 500 13px/18px var(--if-font, 'Nunito', sans-serif); text-align: left; cursor: pointer; }
     .select-options button:hover, .select-options button:focus-visible { outline: 0; color: #075e3a; background: #edf6f1; }
     .select-options button.selected { color: #075e3a; background: #e4f2ea; font-weight: 700; }
     .select-options button:disabled { opacity: .45; cursor: not-allowed; }
     .select-options svg { width: 16px; height: 16px; flex: 0 0 auto; }
     .select-options p { margin: 8px; color: #667085; font-size: 12px; text-align: center; }
+    .select-option-label { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .select-option-label img { width: 18px; height: 18px; flex: 0 0 auto; object-fit: contain; }
+    .select-count { flex: 0 0 auto; padding: 6px 4px 2px; color: #7b8a83; font-size: 11px; text-align: center; border-top: 1px solid #eef3f0; }
     @keyframes select-in { from { opacity: 0; transform: translateY(-4px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
   `],
   host: { '[class.is-open]': 'open' },
@@ -111,6 +122,8 @@ export class SearchableSelectComponent implements ControlValueAccessor, AfterVie
   @Input() items: readonly unknown[] | null | undefined = [];
   @Input() valueKey = '';
   @Input() labelKey = '';
+  /** Campo do item que guarda o ícone; resolvido pelo mesmo caminho das categorias. */
+  @Input() iconKey = '';
   @Input() placeholder = 'Selecione';
   @Input() searchPlaceholder = 'Pesquisar...';
   @Input() emptyLabel = '';
@@ -135,6 +148,7 @@ export class SearchableSelectComponent implements ControlValueAccessor, AfterVie
     const mapped = (this.items ?? []).map((item) => ({
       value: this.readProperty(item, this.valueKey, item),
       label: String(this.readProperty(item, this.labelKey, item) ?? ''),
+      icon: this.iconKey ? categoryIconUrl(String(this.readProperty(item, this.iconKey, '') ?? '')) : '',
       disabled: Boolean(this.readProperty(item, 'disabled', false)),
     }));
     return this.emptyLabel ? [{ value: this.emptyValue, label: this.emptyLabel, disabled: false }, ...mapped] : mapped;

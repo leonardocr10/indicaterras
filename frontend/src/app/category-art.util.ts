@@ -41,6 +41,19 @@ function slugDaCategoria(professional: Pick<Professional, 'categories' | 'catego
   return SLUG_POR_NOME[pelaEtiqueta] ?? 'outros';
 }
 
+/**
+ * Ícone da categoria a partir do valor gravado no cadastro. Aceita URL, data
+ * URI ou o nome de um arquivo de taxonomy-icons. Devolve vazio quando não há
+ * ícone, para quem chama decidir o que mostrar no lugar.
+ */
+export function categoryIconUrl(icon: string | null | undefined): string {
+  const valor = String(icon ?? '').trim();
+  if (!valor) return '';
+  if (valor.startsWith('data:image/') || valor.startsWith('http') || valor.startsWith('/')) return valor;
+  // 'sparkles' veio de cadastros antigos e não tem arquivo próprio.
+  return `/assets/taxonomy-icons/${valor === 'sparkles' ? 'broom' : valor}.svg`;
+}
+
 export function categoryAvatar(professional: Pick<Professional, 'categories' | 'category'>): string {
   return `/assets/avatars/${slugDaCategoria(professional)}.png`;
 }

@@ -76,6 +76,22 @@ function explicarChaveRecusada(mensagem: string) {
     console.error('  4. Coloque essa chave no .env como GOOGLE_GEOCODING_API_KEY e rode de novo.');
     console.error('');
     console.error('A chave do mapa continua a mesma, restrita por referenciador - as duas convivem.');
+  } else if (mensagem.includes('not authorized to use this API key')) {
+    // O Google informa o IP que ele viu; e esse que precisa ser liberado.
+    const ip = /IP address ([^,\s]+)/.exec(mensagem)?.[1];
+    console.error('A chave existe, mas este servidor nao esta autorizado a usa-la.');
+    if (ip) {
+      console.error('');
+      console.error(`IP visto pelo Google: ${ip}`);
+      console.error('Adicione exatamente esse endereco em "Restricoes de aplicativo > Enderecos IP".');
+      if (ip.includes(':')) {
+        console.error('Ele e IPv6: o servidor saiu pela rede IPv6, entao nao adianta cadastrar so o IPv4.');
+        console.error('Cadastre os dois enderecos, ou force IPv4 na chamada.');
+      }
+    }
+    console.error('');
+    console.error('Confira tambem se a Geocoding API esta habilitada em "Restricoes de API" desta chave.');
+    console.error('A propagacao no Google leva alguns minutos.');
   } else {
     console.error('Confira o faturamento do projeto e se a Geocoding API esta habilitada para esta chave.');
   }

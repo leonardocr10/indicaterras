@@ -2219,8 +2219,10 @@ export class DataStoreService implements OnModuleInit {
         id: `resident-${user.id}`,
         type: 'NEW_RESIDENT' as const,
         title: 'Novo morador aguardando aprovação',
-        subtitle: [user.name, condominiumName(user.condominiumId), user.unit].filter(Boolean).join(' · '),
-        link: '/admin/moradores',
+        subtitle: [user.name, user.email, condominiumName(user.condominiumId), user.unit].filter(Boolean).join(' · '),
+        link: '/admin/clientes',
+        // Permite aprovar ou recusar direto da lista, sem abrir o cadastro.
+        targetId: user.id,
       }));
 
     // Denúncias exigem banco de dados; se ele estiver indisponível, apenas os moradores pendentes aparecem na lista.

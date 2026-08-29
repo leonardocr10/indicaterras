@@ -73,7 +73,13 @@ import { brand } from './brand';
             <button type="button" class="text-button" (click)="forgotPassword()">Esqueci minha senha</button>
           </div>
           <button class="primary-button" type="submit">Entrar</button>
-          <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
+          <!-- Aguardar aprovação não é erro de login: a conta existe e está na
+               fila. Mostrar em vermelho fazia parecer que o cadastro falhou. -->
+          <aside *ngIf="awaitingApproval()" class="login-awaiting">
+            <strong>Sua conta está aguardando aprovação</strong>
+            <p>O cadastro foi criado e passa pela liberação da administração. Assim que for aprovado, você entra normalmente com este e-mail e senha.</p>
+          </aside>
+          <p *ngIf="feedback() && !awaitingApproval()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
         </form>
         <div class="separator">ou</div>
         <a routerLink="/cadastro" class="secondary-button"><svg lucideUserRound />Criar conta</a>
@@ -113,6 +119,7 @@ export class LoginPageComponent {
   protected readonly showPassword = signal(false);
   protected readonly feedback = signal('');
   protected readonly hasError = signal(false);
+  protected readonly awaitingApproval = signal(false);
   protected readonly forgotOpen = signal(false);
   protected readonly forgotEmail = signal('');
   protected readonly forgotSending = signal(false);
@@ -186,6 +193,8 @@ export class LoginPageComponent {
       error: (error: { status?: number; error?: { message?: string | string[] } }) => {
         const message = error.error?.message;
         const text = Array.isArray(message) ? message.join(', ') : message;
+        // O backend responde 403 com essa mensagem enquanto o cadastro nao foi liberado.
+        this.awaitingApproval.set(error.status === 403 && /aguardando aprova/i.test(text ?? ''));
         this.feedback.set(text || this.connectionMessage(error.status));
         this.hasError.set(true);
       },
@@ -2467,7 +2476,8 @@ type AdminField = { key: string; label: string; type?: 'text' | 'email' | 'tel' 
           <div class="admin-table-wrap"><table><thead><tr><th *ngFor="let column of config.columns">{{ column }}</th><th>Ações</th></tr></thead><tbody>
               <tr *ngFor="let record of pagedRecords()"><td *ngFor="let key of config.columnKeys" [class.photo-cell]="isPhotoKey(key)" [class.cover-photo-cell]="key === 'coverImage'">
                 <img *ngIf="isPhotoKey(key)" [src]="recordPhoto(record, key)" [alt]="'Foto de ' + value(record, 'name')" (error)="$any($event.target).src=photoPlaceholder(key)" />
-                <span *ngIf="!isPhotoKey(key)">{{ value(record, key) }}</span>
+                <span *ngIf="key === 'approvalStatus'" class="approval-badge" [ngClass]="approvalClass(record)">{{ approvalLabel(record) }}</span>
+                <span *ngIf="!isPhotoKey(key) && key !== 'approvalStatus'">{{ value(record, key) }}</span>
               </td><td class="admin-actions"><button type="button" class="icon-action" aria-label="Editar registro" title="Editar" (click)="editRecord(record)"><svg lucidePencil /></button><button type="button" class="icon-action danger-action" aria-label="Excluir registro" title="Excluir" (click)="deleteRecord(record)"><svg lucideTrash2 /></button></td></tr>
               <tr *ngIf="!pagedRecords().length"><td class="admin-empty-row" [attr.colspan]="config.columns.length + 1">Nenhum cadastro encontrado com os filtros atuais.</td></tr>
           </tbody></table></div>
@@ -2612,7 +2622,7 @@ export class AdminCrudPageComponent implements OnInit {
       { key: 'password', label: 'Senha', type: 'password' }, { key: 'passwordConfirmation', label: 'Confirmar senha', type: 'password' },
       { key: 'zipCode', label: 'CEP' }, { key: 'street', label: 'Rua', wide: true }, { key: 'number', label: 'Número' }, { key: 'complement', label: 'Complemento' },
       { key: 'neighborhood', label: 'Bairro', wide: true }, { key: 'city', label: 'Cidade' }, { key: 'state', label: 'Estado' },
-    ], columns: ['Nome', 'E-mail', 'Telefone', 'Perfil'], columnKeys: ['name', 'email', 'phone', 'role'] },
+    ], columns: ['Nome', 'E-mail', 'Telefone', 'Perfil', 'Situação'], columnKeys: ['name', 'email', 'phone', 'role', 'approvalStatus'] },
     users: { title: 'Usuários do sistema', fields: [
       { key: 'name', label: 'Nome completo' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefone', type: 'tel' },
       { key: 'condominiumId', label: 'Condomínio', select: 'condominium' },
@@ -2659,6 +2669,15 @@ export class AdminCrudPageComponent implements OnInit {
       this.newRecord(false);
       this.load();
     });
+  }
+
+  /** Situação da conta na lista: quem está pendente precisa saltar aos olhos. */
+  protected approvalLabel(record: Record<string, unknown>) {
+    return ({ APPROVED: 'Aprovado', PENDING: 'Aguardando aprovação', REJECTED: 'Recusado' } as Record<string, string>)[String(record['approvalStatus'] ?? '')] ?? '—';
+  }
+
+  protected approvalClass(record: Record<string, unknown>) {
+    return String(record['approvalStatus'] ?? '').toLowerCase();
   }
 
   visibleFields(): AdminField[] {

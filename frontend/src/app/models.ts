@@ -179,6 +179,8 @@ export interface PendingItem {
   title: string;
   subtitle: string;
   link: string;
+  /** Id do usuário, para aprovar ou recusar direto da lista de pendências. */
+  targetId?: string;
 }
 
 export interface ApiResponse<T> {

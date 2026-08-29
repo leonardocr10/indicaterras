@@ -1354,3 +1354,15 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
 .home-address-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .home-address-form>small{display:block;margin:-4px 0 8px;color:#5b7183;font-size:11px}
 .home-address-preview{margin:0 0 10px;color:#245c43;font-size:11px;line-height:16px}
+.approval-badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;color:#6b7a72;background:#f1f4f2}
+.approval-badge.approved{color:#0b6b45;background:#e7f6ed}
+.approval-badge.pending{color:#8a5b00;background:#fdf3e2}
+.approval-badge.rejected{color:#a3302a;background:#fdeceb}
+.pending-row-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.pending-row-actions button{min-height:34px;padding:7px 13px;border-radius:8px;border:1px solid transparent;font:700 12px var(--font-family)}
+.pending-row-actions .pending-approve{color:#fff;background:var(--if-primary-dark)}
+.pending-row-actions .pending-reject{border-color:#e6c9c7;color:#a3302a;background:#fff}
+.pending-row-actions button:disabled{opacity:.5}
+.login-awaiting{margin-top:12px;padding:13px 14px;border:1px solid #cde9d9;border-radius:11px;background:#f4fbf7;text-align:left}
+.login-awaiting strong{display:block;color:#075e3a;font-size:13px}
+.login-awaiting p{margin:5px 0 0;color:#38566a;font-size:12px;line-height:17px}

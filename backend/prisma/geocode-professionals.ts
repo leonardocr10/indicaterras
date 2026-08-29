@@ -19,7 +19,14 @@
  * E idempotente: so consulta quem esta sem coordenada, e guarda um cache por
  * bairro para nao pagar a mesma consulta varias vezes.
  */
+import { setDefaultResultOrder } from 'node:dns';
 import { PrismaClient } from '@prisma/client';
+
+// O Node prefere IPv6 quando o servidor tem os dois, e a chave do Google e
+// restrita por IP: sair pelo IPv4 deixa o endereco previsivel e evita ter de
+// cadastrar o IPv6 tambem. Se o servidor so tiver IPv6, o Node usa IPv6 assim
+// mesmo - isto e ordem de preferencia, nao imposicao.
+setDefaultResultOrder('ipv4first');
 
 const prisma = new PrismaClient();
 const CHAVE = process.env.GOOGLE_GEOCODING_API_KEY || process.env.GOOGLE_MAPS_API_KEY || '';

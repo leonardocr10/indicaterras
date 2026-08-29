@@ -22,17 +22,20 @@ import {
   LucideSearch, LucideShare2, LucideSlidersHorizontal, LucideUsersRound, LucideSparkles,
   LucideBriefcaseBusiness, LucideChevronDown, LucideFileText, LucideThumbsUp,
   LucideStar, LucideUserRoundPlus, LucideCircleAlert,
-  LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideMapPin,
+  LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideMapPin, LucideBuilding2,
   LucideHouse, LucideHandshake, LucideX,
   LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideShieldCheck,
   LucideBadgeCheck, LucideClipboardList, LucidePencil, LucideTrash2, LucideCheck, LucideBan,
 } from '@lucide/angular';
-import { AiProblemAnalysisResult, AiPublicConfig, Category, NearbyResult, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
+import { AiProblemAnalysisResult, AiPublicConfig, Category, NearbyProfessional, NearbyResult, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
 import { matchesSearch } from './search.util';
 import { fetchAddressByZipCode, fetchBrazilianCities, neighborhoodsForCity } from './brazil-locations';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import { categoryAvatar, categoryCover } from './category-art.util';
+
+/** O pouco que precisamos do marcador do Google para destacá-lo. */
+type MarcadorDestacavel = { setAnimation?(valor: unknown): void; setZIndex?(valor: number): void };
 import { SearchableSelectComponent } from './searchable-select';
 import { GoogleMapsLoaderService } from './services/google-maps-loader.service';
 import { LocationService, RADIUS_OPTIONS } from './services/location.service';
@@ -1100,7 +1103,7 @@ export class HomePageComponent implements OnInit {
 @Component({
   selector: 'professionals-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, ProfessionalCardComponent, SearchableSelectComponent, LucideArrowLeft, LucideChevronDown, LucideSearch, LucideSlidersHorizontal, LucideThumbsUp, LucideX, LucideMapPin, LucideSparkles, LucideArrowRight],
+  imports: [CommonModule, FormsModule, RouterLink, ProfessionalCardComponent, SearchableSelectComponent, LucideArrowLeft, LucideChevronDown, LucideSearch, LucideSlidersHorizontal, LucideThumbsUp, LucideX, LucideMapPin, LucideSparkles, LucideArrowRight, LucideStar, LucideHeart, LucideMessageCircle, LucidePhone, LucideUserRound, LucideBuilding2],
   template: `
     <section class="mobile-page professionals-page">
       <div class="professionals-heading">
@@ -1165,7 +1168,59 @@ export class HomePageComponent implements OnInit {
           </div>
 
           <section class="nearby-map-section" *ngIf="mapView()">
-            <div #mapCanvas class="nearby-map" [class.hidden]="mapError()"></div>
+            <div class="nearby-map-wrap">
+              <div #mapCanvas class="nearby-map" [class.hidden]="mapError()"></div>
+
+              <!-- Card do marcador: abre sobre o mapa, sem tirar a pessoa da tela. -->
+              <aside class="map-sheet" *ngIf="selecionado() as escolhido">
+                <div class="map-sheet-handle"></div>
+                <button type="button" class="map-sheet-close" aria-label="Fechar" (click)="fecharCard()"><svg lucideX /></button>
+
+                <header class="map-sheet-head">
+                  <img [src]="avatarDe(escolhido)" [alt]="'Foto de ' + escolhido.name" />
+                  <div>
+                    <h3>{{ escolhido.name }}</h3>
+                    <p class="map-sheet-category">{{ escolhido.category }}</p>
+                    <p class="map-sheet-rating" *ngIf="escolhido.reviewCount; else semNota">
+                      <svg lucideStar />
+                      <strong>{{ escolhido.rating | number: '1.1-1' }}</strong>
+                      <span>({{ escolhido.reviewCount }} {{ escolhido.reviewCount === 1 ? 'avaliação' : 'avaliações' }})</span>
+                    </p>
+                    <ng-template #semNota><p class="map-sheet-rating sem-nota">Ainda sem avaliações</p></ng-template>
+                  </div>
+                </header>
+
+                <div class="map-sheet-meta">
+                  <span *ngIf="distanciaDe(escolhido)"><svg lucideMapPin />{{ distanciaDe(escolhido) }}</span>
+                  <span><svg lucideBuilding2 />{{ regiaoDe(escolhido) }}</span>
+                </div>
+
+                <div class="map-sheet-services" *ngIf="escolhido.services?.length">
+                  <small>Principais serviços</small>
+                  <div>
+                    <span *ngFor="let servico of servicosPrincipais(escolhido)">{{ servico }}</span>
+                    <span class="mais" *ngIf="servicosRestantes(escolhido)">+{{ servicosRestantes(escolhido) }}</span>
+                  </div>
+                </div>
+
+                <div class="map-sheet-availability" [class.indisponivel]="!escolhido.availability?.today">
+                  <i></i>
+                  <div>
+                    <strong>{{ escolhido.availability?.today ? 'Disponível hoje' : 'Consulte disponibilidade' }}</strong>
+                    <small>{{ escolhido.availability?.text }}</small>
+                  </div>
+                </div>
+
+                <div class="map-sheet-actions">
+                  <a [routerLink]="['/app/profissional', escolhido.id]"><svg lucideUserRound />Ver perfil</a>
+                  <a *ngIf="escolhido.whatsapp" [href]="whatsappDe(escolhido)" target="_blank" rel="noopener" class="whatsapp"><svg lucideMessageCircle />WhatsApp</a>
+                  <a *ngIf="!escolhido.whatsapp && escolhido.phone" [href]="telefoneDe(escolhido)" class="whatsapp"><svg lucidePhone />Ligar</a>
+                  <button type="button" [class.ativo]="favoritos().has(escolhido.id)" (click)="alternarFavorito(escolhido)">
+                    <svg lucideHeart [attr.fill]="favoritos().has(escolhido.id) ? 'currentColor' : 'none'" />{{ favoritos().has(escolhido.id) ? 'Favoritado' : 'Favoritar' }}
+                  </button>
+                </div>
+              </aside>
+            </div>
             <p class="nearby-map-error" *ngIf="mapError()">{{ mapError() }}</p>
             <p class="nearby-map-note" *ngIf="!mapError()">Os pinos usam o bairro do profissional, não o endereço exato.</p>
           </section>
@@ -1307,10 +1362,16 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     { value: 4.8, label: '4,8 ou mais' },
   ];
   private readonly locationService = inject(LocationService);
+  private readonly auth = inject(AuthService);
+  private readonly toast = inject(ToastService);
   /** A tela "perto de você" é a experiência do botão Buscar da navegação. */
   protected readonly nearbyMode = signal(false);
   protected readonly mapView = signal(false);
   protected readonly mapError = signal('');
+  /** Profissional do marcador tocado. Null com o card fechado. */
+  protected readonly selecionado = signal<NearbyProfessional | null>(null);
+  /** Ids favoritados, carregados uma vez para o coração refletir o estado real. */
+  protected readonly favoritos = signal<Set<string>>(new Set());
   @ViewChild('mapCanvas') private mapCanvas?: ElementRef<HTMLDivElement>;
   private readonly mapsLoader = inject(GoogleMapsLoaderService);
   private mapa: unknown = null;
@@ -1424,6 +1485,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     this.nearbyMode.set(this.router.url.split('?')[0].endsWith('/buscar'));
     if (this.nearbyMode()) {
       this.api.getPublicSettings().subscribe({ next: (settings) => this.aiEnabled.set(settings.ai?.enabled === true), error: () => undefined });
+      this.carregarFavoritos();
       void this.useProfileAddress();
     }
     this.route.queryParamMap.subscribe((params) => {
@@ -1443,6 +1505,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
    */
   protected setMapView(ativo: boolean) {
     this.mapView.set(ativo);
+    this.selecionado.set(null);
     if (!ativo) return;
     this.mapError.set('');
     setTimeout(() => void this.desenharMapa(), 0);
@@ -1496,19 +1559,13 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
       new maps.Marker({ position: centro, map: mapa, title: 'Sua localização', zIndex: 999 }) as unknown as { setMap(v: unknown): void },
     );
 
-    const janela = new maps.InfoWindow({});
+    // O balão do Google foi substituído pelo card inferior: cabe muito mais
+    // informação e o toque não tira a pessoa do mapa.
     for (const profissional of this.nearbyItems()) {
       if (profissional.latitude === null || profissional.longitude === null) continue;
       const posicao = { lat: profissional.latitude, lng: profissional.longitude };
       const marcador = new maps.Marker({ position: posicao, map: mapa, title: profissional.name });
-      marcador.addListener('click', () => {
-        const distancia = profissional.distanceKm === null ? '' : `<div>~${profissional.distanceKm.toString().replace('.', ',')} km</div>`;
-        janela.open({
-          map: mapa,
-          anchor: marcador,
-          content: `<div style="min-width:150px;font-family:inherit"><strong>${profissional.name}</strong><div>${profissional.category}</div>${distancia}<a href="/app/profissionais/${profissional.id}" style="color:#065f46;font-weight:700">Ver perfil</a></div>`,
-        });
-      });
+      marcador.addListener('click', () => this.selecionarNoMapa(profissional, marcador as unknown as MarcadorDestacavel));
       this.marcadores.push(marcador as unknown as { setMap(v: unknown): void });
       limites.extend(posicao);
     }
@@ -1525,6 +1582,82 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
         );
       }
     }, 1200);
+  }
+
+  /** Destaca o marcador tocado e abre o card, sem navegar para outra tela. */
+  private selecionarNoMapa(profissional: NearbyProfessional, marcador: MarcadorDestacavel) {
+    this.selecionado.set(profissional);
+    const maps = (window as unknown as { google?: { maps?: Record<string, unknown> } }).google?.maps;
+    // O destaque é um detalhe: se a API mudar, o card continua abrindo.
+    for (const outro of this.marcadores as Array<{ setZIndex?(valor: number): void }>) outro.setZIndex?.(1);
+    marcador.setZIndex?.(999);
+    const animacao = (maps?.['Animation'] as { BOUNCE?: unknown } | undefined)?.BOUNCE;
+    if (animacao !== undefined && marcador.setAnimation) {
+      marcador.setAnimation(animacao);
+      setTimeout(() => marcador.setAnimation?.(null), 1400);
+    }
+  }
+
+  protected fecharCard() {
+    this.selecionado.set(null);
+  }
+
+  protected avatarDe(profissional: NearbyProfessional) {
+    return this.api.assetUrl(profissional.avatar) || categoryAvatar(profissional);
+  }
+
+  /**
+   * A coordenada é o centro do bairro, não o endereço: por isso "Aprox.".
+   * Prometer "450 m" seria uma precisão que não temos.
+   */
+  protected distanciaDe(profissional: NearbyProfessional) {
+    if (profissional.distanceKm === null || profissional.distanceKm === undefined) return '';
+    if (profissional.distanceKm < 1) return `Aprox. ${Math.round(profissional.distanceKm * 1000)} m`;
+    return `Aprox. ${profissional.distanceKm.toFixed(1).replace('.', ',')} km`;
+  }
+
+  /** Bairro e cidade — nunca o endereço do profissional. */
+  protected regiaoDe(profissional: NearbyProfessional) {
+    return [profissional.neighborhood, profissional.city].filter(Boolean).join(', ') || 'Região não informada';
+  }
+
+  protected servicosPrincipais(profissional: NearbyProfessional) {
+    return (profissional.services ?? []).slice(0, 3);
+  }
+
+  protected servicosRestantes(profissional: NearbyProfessional) {
+    return Math.max(0, (profissional.services ?? []).length - 3);
+  }
+
+  protected whatsappDe(profissional: NearbyProfessional) {
+    return buildWhatsappLink(profissional, this.auth.user()?.name ?? '', '');
+  }
+
+  protected telefoneDe(profissional: NearbyProfessional) {
+    return buildPhoneLink(profissional);
+  }
+
+  protected alternarFavorito(profissional: NearbyProfessional) {
+    this.api.toggleFavorite(profissional.id).subscribe({
+      next: (resultado) => {
+        this.favoritos.update((atuais) => {
+          const proximos = new Set(atuais);
+          if (resultado.active) proximos.add(profissional.id);
+          else proximos.delete(profissional.id);
+          return proximos;
+        });
+        this.toast.success(resultado.active ? 'Profissional adicionado aos favoritos.' : 'Profissional removido dos favoritos.');
+      },
+      error: () => this.toast.error('Não foi possível atualizar os favoritos.'),
+    });
+  }
+
+  /** Uma leitura só: o card precisa do estado real do coração. */
+  private carregarFavoritos() {
+    this.api.getFavorites().subscribe({
+      next: (lista) => this.favoritos.set(new Set(lista.map((item) => item.id))),
+      error: () => this.favoritos.set(new Set()),
+    });
   }
 
   protected loadNearby() {
@@ -1550,6 +1683,8 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
         next: (resultado) => {
           this.nearby.set(resultado);
           this.loadingNearby.set(false);
+          // O card apontava para um marcador que pode nem existir mais.
+          this.selecionado.set(null);
           if (this.mapView()) setTimeout(() => void this.desenharMapa(), 0);
         },
         error: () => {

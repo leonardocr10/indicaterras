@@ -235,6 +235,8 @@ export interface NearbyProfessional extends Professional {
   /** Coordenada do bairro, usada para o pino no mapa. Nula quando não há. */
   latitude: number | null;
   longitude: number | null;
+  /** Resumo da jornada. `today` falso e o texto de consulta quando não há jornada. */
+  availability: { today: boolean; text: string };
 }
 
 export interface NearbyResult {

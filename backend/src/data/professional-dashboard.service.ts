@@ -1,13 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { PrismaService } from './prisma.service';
-
-/** Bloco de atendimento salvo em `workingHours`. 0 = domingo. */
-interface BlocoDeJornada {
-  days: number[];
-  start: string;
-  end: string;
-}
+import { blocosDeJornada, jornadaDeHoje, textoDeDisponibilidade, type BlocoDeJornada } from './working-hours.util';
 
 /**
  * Painel do profissional: uma única leitura agregada para a tela inicial da
@@ -65,8 +59,8 @@ export class ProfessionalDashboardService {
       : 0;
 
     const completude = this.completude(profissional);
-    const jornada = this.blocosDeJornada(profissional.workingHours);
-    const hoje = this.jornadaDeHoje(jornada);
+    const jornada = blocosDeJornada(profissional.workingHours);
+    const hoje = jornadaDeHoje(jornada);
 
     return {
       profile: {
@@ -95,7 +89,7 @@ export class ProfessionalDashboardService {
         profileCompletion: completude.percent,
         missingProfileItems: completude.missing,
         availableToday: Boolean(hoje),
-        availabilityText: this.textoDeDisponibilidade(jornada, hoje),
+        availabilityText: textoDeDisponibilidade(jornada, hoje),
       },
       portfolio: profissional.images.map((imagem) => ({ id: imagem.id, image: imagem.url, title: imagem.title ?? '' })),
       favoriteClients: {
@@ -134,42 +128,6 @@ export class ProfessionalDashboardService {
     }
   }
 
-  private blocosDeJornada(valor: unknown): BlocoDeJornada[] {
-    if (!Array.isArray(valor)) return [];
-    return valor.filter((item): item is BlocoDeJornada => {
-      const bloco = item as Partial<BlocoDeJornada>;
-      return Array.isArray(bloco?.days) && typeof bloco?.start === 'string' && typeof bloco?.end === 'string';
-    });
-  }
-
-  /**
-   * Sem atendimento hoje nao e o mesmo que sem jornada cadastrada: quem atende
-   * de segunda a sexta precisa ver isso no sabado, e nao "sem horario definido".
-   */
-  private textoDeDisponibilidade(blocos: BlocoDeJornada[], hoje: BlocoDeJornada | null) {
-    if (hoje) return `${hoje.start} – ${hoje.end}`;
-    if (!blocos.length) return 'Nenhum horário cadastrado';
-    const proximo = this.proximoBloco(blocos);
-    return proximo ? `Atende ${proximo.dia}, ${proximo.bloco.start} – ${proximo.bloco.end}` : 'Nenhum horário cadastrado';
-  }
-
-  /** Primeiro bloco a partir de amanha, olhando no maximo uma semana adiante. */
-  private proximoBloco(blocos: BlocoDeJornada[]) {
-    const nomes = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
-    const hoje = new Date().getDay();
-    for (let adiante = 1; adiante <= 7; adiante++) {
-      const dia = (hoje + adiante) % 7;
-      const bloco = blocos.find((item) => item.days.includes(dia));
-      if (bloco) return { dia: nomes[dia], bloco };
-    }
-    return null;
-  }
-
-  private jornadaDeHoje(blocos: BlocoDeJornada[]) {
-    const diaDaSemana = new Date().getDay();
-    return blocos.find((bloco) => bloco.days.includes(diaDaSemana)) ?? null;
-  }
-
   /** Percentual de perfil completo, com peso igual para cada item pendente. */
   private completude(profissional: {
     avatar: string | null;
@@ -197,7 +155,7 @@ export class ProfessionalDashboardService {
       ['categoria', profissional.professionalCategories.length > 0],
       ['serviços que você faz', profissional.professionalServices.length > 0],
       ['fotos de trabalhos', profissional.images.length > 0],
-      ['jornada de atendimento', this.blocosDeJornada(profissional.workingHours).length > 0],
+      ['jornada de atendimento', blocosDeJornada(profissional.workingHours).length > 0],
     ];
     return {
       percent: Math.round((itens.filter(([, ok]) => ok).length / itens.length) * 100),

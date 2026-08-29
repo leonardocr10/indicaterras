@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from './prisma.service';
+import { disponibilidadePublica } from './working-hours.util';
 
 export type NearbySort = 'distance' | 'recommended' | 'rating' | 'reviews' | 'az';
 
@@ -83,6 +84,8 @@ export class NearbyProfessionalsService {
         // Coordenada do bairro, usada para o pino no mapa.
         latitude: profissional.latitude === null ? null : Number(profissional.latitude),
         longitude: profissional.longitude === null ? null : Number(profissional.longitude),
+        // Resumo da jornada para o card do mapa, sem uma chamada por marcador.
+        availability: disponibilidadePublica(profissional.workingHours),
       };
     });
 

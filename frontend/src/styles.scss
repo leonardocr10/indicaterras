@@ -1505,8 +1505,47 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
 .nearby-view-toggle button{min-height:36px;border:0;border-radius:8px;background:transparent;color:#425466;font-weight:700;cursor:pointer}
 .nearby-view-toggle button.active{background:#fff;color:var(--primary);box-shadow:0 2px 8px rgba(11,36,23,.08)}
 .nearby-map-section{margin-bottom:14px}
-.nearby-map{height:340px;border:1px solid #dde5e0;border-radius:10px;overflow:hidden}
+.nearby-map-wrap{position:relative}
+.nearby-map{height:min(70vh,520px);border:1px solid #dde5e0;border-radius:10px;overflow:hidden}
 .nearby-map.hidden{display:none}
+
+/* Card do marcador: bottom sheet sobre o mapa, com o mapa visivel atras. */
+.map-sheet{position:absolute;left:0;right:0;bottom:0;z-index:5;max-height:92%;overflow-y:auto;padding:14px 16px 16px;border-radius:18px 18px 10px 10px;background:#fff;box-shadow:0 -10px 34px rgba(9,40,28,.22)}
+.map-sheet-handle{width:44px;height:4px;margin:0 auto 12px;border-radius:999px;background:#e4e8e5}
+.map-sheet-close{position:absolute;right:12px;top:12px;width:30px;height:30px;border:0;border-radius:50%;display:grid;place-items:center;color:#64748b;background:#f1f4f2;cursor:pointer}
+.map-sheet-close svg{width:15px;height:15px}
+.map-sheet-head{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:start;padding-right:34px}
+.map-sheet-head img{width:64px;height:64px;border-radius:50%;object-fit:cover;background:#eef2ef}
+.map-sheet-head h3{margin:0;color:#1f2937;font:700 18px var(--font-family);line-height:24px}
+.map-sheet-category{margin:2px 0 0;color:#64748b;font-size:13px;line-height:18px}
+.map-sheet-rating{margin:6px 0 0;display:flex;align-items:center;gap:5px;color:#64748b;font-size:13px}
+.map-sheet-rating svg{width:15px;height:15px;color:#f4b942;fill:#f4b942}
+.map-sheet-rating strong{color:#1f2937;font-size:15px}
+.map-sheet-rating.sem-nota{color:#8a978f;font-style:italic}
+.map-sheet-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.map-sheet-meta span{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid #e4e8e5;border-radius:8px;color:#425466;font-size:12px;line-height:16px}
+.map-sheet-meta svg{width:14px;height:14px;color:#065f46}
+.map-sheet-services{margin-top:14px}
+.map-sheet-services small{display:block;margin-bottom:7px;color:#1f2937;font-size:13px;font-weight:700}
+.map-sheet-services div{display:flex;flex-wrap:wrap;gap:7px}
+.map-sheet-services span{padding:7px 11px;border:1px solid #e4e8e5;border-radius:999px;color:#425466;font-size:12px;line-height:16px}
+.map-sheet-services span.mais{border-color:#c9e8d8;color:#065f46;background:#f1faf5;font-weight:700}
+.map-sheet-availability{display:flex;align-items:center;gap:10px;margin-top:14px;padding:11px 13px;border:1px solid #c9e8d8;border-radius:10px;background:#f1faf5}
+.map-sheet-availability i{flex:none;width:9px;height:9px;border-radius:50%;background:#22c55e}
+.map-sheet-availability strong{display:block;color:#065f46;font-size:13px;line-height:18px}
+.map-sheet-availability small{display:block;color:#5b6b63;font-size:12px;line-height:16px}
+.map-sheet-availability.indisponivel{border-color:#e4e8e5;background:#f7f9f8}
+.map-sheet-availability.indisponivel i{background:#94a3b8}
+.map-sheet-availability.indisponivel strong{color:#425466}
+.map-sheet-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.map-sheet-actions a,.map-sheet-actions button{min-height:44px;padding:9px 6px;border:1px solid #e4e8e5;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#fff;color:#1f2937;font-family:var(--font-family);font-size:12px;font-weight:700;text-align:center;text-decoration:none;cursor:pointer}
+.map-sheet-actions svg{width:17px;height:17px;color:#065f46}
+.map-sheet-actions .whatsapp{border-color:transparent;color:#fff;background:#22c55e}
+.map-sheet-actions .whatsapp svg{color:#fff}
+.map-sheet-actions button.ativo{border-color:#e06a6a;color:#c0392b}
+.map-sheet-actions button.ativo svg{color:#e06a6a}
+@media(max-width:360px){.map-sheet-actions{grid-template-columns:1fr 1fr}.map-sheet-actions a:first-child{grid-column:1 / -1}}
+
 .nearby-map-note,.nearby-map-error{margin:8px 0 0;color:var(--muted);font-size:13px}
 .nearby-map-error{color:#8a4b12}
 .nearby-without-location{margin:14px 3px 0;color:#5b7183;font-size:11px;line-height:16px}

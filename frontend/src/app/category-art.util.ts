@@ -50,8 +50,15 @@ export function categoryIconUrl(icon: string | null | undefined): string {
   const valor = String(icon ?? '').trim();
   if (!valor) return '';
   if (valor.startsWith('data:image/') || valor.startsWith('http') || valor.startsWith('/')) return valor;
+  // Alguns cadastros gravaram o nome do componente Lucide ("SmilePlus") em vez
+  // do nome do arquivo ("smile-plus"), e a imagem dava 404. Normalizamos aqui
+  // para que o app nao dependa de como o valor foi digitado.
+  const arquivo = valor
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/\s+/g, '-')
+    .toLowerCase();
   // 'sparkles' veio de cadastros antigos e não tem arquivo próprio.
-  return `/assets/taxonomy-icons/${valor === 'sparkles' ? 'broom' : valor}.svg`;
+  return `/assets/taxonomy-icons/${arquivo === 'sparkles' ? 'broom' : arquivo}.svg`;
 }
 
 export function categoryAvatar(professional: Pick<Professional, 'categories' | 'category'>): string {

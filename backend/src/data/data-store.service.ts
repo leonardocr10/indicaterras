@@ -2419,10 +2419,46 @@ export class DataStoreService implements OnModuleInit {
     return buckets;
   }
 
+  /**
+   * Categorias em destaque na home, das mais procuradas para as menos.
+   *
+   * "Mais usada" aqui e a categoria com mais profissionais visiveis: e o unico
+   * sinal de uso real que o sistema registra hoje - nao ha contador de cliques
+   * nos atalhos. Como criterio de desempate vem as indicacoes acumuladas e,
+   * por fim, a ordem definida no cadastro.
+   */
+  private categoriasEmDestaque(limite: number) {
+    const profissionais = this.visibleProfessionals();
+    const usoPorCategoria = new Map<string, { profissionais: number; indicacoes: number }>();
+    for (const profissional of profissionais) {
+      for (const categoria of profissional.categories) {
+        const atual = usoPorCategoria.get(categoria.id) ?? { profissionais: 0, indicacoes: 0 };
+        atual.profissionais += 1;
+        atual.indicacoes += profissional.recommendationCount;
+        usoPorCategoria.set(categoria.id, atual);
+      }
+    }
+
+    return this.categories
+      .filter((category) => category.active)
+      .sort((esquerda, direita) => {
+        const usoEsquerda = usoPorCategoria.get(esquerda.id) ?? { profissionais: 0, indicacoes: 0 };
+        const usoDireita = usoPorCategoria.get(direita.id) ?? { profissionais: 0, indicacoes: 0 };
+        return (
+          usoDireita.profissionais - usoEsquerda.profissionais ||
+          usoDireita.indicacoes - usoEsquerda.indicacoes ||
+          (esquerda.displayOrder ?? 0) - (direita.displayOrder ?? 0) ||
+          esquerda.name.localeCompare(direita.name)
+        );
+      })
+      .slice(0, limite);
+  }
+
   getHomePayload() {
     return {
       condominium: this.condominiums[0],
-      categories: this.categories.filter((category) => category.active),
+      // A home mostra so os atalhos mais procurados; "Ver todas" leva ao resto.
+      categories: this.categoriasEmDestaque(15),
       featuredProfessionals: [...this.visibleProfessionals()]
         .sort((left, right) => right.recommendationCount - left.recommendationCount || right.rating - left.rating || left.name.localeCompare(right.name))
         .slice(0, 4),

@@ -44,7 +44,10 @@ export class GoogleMapsLoaderService {
 
       const carregou = await new Promise<boolean>((resolve) => {
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&language=pt-BR&region=BR&loading=async`;
+        // Sem `loading=async`: nesse modo o Google entrega so o carregador e as
+        // classes precisam ser pedidas uma a uma, o que ja quebrou o mapa aqui.
+        // No modo classico `google.maps.Map` existe assim que o script carrega.
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&language=pt-BR&region=BR`;
         script.async = true;
         script.onload = () => resolve(Boolean((window as unknown as Record<string, unknown>)['google']));
         script.onerror = () => resolve(false);
@@ -58,8 +61,14 @@ export class GoogleMapsLoaderService {
     // o mapa quebrava com "google.maps.Map is not a constructor".
     const maps = (window as unknown as { google?: { maps?: { importLibrary?: (nome: string) => Promise<unknown> } } }).google?.maps;
     if (!maps) return false;
-    if (typeof maps.importLibrary === 'function') {
-      await Promise.all([maps.importLibrary('core'), maps.importLibrary('maps'), maps.importLibrary('marker')]);
+    // Cinto e suspensorio: se a versao da API ainda assim entregar so o
+    // carregador, pedimos as bibliotecas antes de desistir.
+    if (!this.mapsPronto() && typeof maps.importLibrary === 'function') {
+      try {
+        await Promise.all([maps.importLibrary('core'), maps.importLibrary('maps'), maps.importLibrary('marker')]);
+      } catch {
+        return false;
+      }
     }
     return this.mapsPronto();
   }

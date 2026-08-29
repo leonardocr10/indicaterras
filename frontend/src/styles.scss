@@ -1366,3 +1366,14 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
 .login-awaiting{margin-top:12px;padding:13px 14px;border:1px solid #cde9d9;border-radius:11px;background:#f4fbf7;text-align:left}
 .login-awaiting strong{display:block;color:#075e3a;font-size:13px}
 .login-awaiting p{margin:5px 0 0;color:#38566a;font-size:12px;line-height:17px}
+.working-hours{padding:12px;border:1px solid #dce7e1;border-radius:10px;background:#fbfdfc;margin-bottom:9px}
+.working-hours-days{display:flex;gap:6px;flex-wrap:wrap}
+.working-hours-days button{width:36px;height:36px;flex:0 0 auto;border:1px solid #d8e3de;border-radius:50%;color:#31473f;background:#fff;font:700 12px var(--font-family)}
+.working-hours-days button.active{border-color:var(--if-primary-dark);color:#fff;background:var(--if-primary-dark)}
+.working-hours-range{margin-top:10px;display:flex;align-items:flex-end;gap:9px}
+.working-hours-range label{flex:1;display:grid;gap:4px;color:#31473f;font-size:12px;font-weight:600}
+.working-hours-range input{min-height:40px;padding:8px 10px;font-size:13px}
+.working-hours-remove{width:38px;height:40px;flex:0 0 auto;padding:0;border:1px solid #e6c9c7;border-radius:8px;display:grid;place-items:center;color:#a3302a;background:#fff}
+.working-hours-remove svg{width:15px;height:15px}
+.working-hours-add{width:100%;min-height:40px;border:1px dashed #b9cfc5;border-radius:9px;color:var(--if-primary-dark);background:#fff;font:600 12px var(--font-family)}
+.register-hint{display:block;margin-top:7px;color:#5b7183;font-size:11px;line-height:16px}

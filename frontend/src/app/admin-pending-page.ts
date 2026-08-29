@@ -23,7 +23,7 @@ import { ToastService } from './services/toast.service';
       <section class="admin-table-panel pending-list-panel">
         <div class="pending-row" *ngFor="let item of items()">
           <div class="pending-row-icon" [class.danger]="item.type === 'REPORT'">
-            <svg *ngIf="item.type === 'NEW_RESIDENT'" lucideUserRoundPlus />
+            <svg *ngIf="item.type === 'NEW_RESIDENT' || item.type === 'NEW_PROFESSIONAL'" lucideUserRoundPlus />
             <svg *ngIf="item.type === 'REPORT'" lucideTriangleAlert />
           </div>
           <div class="pending-row-body">
@@ -33,7 +33,7 @@ import { ToastService } from './services/toast.service';
           <div class="pending-row-actions">
             <!-- Aprovar e recusar direto daqui: abrir o cadastro só para mudar
                  um status transformava a fila em um vaivém de telas. -->
-            <ng-container *ngIf="item.type === 'NEW_RESIDENT' && item.targetId">
+            <ng-container *ngIf="(item.type === 'NEW_RESIDENT' || item.type === 'NEW_PROFESSIONAL') && item.targetId">
               <button type="button" class="pending-approve" [disabled]="processing() === item.targetId" (click)="decidir(item, 'APPROVED')">Aprovar</button>
               <button type="button" class="pending-reject" [disabled]="processing() === item.targetId" (click)="decidir(item, 'REJECTED')">Recusar</button>
             </ng-container>
@@ -58,12 +58,14 @@ export class AdminPendingPageComponent implements OnInit {
   protected decidir(item: PendingItem, status: 'APPROVED' | 'REJECTED') {
     if (!item.targetId) return;
     this.processing.set(item.targetId);
-    this.api.updateAdminRecord('users', item.targetId, { approvalStatus: status }).subscribe({
+    const recurso = item.type === 'NEW_PROFESSIONAL' ? 'professionals' : 'users';
+    this.api.updateAdminRecord(recurso, item.targetId, { approvalStatus: status }).subscribe({
       next: () => {
         this.processing.set('');
         // Sai da fila: o item deixa de ser pendência assim que uma decisão é tomada.
         this.items.update((atuais) => atuais.filter((atual) => atual.id !== item.id));
-        this.toast.success(status === 'APPROVED' ? 'Cliente aprovado. Ele já pode entrar no aplicativo.' : 'Cadastro recusado.');
+        const alvo = item.type === 'NEW_PROFESSIONAL' ? 'Profissional aprovado. Ele já aparece nas buscas.' : 'Cliente aprovado. Ele já pode entrar no aplicativo.';
+        this.toast.success(status === 'APPROVED' ? alvo : 'Cadastro recusado.');
       },
       error: () => {
         this.processing.set('');

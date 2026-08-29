@@ -89,6 +89,12 @@ export interface DemoProfessional {
   active?: boolean;
   /** Verdadeiro enquanto houver punição vigente de ocultar, suspender ou bloquear. */
   moderationHidden?: boolean;
+  /** PENDING enquanto a administração não liberou o cadastro. */
+  approvalStatus?: string;
+  /** Blocos de atendimento: dias da semana (0 = domingo) e faixa de horário. */
+  workingHours?: Array<{ days: number[]; start: string; end: string }>;
+  /** Falta algo para o cadastro entrar na fila de aprovação. */
+  profileComplete?: boolean;
 }
 
 export interface DemoReview {

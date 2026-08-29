@@ -61,6 +61,7 @@ export class AuthService {
     neighborhood?: string;
     bio?: string;
     password: string;
+    workingHours?: Array<{ days: number[]; start: string; end: string }>;
   }) {
     return this.http.post<ApiResponse<RegistrationResult>>(`${this.baseUrl}/auth/register-professional`, payload).pipe(
       map((response) => response.data),

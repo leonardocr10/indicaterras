@@ -300,6 +300,22 @@ export class LoginPageComponent {
             <label class="auth-field">Sobre o seu trabalho
               <textarea placeholder="Conte sua experiência, especialidades e diferenciais (opcional)" formControlName="bio" maxlength="600"></textarea>
             </label>
+
+            <!-- Jornada no cadastro: o cliente precisa saber quando procurar, e
+                 pedir depois deixaria o perfil incompleto na fila de aprovação. -->
+            <span class="register-legend">Quando você atende</span>
+            <div class="working-hours" *ngFor="let bloco of workingHours(); let indice = index">
+              <div class="working-hours-days">
+                <button *ngFor="let dia of weekDays" type="button" [class.active]="bloco.days.includes(dia.value)" (click)="toggleWorkDay(indice, dia.value)" [attr.aria-pressed]="bloco.days.includes(dia.value)" [attr.aria-label]="dia.full">{{ dia.label }}</button>
+              </div>
+              <div class="working-hours-range">
+                <label>Das<input type="time" [value]="bloco.start" (change)="setWorkTime(indice, 'start', $any($event.target).value)" /></label>
+                <label>Até<input type="time" [value]="bloco.end" (change)="setWorkTime(indice, 'end', $any($event.target).value)" /></label>
+                <button *ngIf="workingHours().length > 1" type="button" class="working-hours-remove" (click)="removeWorkBlock(indice)" aria-label="Remover horário"><svg lucideX /></button>
+              </div>
+            </div>
+            <button type="button" class="working-hours-add" (click)="addWorkBlock()">+ Adicionar outro horário</button>
+            <small class="register-hint">Ex.: segunda a sexta das 8h às 18h e sábado das 8h às 12h.</small>
           </ng-container>
 
           <ng-container *ngIf="registrationStep() === 3">
@@ -345,6 +361,19 @@ export class RegisterPageComponent implements OnInit {
   protected readonly registrationStep = signal(1);
   /** E-mail confirmado no cadastro; troca o formulario pela tela de sucesso. */
   protected readonly registeredEmail = signal('');
+  protected readonly weekDays = [
+    { value: 1, label: 'S', full: 'Segunda' },
+    { value: 2, label: 'T', full: 'Terça' },
+    { value: 3, label: 'Q', full: 'Quarta' },
+    { value: 4, label: 'Q', full: 'Quinta' },
+    { value: 5, label: 'S', full: 'Sexta' },
+    { value: 6, label: 'S', full: 'Sábado' },
+    { value: 0, label: 'D', full: 'Domingo' },
+  ];
+  /** Começa em segunda a sexta, comercial: cobre a maioria sem digitação. */
+  protected readonly workingHours = signal<Array<{ days: number[]; start: string; end: string }>>([
+    { days: [1, 2, 3, 4, 5], start: '08:00', end: '18:00' },
+  ]);
   protected readonly showPassword = signal(false);
   protected readonly password = signal('');
   protected readonly feedback = signal('');
@@ -441,6 +470,33 @@ export class RegisterPageComponent implements OnInit {
     [categoryId, ...enderecoCompleto].forEach((control) => control.updateValueAndValidity());
   }
 
+  protected toggleWorkDay(indice: number, dia: number) {
+    this.workingHours.update((blocos) =>
+      blocos.map((bloco, posicao) =>
+        posicao !== indice
+          ? bloco
+          : { ...bloco, days: bloco.days.includes(dia) ? bloco.days.filter((item) => item !== dia) : [...bloco.days, dia].sort() },
+      ),
+    );
+  }
+
+  protected setWorkTime(indice: number, campo: 'start' | 'end', valor: string) {
+    this.workingHours.update((blocos) => blocos.map((bloco, posicao) => (posicao === indice ? { ...bloco, [campo]: valor } : bloco)));
+  }
+
+  protected addWorkBlock() {
+    this.workingHours.update((blocos) => [...blocos, { days: [6], start: '08:00', end: '12:00' }]);
+  }
+
+  protected removeWorkBlock(indice: number) {
+    this.workingHours.update((blocos) => blocos.filter((_, posicao) => posicao !== indice));
+  }
+
+  /** Descarta bloco sem dia marcado ou com horário incompleto. */
+  private jornadaValida() {
+    return this.workingHours().filter((bloco) => bloco.days.length > 0 && bloco.start && bloco.end && bloco.start < bloco.end);
+  }
+
   protected previousStep() {
     this.feedback.set('');
     this.hasError.set(false);
@@ -515,6 +571,7 @@ export class RegisterPageComponent implements OnInit {
           neighborhood: values.neighborhood,
           bio: values.bio,
           password: values.password,
+          workingHours: this.jornadaValida(),
         })
       : this.auth.register({
           name: values.name,

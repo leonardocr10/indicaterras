@@ -240,6 +240,13 @@ model Professional {
   // de endereco - a interface sempre mostra a distancia como aproximada.
   latitude               Decimal?               @db.Decimal(10, 7)
   longitude              Decimal?               @db.Decimal(10, 7)
+  // Blocos de atendimento: [{ "days": [1,2,3,4,5], "start": "08:00", "end": "18:00" }]
+  // com 0 = domingo. Permite mais de um bloco, ex.: semana e sabado.
+  workingHours           Json?
+  // Separado de `active`: pendente e quem ainda nao foi liberado pela
+  // administracao; inativo e quem foi desligado ou punido. Cadastros antigos
+  // nascem aprovados para nao sumirem do app.
+  approvalStatus         String                 @default("APPROVED") @db.VarChar(20)
   active                 Boolean                @default(true)
   featured               Boolean                @default(false)
   createdAt              DateTime               @default(now())

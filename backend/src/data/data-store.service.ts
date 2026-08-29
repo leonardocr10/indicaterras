@@ -222,6 +222,11 @@ export class DataStoreService implements OnModuleInit {
               ['HIDE', 'SUSPEND_7', 'SUSPEND_30', 'BLOCK'].includes(acao.action) &&
               (acao.endsAt === null || acao.endsAt.getTime() > Date.now()),
           ),
+          approvalStatus: item.approvalStatus,
+          workingHours: this.parseWorkingHours(item.workingHours),
+          // Sem serviço escolhido ele não aparece em busca por serviço, e sem
+          // jornada o cliente não sabe quando procurar: os dois definem "completo".
+          profileComplete: serviceDetails.length > 0 && this.parseWorkingHours(item.workingHours).length > 0,
         } satisfies DemoProfessional;
       }),
     );
@@ -445,6 +450,8 @@ export class DataStoreService implements OnModuleInit {
     neighborhood?: string;
     bio?: string;
     condominiumId?: string;
+    serviceIds?: string[];
+    workingHours?: Array<{ days: number[]; start: string; end: string }>;
   }) {
     await this.usersReady;
     this.ensureDatabase('criar a conta do profissional');
@@ -462,12 +469,23 @@ export class DataStoreService implements OnModuleInit {
       neighborhood: payload.neighborhood ?? '',
       bio: payload.bio ?? '',
       categoryIds: [category.id],
-      serviceIds: [],
+      serviceIds: payload.serviceIds ?? [],
       condominiumId: payload.condominiumId || this.condominiums[0]?.id || '',
       active: true,
     });
     const professionalId = String((professional as { id?: string })?.id ?? '');
     if (!professionalId) throw new ConflictException('Não foi possível criar o perfil do profissional');
+
+    // Nasce pendente: so aparece no app depois que a administracao aprovar.
+    // A conta de acesso continua liberada, senao ele nao conseguiria entrar
+    // para completar o proprio cadastro.
+    await this.prisma.professional.update({
+      where: { id: professionalId },
+      data: {
+        approvalStatus: 'PENDING',
+        workingHours: (payload.workingHours ?? []) as never,
+      },
+    });
 
     try {
       const user = await this.prisma.$transaction(async (transaction) => {
@@ -969,6 +987,8 @@ export class DataStoreService implements OnModuleInit {
             // Sem isto, ocultar/suspender/bloquear pela moderação não tinha efeito:
             // o valor era descartado aqui e o profissional continuava no app.
             active: payload.active === undefined ? undefined : Boolean(payload.active),
+            approvalStatus: payload.approvalStatus === undefined ? undefined : String(payload.approvalStatus),
+            workingHours: payload.workingHours === undefined ? undefined : (this.parseWorkingHours(payload.workingHours) as never),
           },
         });
         if (categoryIds.length) {
@@ -1148,12 +1168,31 @@ export class DataStoreService implements OnModuleInit {
     return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   }
 
+  /** Normaliza a jornada vinda do banco, descartando bloco malformado. */
+  private parseWorkingHours(valor: unknown): Array<{ days: number[]; start: string; end: string }> {
+    if (!Array.isArray(valor)) return [];
+    return valor
+      .filter((bloco): bloco is { days: unknown; start: unknown; end: unknown } => typeof bloco === 'object' && bloco !== null)
+      .map((bloco) => ({
+        days: Array.isArray(bloco.days) ? bloco.days.map(Number).filter((dia) => Number.isInteger(dia) && dia >= 0 && dia <= 6) : [],
+        start: String(bloco.start ?? ''),
+        end: String(bloco.end ?? ''),
+      }))
+      .filter((bloco) => bloco.days.length > 0 && /^\d{2}:\d{2}$/.test(bloco.start) && /^\d{2}:\d{2}$/.test(bloco.end));
+  }
+
   /**
    * Profissionais que o app pode exibir. O administrador continua enxergando
    * todos por getAdminRecords, senão não teria como restaurar quem foi punido.
    */
   private visibleProfessionals() {
-    return this.professionals.filter((professional) => professional.active !== false && !professional.moderationHidden);
+    return this.professionals.filter(
+      (professional) =>
+        professional.active !== false &&
+        !professional.moderationHidden &&
+        // Cadastros antigos não têm o campo e seguem visíveis.
+        (professional.approvalStatus ?? 'APPROVED') === 'APPROVED',
+    );
   }
 
   getProfessionals(categorySlug?: string, serviceSlug?: string, search?: string, condominiumId?: string): Array<DemoProfessional & { matchesLocation?: boolean }> {
@@ -2233,6 +2272,19 @@ export class DataStoreService implements OnModuleInit {
         targetId: user.id,
       }));
 
+    // Só entra na fila quem já tem serviços e jornada: cobrar aprovação de um
+    // cadastro pela metade só geraria vaivém entre admin e profissional.
+    const novosProfissionais = this.professionals
+      .filter((professional) => professional.approvalStatus === 'PENDING' && professional.profileComplete)
+      .map((professional) => ({
+        id: `professional-${professional.id}`,
+        type: 'NEW_PROFESSIONAL' as const,
+        title: 'Novo profissional aguardando aprovação',
+        subtitle: [professional.name, professional.category, professional.city].filter(Boolean).join(' · '),
+        link: '/admin/profissionais',
+        targetId: professional.id,
+      }));
+
     // Denúncias exigem banco de dados; se ele estiver indisponível, apenas os moradores pendentes aparecem na lista.
     let pendingReports: Array<{ id: string; type: 'REPORT'; title: string; subtitle: string; link: string }> = [];
     if (this.databaseAvailable) {
@@ -2247,7 +2299,7 @@ export class DataStoreService implements OnModuleInit {
         }));
     }
 
-    return [...newResidents, ...pendingReports];
+    return [...newResidents, ...novosProfissionais, ...pendingReports];
   }
 
   private recommendationsByPeriod() {

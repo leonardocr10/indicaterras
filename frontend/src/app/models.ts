@@ -175,7 +175,7 @@ export interface DashboardPayload {
 
 export interface PendingItem {
   id: string;
-  type: 'NEW_RESIDENT' | 'REPORT';
+  type: 'NEW_RESIDENT' | 'NEW_PROFESSIONAL' | 'REPORT';
   title: string;
   subtitle: string;
   link: string;

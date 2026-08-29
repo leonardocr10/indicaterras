@@ -15,7 +15,6 @@ import {
 import { ResidentProfilePageComponent } from './extra-pages';
 import { AdminLayoutComponent, MobileLayoutComponent } from './layouts';
 import { adminGuard, professionalGuard, residentGuard } from './guards/auth.guard';
-import { LandingPageComponent } from './landing-page';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
@@ -82,6 +81,7 @@ export const routes: Routes = [
   { path: 'indicar', redirectTo: 'app/indicar', pathMatch: 'full' },
   { path: 'favoritos', redirectTo: 'app/favoritos', pathMatch: 'full' },
   { path: 'minhas-indicacoes', redirectTo: 'app/minhas-indicacoes', pathMatch: 'full' },
-  { path: '', pathMatch: 'full', component: LandingPageComponent },
+  // Carregada sob demanda: e a vitrine publica, nao faz parte do app logado.
+  { path: '', pathMatch: 'full', loadComponent: () => import('./landing-page').then((m) => m.LandingPageComponent) },
   { path: '**', redirectTo: '', pathMatch: 'full' },
 ];

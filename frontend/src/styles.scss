@@ -1512,6 +1512,15 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
 
 
 /* Marcador do mapa: card com foto e profissao, ponta verde sobre a coordenada. */
+/* Aviso de nova versao: fica acima da navegacao para nao tapar o conteudo. */
+.update-prompt{position:fixed;left:50%;bottom:calc(var(--if-bottom-nav-height) + 12px + env(safe-area-inset-bottom));z-index:70;width:min(100% - 24px,430px);transform:translateX(-50%);display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px 14px;border:1px solid #c9e8d8;border-radius:12px;background:#fff;box-shadow:0 14px 34px rgba(9,40,28,.18)}
+.update-prompt>svg{width:22px;height:22px;color:#065f46}
+.update-prompt strong{display:block;color:#1f2937;font-size:14px;line-height:19px}
+.update-prompt small{display:block;color:#64748b;font-size:12px;line-height:16px}
+.update-prompt button{min-height:38px;padding:8px 14px;border:0;border-radius:8px;color:#fff;background:var(--primary);font-family:var(--font-family);font-size:13px;font-weight:700;cursor:pointer}
+.update-prompt button:disabled{opacity:.6;cursor:progress}
+.update-prompt button.depois{grid-column:2 / -1;justify-self:end;min-height:auto;padding:0;color:#64748b;background:transparent;font-size:12px;font-weight:600}
+
 .availability-badge{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 10px;border:1px solid #c9e8d8;border-radius:999px;background:#f1faf5;color:#065f46;font-size:11px;font-weight:700;line-height:15px}
 .availability-badge i{width:7px;height:7px;border-radius:50%;background:#22c55e}
 .availability-badge.indisponivel{border-color:#e4e8e5;background:#f7f9f8;color:#64748b}

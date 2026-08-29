@@ -746,7 +746,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .provider-chips button.active{border-color:var(--primary);color:#fff;background:var(--primary)}
 .provider-chips button svg{width:13px;height:13px}
 .provider-form .full-width{margin-top:14px}
-@media(min-width:520px){.provider-summary,.provider-form{max-width:520px;margin-inline:auto}.provider-topbar{padding-inline:calc(50% - 244px)}}
+@media(min-width:520px){.provider-summary,.provider-form{max-width:min(520px, 100% - 32px);margin-inline:auto}.provider-topbar{padding-inline:calc(50% - 244px)}}
 
 /* Capa, onboarding e portfólio do prestador */
 .provider-onboarding{margin:14px 16px -4px;padding:13px 15px;border:1px solid #f0dcae;border-radius:9px;display:flex;align-items:flex-start;gap:11px;background:#fff8e6}
@@ -768,7 +768,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .provider-work-button svg{width:17px;height:17px}
 .provider-work-button input{display:none}
 .provider-work-button.disabled{opacity:.55;cursor:progress}
-@media(min-width:520px){.provider-cover,.provider-onboarding{max-width:520px;margin-inline:auto}}
+@media(min-width:520px){.provider-cover,.provider-onboarding{max-width:min(520px, 100% - 32px);margin-inline:auto}}
 
 .profile-works .profile-work-strip{display:flex;gap:9px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 .profile-works .profile-work-strip::-webkit-scrollbar{display:none}
@@ -1017,6 +1017,18 @@ label>span{display:block}
 .request-field{display:grid;gap:8px;margin-top:14px}
 .request-field>span{color:#334155;font-size:13px;font-weight:700}
 .request-field input,.request-field textarea,.request-field select{width:100%;padding:13px 14px;border:1px solid #d7e0da;border-radius:8px;background:#fff;font-size:15px;color:var(--ink)}
+.request-problem-input{position:relative}
+.request-problem-input textarea{padding-right:56px;min-height:104px;resize:vertical}
+.request-mic{position:absolute;top:8px;right:8px;width:40px;height:40px;display:grid;place-items:center;border:1px solid #d7e0da;border-radius:999px;background:#fff;color:var(--primary);cursor:pointer}
+.request-mic.listening{border-color:transparent;background:var(--primary);color:#fff;animation:request-mic-pulse 1.4s ease-in-out infinite}
+@keyframes request-mic-pulse{0%,100%{box-shadow:0 0 0 0 rgba(6,95,70,.35)}50%{box-shadow:0 0 0 8px rgba(6,95,70,0)}}
+@media (prefers-reduced-motion:reduce){.request-mic.listening{animation:none}}
+.request-identified{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:14px;border:1px solid #c9e8d8;border-radius:10px;background:#f1faf5}
+.request-identified small{display:block;color:#5b6b63;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.request-identified strong{display:block;margin-top:2px;color:#065f46;font-size:17px}
+.request-identified p{margin:4px 0 0;color:#3f5b4e;font-size:13px}
+.request-identified button{flex:none;min-height:38px;padding:8px 14px;border:1px solid #065f46;border-radius:8px;background:#fff;color:#065f46;font-weight:700;cursor:pointer}
+.request-analyzing{margin:14px 0 0;color:var(--muted);font-size:14px}
 .request-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .request-chip-grid{display:flex;flex-wrap:wrap;gap:8px}
 .request-chip{min-height:40px;padding:9px 14px;border:1px solid #d7e0da;border-radius:999px;background:#fff;color:#425466;font-weight:700}
@@ -1036,7 +1048,9 @@ label>span{display:block}
 .request-summary-list span{color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .request-summary-list strong{font-size:16px}
 .request-summary-list small{color:#516171;font-size:13px;line-height:1.45}
-.request-builder-actions{position:fixed;z-index:6;right:0;bottom:calc(var(--if-bottom-nav-height) + env(safe-area-inset-bottom));left:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:var(--page-max-width, 560px);margin:auto;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #e5ebe7;background:rgba(255,255,255,.97);backdrop-filter:blur(12px)}
+/* Alinhada com a barra inferior (430px): antes usava 560px e, em telas largas,
+   a barra ficava mais larga que o app e deslocada para a esquerda. */
+.request-builder-actions{position:fixed;z-index:6;bottom:calc(var(--if-bottom-nav-height) + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(100%,430px);padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #e5ebe7;background:rgba(255,255,255,.97);backdrop-filter:blur(12px)}
 .request-builder-actions .primary-button,.request-builder-actions .secondary-button{min-height:44px;font-size:13px}
 .request-builder-actions .primary-button:only-child{grid-column:1 / -1}
 .request-list{display:grid;gap:12px}

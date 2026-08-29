@@ -28,6 +28,7 @@ const PROVIDER_OPTIONS = [
       <section class="admin-ai-metrics" *ngIf="usage() as data">
         <article><span>Chamadas hoje</span><strong>{{ data.today.total }}</strong><small>{{ data.today.aiCalls }} via IA</small></article>
         <article><span>Chamadas no mês</span><strong>{{ data.month.total }}</strong><small>{{ data.month.aiCalls }} via IA</small></article>
+        <article><span>Resolvidas sem IA</span><strong>{{ percent(data.today.keywordHits || 0, data.today.total) }}</strong><small>{{ data.today.keywordHits || 0 }} por palavra-chave</small></article>
         <article><span>Fallback hoje</span><strong>{{ percent(data.today.fallbackCalls, data.today.total) }}</strong><small>{{ data.today.fallbackCalls }} análises</small></article>
         <article><span>Erros hoje</span><strong>{{ percent(data.today.errors, data.today.total) }}</strong><small>{{ data.today.errors }} falhas</small></article>
         <article><span>Tempo médio</span><strong>{{ data.averageLatencyMs !== null ? data.averageLatencyMs + 'ms' : '—' }}</strong><small>respostas de hoje</small></article>
@@ -72,6 +73,14 @@ const PROVIDER_OPTIONS = [
           <label class="switch-row"><input type="checkbox" formControlName="summaryEnabled" /> Gerar resumo do problema</label>
           <label class="switch-row"><input type="checkbox" formControlName="clarificationEnabled" /> Fazer pergunta quando houver dúvida</label>
           <label class="switch-row"><input type="checkbox" formControlName="fallbackKeywordsEnabled" /> Usar palavras-chave caso a IA falhe</label>
+        </section>
+
+        <section class="settings-card">
+          <h2>Economia de chamadas</h2>
+          <label class="switch-row"><input type="checkbox" formControlName="keywordFirstEnabled" /> Tentar palavras-chave antes da IA</label>
+          <small>Quando o catálogo já identifica o serviço com segurança, a resposta sai sem consumir a IA. Ela fica para o que as palavras-chave não reconhecem.</small>
+          <label>Confiança para dispensar a IA<input type="number" min="0" max="1" step="0.05" formControlName="keywordFirstConfidence" /></label>
+          <small>Quanto maior, mais vezes a IA é chamada e maior o custo. Quanto menor, mais economia, com risco de aceitar uma correspondência fraca. O padrão é 0,80.</small>
         </section>
 
         <section class="settings-card">
@@ -177,6 +186,8 @@ export class AdminAiPageComponent implements OnInit {
     summaryEnabled: true,
     clarificationEnabled: true,
     fallbackKeywordsEnabled: true,
+    keywordFirstEnabled: true,
+    keywordFirstConfidence: 0.8,
     minimumConfidence: 0.75,
     autoApplyConfidence: 0.85,
     dailyLimit: 500,
@@ -304,6 +315,8 @@ export class AdminAiPageComponent implements OnInit {
       summaryEnabled: settings.summaryEnabled,
       clarificationEnabled: settings.clarificationEnabled,
       fallbackKeywordsEnabled: settings.fallbackKeywordsEnabled,
+      keywordFirstEnabled: settings.keywordFirstEnabled ?? true,
+      keywordFirstConfidence: settings.keywordFirstConfidence ?? 0.8,
       minimumConfidence: settings.minimumConfidence,
       autoApplyConfidence: settings.autoApplyConfidence,
       dailyLimit: settings.dailyLimit ?? 0,

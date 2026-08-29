@@ -285,6 +285,8 @@ export interface AiSettings {
   summaryEnabled: boolean;
   clarificationEnabled: boolean;
   fallbackKeywordsEnabled: boolean;
+  keywordFirstEnabled: boolean;
+  keywordFirstConfidence: number;
   minimumConfidence: number;
   autoApplyConfidence: number;
   dailyLimit: number | null;
@@ -320,8 +322,8 @@ export interface AiAnalysisLogRow {
 }
 
 export interface AiUsageSummary {
-  today: { total: number; aiCalls: number; fallbackCalls: number; errors: number };
-  month: { total: number; aiCalls: number; fallbackCalls: number; errors: number };
+  today: { total: number; aiCalls: number; fallbackCalls: number; errors: number; keywordHits?: number };
+  month: { total: number; aiCalls: number; fallbackCalls: number; errors: number; keywordHits?: number };
   averageConfidence: number | null;
   averageLatencyMs: number | null;
 }

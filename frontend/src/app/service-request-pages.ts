@@ -9,6 +9,7 @@ import {
   LucideCircleAlert,
   LucideFileText,
   LucideMapPin,
+  LucideMic,
   LucideSparkles,
   LucideTrash2,
 } from '@lucide/angular';
@@ -24,61 +25,84 @@ const STEP_LABELS = ['Problema', 'Fotos', 'Preferências', 'Local', 'Confirmar']
 @Component({
   selector: 'request-problem-step',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideSparkles, SearchableSelectComponent],
+  imports: [CommonModule, FormsModule, LucideSparkles, LucideMic, SearchableSelectComponent],
   template: `
     <section class="request-step-card">
       <div class="request-step-intro">
         <span><svg lucideSparkles /></span>
         <div>
-          <h2>Descreva o problema</h2>
-          <p>Vamos sugerir a categoria e os serviços mais compatíveis.</p>
+          <h2>Conte o que aconteceu</h2>
+          <p>Descreva com suas palavras. Identificamos o serviço para você.</p>
         </div>
       </div>
 
-      <label class="request-field">
-        <span>Título</span>
-        <input [ngModel]="draft.title" (ngModelChange)="patch.emit({ title: $event })" placeholder="Ex.: Chuveiro não esquenta" />
-      </label>
-
-      <label class="request-field">
-        <span>Descrição</span>
-        <textarea
-          rows="5"
-          [ngModel]="draft.description"
-          (ngModelChange)="patch.emit({ description: $event }); descriptionChanged.emit()"
-          placeholder="Conte o que está acontecendo, quando começou e qualquer detalhe útil."
-        ></textarea>
-      </label>
-
-      <div class="request-field">
-        <span>Categoria</span>
-        <app-searchable-select [ngModel]="draft.categoryId" (ngModelChange)="patch.emit({ categoryId: $event })" [items]="categories" valueKey="id" labelKey="name" iconKey="icon" emptyLabel="Selecione uma categoria" searchPlaceholder="Pesquisar categoria..." />
-      </div>
-
-      <div class="request-field">
-        <span>Serviços relacionados</span>
-        <div class="request-chip-grid" *ngIf="services.length; else noServices">
+      <!-- A descricao e o campo principal: dela sai a categoria e os servicos.
+           Antes o cliente tinha que escolher a categoria mesmo sem saber qual e. -->
+      <label class="request-field request-problem-field">
+        <span>Qual é o problema?</span>
+        <div class="request-problem-input">
+          <textarea
+            rows="4"
+            [ngModel]="draft.description"
+            (ngModelChange)="patch.emit({ description: $event }); descriptionChanged.emit()"
+            [placeholder]="listening ? 'Ouvindo... pode falar' : 'Ex.: meu chuveiro queimou e o disjuntor desarma'"
+          ></textarea>
           <button
-            *ngFor="let service of services"
+            *ngIf="voiceSupported"
             type="button"
-            class="request-chip"
-            [class.active]="draft.serviceIds.includes(service.id)"
-            (click)="toggleService.emit(service.id)"
+            class="request-mic"
+            [class.listening]="listening"
+            [attr.aria-label]="listening ? 'Parar de gravar' : 'Ditar o problema'"
+            (click)="toggleVoice.emit()"
           >
-            {{ service.name }}
+            <svg lucideMic />
           </button>
         </div>
-        <ng-template #noServices><p class="request-muted">Selecione uma categoria para ver os serviços disponíveis.</p></ng-template>
+        <small class="request-muted" *ngIf="voiceSupported && !listening">Toque no microfone para ditar em vez de escrever.</small>
+        <small class="request-muted" *ngIf="listening">Fale agora. Toque no microfone de novo para parar.</small>
+      </label>
+
+      <div class="request-identified" *ngIf="draft.categoryId && !adjusting">
+        <div>
+          <small>Identificamos</small>
+          <strong>{{ categoryName }}</strong>
+          <p *ngIf="selectedServiceNames.length">{{ selectedServiceNames.join(' · ') }}</p>
+          <p *ngIf="!selectedServiceNames.length" class="request-muted">Nenhum serviço específico selecionado.</p>
+        </div>
+        <button type="button" (click)="adjust.emit()">Ajustar</button>
       </div>
 
-      <div class="request-suggestion-card" *ngIf="match">
-        <div class="request-suggestion-header">
-          <strong>Sugestão automática</strong>
-          <small *ngIf="matching">Analisando...</small>
+      <p class="request-analyzing" *ngIf="matching && !draft.categoryId">Analisando o que você escreveu...</p>
+
+      <!-- O caminho manual continua existindo: a identificacao automatica pode
+           falhar, e sem ele o cliente ficaria travado sem conseguir publicar. -->
+      <ng-container *ngIf="adjusting || (!draft.categoryId && !matching && draft.description.length > 8)">
+        <p class="request-analyzing" *ngIf="!draft.categoryId">Não identificamos o serviço. Escolha a categoria abaixo.</p>
+        <div class="request-field">
+          <span>Categoria</span>
+          <app-searchable-select [ngModel]="draft.categoryId" (ngModelChange)="patch.emit({ categoryId: $event })" [items]="categories" valueKey="id" labelKey="name" iconKey="icon" emptyLabel="Selecione uma categoria" searchPlaceholder="Pesquisar categoria..." />
         </div>
-        <p *ngIf="match.category">Categoria sugerida: <b>{{ match.category.name }}</b></p>
-        <p *ngIf="match.services.length">Serviços: {{ matchServiceNames() }}</p>
-      </div>
+
+        <div class="request-field" *ngIf="services.length">
+          <span>Serviços relacionados</span>
+          <div class="request-chip-grid">
+            <button
+              *ngFor="let service of services"
+              type="button"
+              class="request-chip"
+              [class.active]="draft.serviceIds.includes(service.id)"
+              (click)="toggleService.emit(service.id)"
+            >
+              {{ service.name }}
+            </button>
+          </div>
+        </div>
+      </ng-container>
+
+      <label class="request-field">
+        <span>Título <small class="request-muted">(opcional)</small></span>
+        <input [ngModel]="draft.title" (ngModelChange)="patch.emit({ title: $event })" placeholder="Ex.: Chuveiro não esquenta" />
+      </label>
     </section>
   `,
 })
@@ -88,12 +112,22 @@ export class RequestProblemStepComponent {
   @Input({ required: true }) services: CategoryService[] = [];
   @Input() match: ProblemMatchResult | null = null;
   @Input() matching = false;
+  /** Exibe os campos manuais quando o cliente quer corrigir o que identificamos. */
+  @Input() adjusting = false;
+  @Input() voiceSupported = false;
+  @Input() listening = false;
   @Output() patch = new EventEmitter<Partial<ServiceRequestDraft>>();
   @Output() toggleService = new EventEmitter<string>();
   @Output() descriptionChanged = new EventEmitter<void>();
+  @Output() adjust = new EventEmitter<void>();
+  @Output() toggleVoice = new EventEmitter<void>();
 
-  protected matchServiceNames() {
-    return this.match?.services.map((service) => service.name).join(', ') ?? '';
+  protected get categoryName() {
+    return this.categories.find((item) => item.id === this.draft.categoryId)?.name ?? '';
+  }
+
+  protected get selectedServiceNames() {
+    return this.services.filter((service) => this.draft.serviceIds.includes(service.id)).map((service) => service.name);
   }
 }
 
@@ -501,9 +535,14 @@ export class ServiceRequestDetailsPageComponent implements OnInit {
           [services]="availableServices()"
           [match]="match()"
           [matching]="matching()"
+          [adjusting]="ajustandoManualmente()"
+          [voiceSupported]="voiceSupported"
+          [listening]="listening()"
           (patch)="patchDraft($event)"
           (toggleService)="toggleService($event)"
           (descriptionChanged)="scheduleMatch()"
+          (adjust)="ajustandoManualmente.set(true)"
+          (toggleVoice)="toggleVoice()"
         />
 
         <request-media-step *ngIf="currentStep() === 1" [draft]="draft()" (filesSelected)="selectMedia($event)" (remove)="removeMedia($event)" />
@@ -547,6 +586,16 @@ export class ServiceRequestNewPageComponent implements OnInit, OnDestroy {
   protected readonly matching = signal(false);
   /** Sinaliza na tela que o endereço veio do cadastro e pode ser ajustado. */
   protected readonly enderecoDoCadastro = signal(false);
+  protected readonly ajustandoManualmente = signal(false);
+  private readonly categoriaManual = signal(false);
+  protected readonly listening = signal(false);
+  /**
+   * Ditado por voz: a API de reconhecimento existe no Chrome e no Edge, inclusive
+   * Android. Firefox nao tem e o Safari e limitado, entao o botao so aparece
+   * onde funciona - melhor esconder do que oferecer algo que nao responde.
+   */
+  protected readonly voiceSupported = typeof window !== 'undefined' && Boolean((window as never as Record<string, unknown>)['SpeechRecognition'] || (window as never as Record<string, unknown>)['webkitSpeechRecognition']);
+  private reconhecimento: { start(): void; stop(): void; abort(): void } | null = null;
   protected readonly saving = signal(false);
   protected readonly availableServices = computed(() => {
     const category = this.categories().find((item) => item.id === this.draft().categoryId);
@@ -605,9 +654,62 @@ export class ServiceRequestNewPageComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Liga e desliga o ditado. O texto reconhecido entra na descricao. */
+  protected toggleVoice() {
+    if (this.listening()) {
+      this.reconhecimento?.stop();
+      return;
+    }
+    const Reconhecimento =
+      (window as never as Record<string, new () => never>)['SpeechRecognition'] ??
+      (window as never as Record<string, new () => never>)['webkitSpeechRecognition'];
+    if (!Reconhecimento) return;
+
+    const sessao = new Reconhecimento() as unknown as {
+      lang: string;
+      continuous: boolean;
+      interimResults: boolean;
+      start(): void;
+      stop(): void;
+      abort(): void;
+      onresult: ((evento: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+      onerror: ((evento: { error?: string }) => void) | null;
+      onend: (() => void) | null;
+    };
+    sessao.lang = 'pt-BR';
+    sessao.continuous = true;
+    // Sem os parciais o campo so preenche no fim, e a pessoa fica sem retorno.
+    sessao.interimResults = true;
+
+    const textoInicial = this.draft().description;
+    sessao.onresult = (evento) => {
+      let transcricao = '';
+      for (let indice = 0; indice < evento.results.length; indice++) {
+        transcricao += evento.results[indice][0].transcript;
+      }
+      const texto = [textoInicial.trim(), transcricao.trim()].filter(Boolean).join(' ');
+      this.store.patch({ description: texto });
+    };
+    sessao.onerror = (evento) => {
+      this.listening.set(false);
+      if (evento.error === 'not-allowed') this.toast.error('Permissão de microfone negada. Você pode digitar normalmente.');
+      else if (evento.error !== 'aborted') this.toast.error('Não conseguimos captar o áudio. Tente novamente ou digite.');
+    };
+    sessao.onend = () => {
+      this.listening.set(false);
+      this.scheduleMatch();
+    };
+
+    this.reconhecimento = sessao;
+    this.listening.set(true);
+    sessao.start();
+  }
+
   protected patchDraft(partial: Partial<ServiceRequestDraft>) {
     const next = { ...partial };
     if (partial.categoryId !== undefined) {
+      // Escolha manual manda: a identificacao automatica para de sobrescrever.
+      this.categoriaManual.set(true);
       const allowed = new Set((this.categories().find((item) => item.id === partial.categoryId)?.services ?? []).map((service) => service.id));
       next.serviceIds = this.draft().serviceIds.filter((serviceId) => allowed.has(serviceId));
     }
@@ -631,14 +733,22 @@ export class ServiceRequestNewPageComponent implements OnInit, OnDestroy {
         next: (match) => {
           this.match.set(match);
           this.matching.set(false);
-          if (!this.draft().categoryId && match.category) {
+          // Sem escolha manual, uma descricao nova reidentifica a categoria;
+          // senao o cliente reescreveria o problema e continuaria na categoria antiga.
+          if (match.category && (!this.categoriaManual() || !this.draft().categoryId)) {
             this.store.patch({ categoryId: match.category.id });
           }
           if (!this.draft().serviceIds.length && match.services.length) {
             this.store.patch({ serviceIds: match.services.map((service) => service.id) });
           }
+          // Nao identificou: abre o caminho manual e o mantem aberto, senao o
+          // cliente escolheria a categoria e perderia os servicos da tela.
+          if (!match.category && !this.draft().categoryId) this.ajustandoManualmente.set(true);
         },
-        error: () => this.matching.set(false),
+        error: () => {
+          this.matching.set(false);
+          if (!this.draft().categoryId) this.ajustandoManualmente.set(true);
+        },
       });
     }, 350);
   }

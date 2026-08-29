@@ -17,6 +17,7 @@ import {
   type DemoUser,
 } from './demo-data';
 import { PrismaService } from './prisma.service';
+import { disponibilidadePublica } from './working-hours.util';
 import { SERVICE_ALIASES } from './service-aliases';
 import { ACTION_LABELS, ACTION_TYPE_MAP, COMPLAINT_LABEL_TO_STATUS, COMPLAINT_STATUS_TO_LABEL, ComplaintAction, ComplaintEvent, ComplaintStatus } from './complaints';
 import { ProblemMatcherService } from './problem-matcher.service';
@@ -226,6 +227,11 @@ export class DataStoreService implements OnModuleInit {
           ),
           approvalStatus: item.approvalStatus,
           workingHours: this.parseWorkingHours(item.workingHours),
+          // Disponibilidade e coordenada nos cards de todas as listas, não só
+          // na busca por proximidade: a regra da jornada é a mesma do painel.
+          availability: disponibilidadePublica(item.workingHours),
+          latitude: item.latitude === null ? null : Number(item.latitude),
+          longitude: item.longitude === null ? null : Number(item.longitude),
           // Sem serviço escolhido ele não aparece em busca por serviço, e sem
           // jornada o cliente não sabe quando procurar: os dois definem "completo".
           profileComplete: serviceDetails.length > 0 && this.parseWorkingHours(item.workingHours).length > 0,

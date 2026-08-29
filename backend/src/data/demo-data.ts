@@ -93,6 +93,11 @@ export interface DemoProfessional {
   approvalStatus?: string;
   /** Blocos de atendimento: dias da semana (0 = domingo) e faixa de horário. */
   workingHours?: Array<{ days: number[]; start: string; end: string }>;
+  /** Resumo da jornada para os cards. Sem jornada, pede para consultar. */
+  availability?: { today: boolean; text: string };
+  /** Centroide do bairro: permite calcular a distância quando há localização. */
+  latitude?: number | null;
+  longitude?: number | null;
   /** Falta algo para o cadastro entrar na fila de aprovação. */
   profileComplete?: boolean;
 }

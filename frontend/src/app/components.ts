@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AppNotification, Category, Professional } from './models';
 import { ApiService } from './services/api.service';
 import { ToastService } from './services/toast.service';
+import { LocationService } from './services/location.service';
 import { AuthService } from './services/auth.service';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import { categoryAvatar } from './category-art.util';
@@ -149,6 +150,9 @@ export class CategoryCardComponent {
         </div>
         <span *ngIf="distanceLabel" class="location-badge distance-badge"><svg lucideMapPin />{{ distanceLabel }}</span>
         <span *ngIf="!distanceLabel && professional.matchesLocation" class="location-badge"><svg lucideMapPin />Atende sua região</span>
+        <span class="availability-badge" [class.indisponivel]="!professional.availability?.today" *ngIf="professional.availability">
+          <i></i>{{ professional.availability.today ? 'Atende hoje' : 'Consulte a agenda' }}
+        </span>
         <div *ngIf="professional.rating > 0 && professional.reviewCount > 0; else noReviews" class="rating-line">
           <rating-stars [rating]="professional.rating" />
           <strong>{{ professional.rating | number: '1.1-1' }}</strong>
@@ -193,6 +197,7 @@ export class ProfessionalCardComponent {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
+  private readonly locationService = inject(LocationService);
   protected readonly favorite = signal(false);
   protected readonly recommended = signal(false);
   protected readonly menuOpen = signal(false);
@@ -202,9 +207,30 @@ export class ProfessionalCardComponent {
    * Por isso o "~": prometer "450 m" seria uma precisão que não temos.
    */
   protected get distanceLabel(): string {
-    if (this.distanceKm === null || this.distanceKm === undefined) return '';
-    if (this.distanceKm < 1) return `~${Math.round(this.distanceKm * 1000)} m`;
-    return `~${this.distanceKm.toFixed(1).replace('.', ',')} km`;
+    const distancia = this.distanceKm ?? this.distanciaCalculada();
+    if (distancia === null || distancia === undefined) return '';
+    if (distancia < 1) return `~${Math.round(distancia * 1000)} m`;
+    return `~${distancia.toFixed(1).replace('.', ',')} km`;
+  }
+
+  /**
+   * Fora da busca por proximidade ninguém informa a distância ao card, mas se o
+   * cliente já escolheu uma localização dá para calcular aqui e mostrar em todas
+   * as listas. Continua aproximada: a coordenada é o centro do bairro.
+   */
+  private distanciaCalculada(): number | null {
+    const origem = this.locationService.location();
+    const lat = this.professional.latitude;
+    const lng = this.professional.longitude;
+    if (!origem || lat === null || lat === undefined || lng === null || lng === undefined) return null;
+    const raioDaTerra = 6371;
+    const paraRadianos = (grau: number) => (grau * Math.PI) / 180;
+    const deltaLat = paraRadianos(lat - origem.latitude);
+    const deltaLng = paraRadianos(lng - origem.longitude);
+    const a =
+      Math.sin(deltaLat / 2) ** 2 +
+      Math.cos(paraRadianos(origem.latitude)) * Math.cos(paraRadianos(lat)) * Math.sin(deltaLng / 2) ** 2;
+    return Number((raioDaTerra * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1));
   }
   private readonly recommendationCount = signal<number | null>(null);
 

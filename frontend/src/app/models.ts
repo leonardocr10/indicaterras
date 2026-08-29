@@ -68,6 +68,11 @@ export interface Professional {
   profileComplete?: boolean;
   /** Falso quando a administração suspendeu ou bloqueou o cadastro. */
   active?: boolean;
+  /** Resumo da jornada. Sem jornada cadastrada, pede para consultar. */
+  availability?: { today: boolean; text: string };
+  /** Centroide do bairro; permite calcular a distância quando há localização. */
+  latitude?: number | null;
+  longitude?: number | null;
   workingHours?: Array<{ days: number[]; start: string; end: string }>;
 }
 

@@ -547,7 +547,7 @@ export class DataStoreService implements OnModuleInit {
   async updateOwnProfessional(userId: string, payload: Record<string, unknown>) {
     const professionalId = this.professionalByUserId.get(userId);
     if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
-    const editable = ['name', 'companyName', 'phone', 'whatsapp', 'instagram', 'city', 'neighborhood', 'bio', 'avatar', 'coverImage', 'categoryIds', 'serviceIds'];
+    const editable = ['name', 'companyName', 'phone', 'whatsapp', 'instagram', 'city', 'neighborhood', 'bio', 'avatar', 'coverImage', 'categoryIds', 'serviceIds', 'workingHours'];
     const allowed = Object.fromEntries(Object.entries(payload).filter(([key]) => editable.includes(key)));
     const updated = await this.updateAdminRecord('professionals', professionalId, allowed);
     const refreshed = this.getProfessionalById(professionalId);

@@ -66,6 +66,8 @@ export interface Professional {
   approvalStatus?: string;
   /** Falso quando ainda faltam serviços ou jornada para entrar na fila. */
   profileComplete?: boolean;
+  /** Falso quando a administração suspendeu ou bloqueou o cadastro. */
+  active?: boolean;
   workingHours?: Array<{ days: number[]; start: string; end: string }>;
 }
 
@@ -370,4 +372,34 @@ export interface ServiceRequestRecord {
   updatedAt: string;
   closedAt: string;
   media: ServiceRequestMedia[];
+}
+
+/** Painel do profissional: tudo vem de `GET /me/professional/dashboard`. */
+export interface ProfessionalDashboard {
+  profile: {
+    id: string;
+    name: string;
+    companyName: string;
+    avatar: string;
+    coverImage: string;
+    specialty: string;
+    city: string;
+    neighborhood: string;
+    whatsapp: string;
+    approvalStatus: string;
+    active: boolean;
+  };
+  metrics: { rating: number; reviews: number; recommendations: number; favorites: number; views: number };
+  overview: {
+    unreadMessages: number;
+    pendingRequests: number;
+    profileCompletion: number;
+    missingProfileItems: string[];
+    availableToday: boolean;
+    availabilityText: string;
+  };
+  portfolio: Array<{ id: string; image: string; title: string }>;
+  /** Só quantidade e iniciais: nenhum dado pessoal do cliente aparece aqui. */
+  favoriteClients: { total: number; preview: Array<{ id: string; initial: string }> };
+  recentReviews: Array<{ id: string; rating: number; comment: string; createdAt: string; author: string }>;
 }

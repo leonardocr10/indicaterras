@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
-import { AiAnalysisLogRow, AiProblemAnalysisResult, AiPublicConfig, AiSettings, AiUsageSummary, ApiResponse, NearbyResult, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, HomePayload, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
+import { AiAnalysisLogRow, AiProblemAnalysisResult, AiPublicConfig, AiSettings, AiUsageSummary, ApiResponse, NearbyResult, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, HomePayload, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalDashboard, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
@@ -336,6 +336,14 @@ export class ApiService {
   getPublicSettings() {
     return this.http
       .get<ApiResponse<{ systemName: string; selfRegistration: boolean; professionalSelfRegistration: boolean; showBlock: boolean; ai: AiPublicConfig; maps: { apiKey: string } }>>(`${this.baseUrl}/public-settings`)
+      .pipe(map((response) => response.data));
+  }
+
+  /** Painel do profissional: métricas, visão geral, trabalhos e avaliações. */
+  getProfessionalDashboard() {
+    const userId = this.auth.user()?.id ?? '';
+    return this.http
+      .get<ApiResponse<ProfessionalDashboard>>(`${this.baseUrl}/me/professional/dashboard?userId=${encodeURIComponent(userId)}`)
       .pipe(map((response) => response.data));
   }
 

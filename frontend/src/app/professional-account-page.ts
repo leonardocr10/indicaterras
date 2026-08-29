@@ -1,10 +1,31 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { forkJoin, map, of, switchMap } from 'rxjs';
-import { LucideCamera, LucideCheckCircle2, LucideImagePlus, LucideLogOut, LucideStar, LucideTrash2, LucideTriangleAlert } from '@lucide/angular';
-import { Category, CategoryService, Professional, ProfessionalWork } from './models';
+import {
+  LucideBriefcaseBusiness,
+  LucideCalendarCheck,
+  LucideCamera,
+  LucideCheckCircle2,
+  LucideChevronRight,
+  LucideEye,
+  LucideFileCheck,
+  LucideFileText,
+  LucideHeart,
+  LucideImagePlus,
+  LucideLogOut,
+  LucideMail,
+  LucideMapPin,
+  LucideMessageCircle,
+  LucideMessageSquare,
+  LucidePencil,
+  LucideShare2,
+  LucideStar,
+  LucideTrash2,
+  LucideUsers,
+} from '@lucide/angular';
+import { Category, CategoryService, Professional, ProfessionalDashboard, ProfessionalWork } from './models';
 import { PhoneMaskDirective } from './phone-mask.directive';
 import { ApiService } from './services/api.service';
 import { AuthService } from './services/auth.service';
@@ -13,7 +34,32 @@ import { ToastService } from './services/toast.service';
 @Component({
   selector: 'professional-account-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, PhoneMaskDirective, LucideCamera, LucideCheckCircle2, LucideImagePlus, LucideLogOut, LucideStar, LucideTrash2, LucideTriangleAlert],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    PhoneMaskDirective,
+    LucideBriefcaseBusiness,
+    LucideCalendarCheck,
+    LucideCamera,
+    LucideCheckCircle2,
+    LucideChevronRight,
+    LucideEye,
+    LucideFileCheck,
+    LucideFileText,
+    LucideHeart,
+    LucideImagePlus,
+    LucideLogOut,
+    LucideMail,
+    LucideMapPin,
+    LucideMessageCircle,
+    LucideMessageSquare,
+    LucidePencil,
+    LucideShare2,
+    LucideStar,
+    LucideTrash2,
+    LucideUsers,
+  ],
   template: `
     <section class="mobile-page provider-page">
       <header class="provider-topbar">
@@ -30,43 +76,78 @@ import { ToastService } from './services/toast.service';
       <ng-container *ngIf="!loading() && !loadError() && professional() as profile">
         <!-- Enquanto aguarda liberação, o profissional precisa saber em que pé
              está e o que falta, em vez de estranhar não aparecer nas buscas. -->
-        <div *ngIf="profile.approvalStatus === 'PENDING'" class="provider-approval">
-          <strong>Seu cadastro está em análise</strong>
-          <p *ngIf="profile.profileComplete">Enviamos para a administração aprovar. Assim que for liberado, você passa a aparecer nas buscas do aplicativo.</p>
-          <p *ngIf="!profile.profileComplete">Para entrar na fila de aprovação, complete os serviços que você realiza e a sua jornada de atendimento abaixo.</p>
-        </div>
-        <div *ngIf="profile.approvalStatus === 'REJECTED'" class="provider-approval rejected">
-          <strong>Cadastro não aprovado</strong>
-          <p>A administração não liberou este cadastro. Fale com o suporte para entender o motivo.</p>
-        </div>
+        <!-- Estado do cadastro: dinamico, com icone, indicador e seta. -->
+        <button type="button" class="provider-status" [class]="'provider-status ' + statusTone()" (click)="mostrarPendencias()">
+          <span class="provider-status-icon"><svg lucideFileCheck /><i></i></span>
+          <span class="provider-status-text">
+            <strong>{{ statusTitle() }}</strong>
+            <small>{{ statusDescription() }}</small>
+          </span>
+          <svg lucideChevronRight />
+        </button>
 
-        <div *ngIf="missingMedia().length" class="provider-onboarding">
-          <svg lucideTriangleAlert />
-          <div>
-            <strong>Complete seu perfil</strong>
-            <p>Falta {{ missingMedia().join(' e ') }}. Perfis completos aparecem melhor para os clientes.</p>
+        <!-- Identidade: capa, foto sobreposta, nome, especialidade e local. -->
+        <section class="provider-identity">
+          <div class="provider-identity-cover" [style.background-image]="coverBackground()">
+            <label class="provider-cover-button"><svg lucideImagePlus />{{ coverPreview() || profile.coverImage ? 'Trocar capa' : 'Adicionar capa' }}<input type="file" accept="image/png,image/jpeg,image/webp" (change)="selectCover($event)" /></label>
           </div>
-        </div>
-
-        <section class="provider-cover" [style.background-image]="coverBackground()">
-          <label class="provider-cover-button"><svg lucideImagePlus />{{ coverPreview() || profile.coverImage ? 'Trocar capa' : 'Adicionar capa' }}<input type="file" accept="image/png,image/jpeg,image/webp" (change)="selectCover($event)" /></label>
-        </section>
-
-        <section class="provider-summary">
-          <div class="provider-photo">
-            <img *ngIf="photoPreview() || profile.avatar" [src]="photoPreview() || assetUrl(profile.avatar)" alt="Foto do perfil" />
-            <span *ngIf="!photoPreview() && !profile.avatar">{{ initials() }}</span>
-            <label aria-label="Trocar foto"><svg lucideCamera /><input type="file" accept="image/png,image/jpeg,image/webp" (change)="selectPhoto($event)" /></label>
-          </div>
-          <div class="provider-metrics">
-            <div><svg lucideStar /><strong>{{ profile.rating | number: '1.1-1' }}</strong><small>Nota</small></div>
-            <div><strong>{{ profile.reviewCount }}</strong><small>Avaliações</small></div>
-            <div><strong>{{ profile.recommendationCount }}</strong><small>Indicações</small></div>
+          <div class="provider-identity-body">
+            <div class="provider-photo">
+              <img *ngIf="photoPreview() || profile.avatar" [src]="photoPreview() || assetUrl(profile.avatar)" alt="Foto do perfil" />
+              <span *ngIf="!photoPreview() && !profile.avatar">{{ initials() }}</span>
+              <label aria-label="Trocar foto"><svg lucideCamera /><input type="file" accept="image/png,image/jpeg,image/webp" (change)="selectPhoto($event)" /></label>
+            </div>
+            <div class="provider-identity-text">
+              <h2>{{ profile.name }}</h2>
+              <p *ngIf="specialty()"><svg lucideBriefcaseBusiness />{{ specialty() }}</p>
+              <p *ngIf="localizacao()"><svg lucideMapPin />{{ localizacao() }}</p>
+            </div>
+            <button type="button" class="provider-edit-button" (click)="scrollToForm()"><svg lucidePencil />Editar perfil</button>
           </div>
         </section>
 
-        <section class="provider-form provider-works">
-          <h2>Meus trabalhos</h2>
+        <!-- Metricas reais do banco. Sem dado, aparece 0. -->
+        <section class="provider-metrics-strip" *ngIf="dashboard() as painel">
+          <div><svg lucideStar class="metric-star" /><strong>{{ painel.metrics.rating | number: '1.1-1' }}</strong><small>Nota</small></div>
+          <div><svg lucideMessageSquare /><strong>{{ painel.metrics.reviews }}</strong><small>Avaliações</small></div>
+          <div><svg lucideUsers /><strong>{{ painel.metrics.recommendations }}</strong><small>Indicações</small></div>
+          <div><svg lucideHeart class="metric-heart" /><strong>{{ painel.metrics.favorites }}</strong><small>Favoritos</small></div>
+          <div><svg lucideEye class="metric-eye" /><strong>{{ painel.metrics.views }}</strong><small>Visualizações</small></div>
+        </section>
+
+        <section class="provider-block" *ngIf="dashboard() as painel">
+          <header class="provider-block-header"><h2>Visão geral</h2></header>
+          <div class="provider-overview-grid">
+            <button type="button" class="provider-overview-card mensagens" (click)="abrirMensagens()">
+              <span class="provider-overview-badge" *ngIf="painel.overview.unreadMessages">{{ painel.overview.unreadMessages }}</span>
+              <svg lucideMail />
+              <strong>Novas mensagens</strong>
+              <small>{{ painel.overview.unreadMessages ? painel.overview.unreadMessages + ' não lidas' : 'Nenhuma não lida' }}</small>
+            </button>
+            <button type="button" class="provider-overview-card solicitacoes" (click)="abrirSolicitacoes()">
+              <span class="provider-overview-badge alerta" *ngIf="painel.overview.pendingRequests">{{ painel.overview.pendingRequests }}</span>
+              <svg lucideFileText />
+              <strong>Solicitações abertas</strong>
+              <small>{{ painel.overview.pendingRequests ? 'Nas suas categorias' : 'Nenhuma no momento' }}</small>
+            </button>
+            <button type="button" class="provider-overview-card completude" (click)="mostrarPendencias()">
+              <span class="provider-progress">{{ painel.overview.profileCompletion }}%</span>
+              <strong>Perfil completo</strong>
+              <small>{{ painel.overview.profileCompletion === 100 ? 'Tudo preenchido' : 'Falta pouco!' }}</small>
+            </button>
+            <button type="button" class="provider-overview-card disponibilidade" (click)="scrollToHours()">
+              <svg lucideCalendarCheck />
+              <strong>{{ painel.overview.availableToday ? 'Disponível hoje' : 'Sem atendimento hoje' }}</strong>
+              <small>{{ painel.overview.availabilityText }}</small>
+            </button>
+          </div>
+          <p class="provider-hint" *ngIf="pendenciasVisiveis() && painel.overview.missingProfileItems.length">
+            Falta preencher: {{ painel.overview.missingProfileItems.join(', ') }}.
+          </p>
+        </section>
+
+        <section class="provider-block provider-works">
+          <header class="provider-block-header"><h2>Meus trabalhos</h2></header>
           <p class="provider-hint">Publique fotos dos serviços que você já fez. Elas aparecem no seu perfil para os clientes.</p>
           <div *ngIf="works().length" class="provider-work-grid">
             <figure *ngFor="let work of works()">
@@ -81,8 +162,63 @@ import { ToastService } from './services/toast.service';
           </label>
         </section>
 
+        <!-- So quantidade e iniciais: o app nao guarda foto de cliente, e nome
+             completo, telefone ou e-mail nao tem por que aparecer aqui. -->
+        <section class="provider-block" *ngIf="dashboard() as painel">
+          <header class="provider-block-header"><h2>Clientes que favoritaram você</h2></header>
+          <div class="provider-favorites" *ngIf="painel.favoriteClients.total; else semFavoritos">
+            <div class="provider-favorite-avatars">
+              <span *ngFor="let cliente of painel.favoriteClients.preview">{{ cliente.initial }}</span>
+              <span class="mais" *ngIf="painel.favoriteClients.total > painel.favoriteClients.preview.length">+{{ painel.favoriteClients.total - painel.favoriteClients.preview.length }}</span>
+            </div>
+            <div>
+              <strong>{{ painel.favoriteClients.total }} {{ painel.favoriteClients.total === 1 ? 'cliente salvou' : 'clientes salvaram' }} seu perfil</strong>
+              <p>Mostre seu trabalho e conquiste ainda mais clientes.</p>
+            </div>
+          </div>
+          <ng-template #semFavoritos>
+            <p class="provider-empty">Ninguém favoritou seu perfil ainda. Publique fotos dos seus trabalhos para aparecer melhor.</p>
+          </ng-template>
+        </section>
+
+        <section class="provider-block" *ngIf="dashboard() as painel">
+          <header class="provider-block-header">
+            <h2>Avaliações recentes</h2>
+            <a *ngIf="painel.recentReviews.length" [routerLink]="['/app/profissional', painel.profile.id, 'comentarios']">Ver todas</a>
+          </header>
+          <div class="provider-reviews" *ngIf="painel.recentReviews.length; else semAvaliacoes">
+            <article *ngFor="let review of painel.recentReviews">
+              <header>
+                <span class="provider-review-avatar">{{ review.author.charAt(0) }}</span>
+                <div>
+                  <strong>{{ review.author }}</strong>
+                  <div class="provider-review-stars"><svg lucideStar *ngFor="let estrela of estrelasDe(review.rating)" /></div>
+                </div>
+                <b>{{ review.rating | number: '1.1-1' }}</b>
+              </header>
+              <p>{{ review.comment }}</p>
+              <time>{{ review.createdAt | date: 'dd/MM/yyyy' }}</time>
+            </article>
+          </div>
+          <ng-template #semAvaliacoes>
+            <p class="provider-empty">Ainda não há avaliações. As avaliações dos seus clientes aparecerão aqui depois dos serviços realizados.</p>
+          </ng-template>
+        </section>
+
+        <section class="provider-shortcuts">
+          <button type="button" (click)="compartilharPerfil()">
+            <svg lucideShare2 /><strong>Compartilhar perfil</strong><small>Divulgue para mais clientes</small>
+          </button>
+          <button type="button" (click)="abrirWhatsapp()">
+            <svg lucideMessageCircle /><strong>WhatsApp</strong><small>{{ form.controls.whatsapp.value ? 'Fale com clientes' : 'Configurar número' }}</small>
+          </button>
+          <button type="button" (click)="scrollToHours()">
+            <svg lucideCalendarCheck /><strong>Disponibilidade</strong><small>Gerencie seus horários</small>
+          </button>
+        </section>
+
         <form [formGroup]="form" class="stack-form provider-form" (ngSubmit)="save()">
-          <h2>Dados do perfil</h2>
+          <h2 #formAnchor>Dados do perfil</h2>
           <label><span>Nome <i>*</i></span><input formControlName="name" placeholder="Como você aparece no app" /></label>
           <label><span>Empresa</span><input formControlName="companyName" placeholder="Nome da empresa (opcional)" /></label>
           <div class="grid-2">
@@ -113,6 +249,20 @@ import { ToastService } from './services/toast.service';
             </div>
           </ng-container>
 
+          <h2 #jornadaAnchor>Disponibilidade</h2>
+          <p class="provider-hint">Os horários em que você atende. É o que aparece como "Disponível hoje" no seu painel.</p>
+          <div class="provider-hours" *ngFor="let bloco of workingHours(); let indice = index">
+            <div class="provider-hours-days">
+              <button *ngFor="let dia of diasDaSemana" type="button" [class.active]="bloco.days.includes(dia.value)" (click)="toggleDia(indice, dia.value)">{{ dia.label }}</button>
+            </div>
+            <div class="provider-hours-range">
+              <label><span>Início</span><input type="time" [value]="bloco.start" (change)="setHora(indice, 'start', $event)" /></label>
+              <label><span>Fim</span><input type="time" [value]="bloco.end" (change)="setHora(indice, 'end', $event)" /></label>
+              <button *ngIf="workingHours().length > 1" type="button" class="provider-hours-remove" aria-label="Remover horário" (click)="removerBloco(indice)"><svg lucideTrash2 /></button>
+            </div>
+          </div>
+          <button type="button" class="provider-hours-add" (click)="adicionarBloco()">Adicionar outro horário</button>
+
           <p *ngIf="feedback()" class="form-feedback" [class.error]="hasError()">{{ feedback() }}</p>
           <button class="primary-button full-width" type="submit" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar perfil' }}</button>
         </form>
@@ -128,6 +278,20 @@ export class ProfessionalAccountPageComponent implements OnInit {
   private readonly toast = inject(ToastService);
 
   protected readonly professional = signal<Professional | null>(null);
+  protected readonly dashboard = signal<ProfessionalDashboard | null>(null);
+  protected readonly pendenciasVisiveis = signal(false);
+  protected readonly workingHours = signal<Array<{ days: number[]; start: string; end: string }>>([]);
+  @ViewChild('formAnchor') private formAnchor?: ElementRef<HTMLElement>;
+  @ViewChild('jornadaAnchor') private jornadaAnchor?: ElementRef<HTMLElement>;
+  protected readonly diasDaSemana = [
+    { value: 1, label: 'Seg' },
+    { value: 2, label: 'Ter' },
+    { value: 3, label: 'Qua' },
+    { value: 4, label: 'Qui' },
+    { value: 5, label: 'Sex' },
+    { value: 6, label: 'Sáb' },
+    { value: 0, label: 'Dom' },
+  ];
   protected readonly categories = signal<Category[]>([]);
   protected readonly selectedCategoryIds = signal<string[]>([]);
   protected readonly selectedServiceIds = signal<string[]>([]);
@@ -164,6 +328,42 @@ export class ProfessionalAccountPageComponent implements OnInit {
       .join('')
       .toUpperCase(),
   );
+
+  protected readonly specialty = computed(() => this.dashboard()?.profile.specialty ?? '');
+  protected readonly localizacao = computed(() => {
+    const perfil = this.dashboard()?.profile ?? this.professional();
+    if (!perfil) return '';
+    return [perfil.neighborhood, perfil.city].filter(Boolean).join(', ');
+  });
+
+  /** Estado do cadastro em uma frase, sempre a partir do que está no banco. */
+  protected readonly statusTitle = computed(() => {
+    const perfil = this.professional();
+    if (!perfil) return '';
+    if (perfil.approvalStatus === 'REJECTED') return 'Cadastro não aprovado';
+    if (perfil.approvalStatus === 'PENDING') return 'Seu cadastro está em análise';
+    if (perfil.active === false) return 'Seu perfil está suspenso';
+    return 'Seu perfil está ativo';
+  });
+  protected readonly statusDescription = computed(() => {
+    const perfil = this.professional();
+    if (!perfil) return '';
+    if (perfil.approvalStatus === 'REJECTED') return 'A administração não liberou este cadastro. Fale com o suporte para entender o motivo.';
+    if (perfil.approvalStatus === 'PENDING') {
+      return perfil.profileComplete
+        ? 'Enviamos para a administração aprovar. Assim que for liberado, você passa a aparecer nas buscas do aplicativo.'
+        : 'Para entrar na fila de aprovação, complete os serviços que você realiza e a sua jornada de atendimento.';
+    }
+    if (perfil.active === false) return 'Seu perfil não aparece nas buscas no momento. Fale com a administração.';
+    return 'Você aparece nas buscas do aplicativo. Mantenha suas fotos e horários em dia.';
+  });
+  protected readonly statusTone = computed(() => {
+    const perfil = this.professional();
+    if (!perfil) return 'neutro';
+    if (perfil.approvalStatus === 'REJECTED' || perfil.active === false) return 'recusado';
+    if (perfil.approvalStatus === 'PENDING') return 'analise';
+    return 'ativo';
+  });
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
@@ -293,6 +493,92 @@ export class ProfessionalAccountPageComponent implements OnInit {
     });
   }
 
+  protected estrelasDe(nota: number) {
+    return Array.from({ length: Math.max(0, Math.min(5, Math.round(nota))) });
+  }
+
+  protected mostrarPendencias() {
+    this.pendenciasVisiveis.update((visivel) => !visivel);
+  }
+
+  protected scrollToForm() {
+    this.formAnchor?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  protected scrollToHours() {
+    this.jornadaAnchor?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  protected abrirMensagens() {
+    const total = this.dashboard()?.overview.unreadMessages ?? 0;
+    this.toast.info(
+      total
+        ? `Você tem ${total} ${total === 1 ? 'mensagem não lida' : 'mensagens não lidas'}. Elas chegam pela conversa que o cliente abre no seu perfil.`
+        : 'Nenhuma mensagem não lida no momento.',
+    );
+  }
+
+  protected abrirSolicitacoes() {
+    const total = this.dashboard()?.overview.pendingRequests ?? 0;
+    this.toast.info(
+      total
+        ? `${total} ${total === 1 ? 'cliente pediu' : 'clientes pediram'} orçamento nas suas categorias.`
+        : 'Nenhuma solicitação aberta nas suas categorias agora.',
+    );
+  }
+
+  /** Compartilha pelo app quando o navegador permite; senão copia o link. */
+  protected async compartilharPerfil() {
+    const id = this.professional()?.id;
+    if (!id) return;
+    const url = `${window.location.origin}/app/profissional/${id}`;
+    const dados = { title: this.professional()?.name ?? 'Meu perfil', text: 'Veja meu perfil no IndicaFácil', url };
+    try {
+      if (navigator.share) {
+        await navigator.share(dados);
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      this.toast.success('Link do seu perfil copiado.');
+    } catch {
+      // Cancelar o compartilhamento não é erro; só avisamos quando nada funcionou.
+      if (!navigator.share) this.toast.error('Não foi possível copiar o link.');
+    }
+  }
+
+  protected abrirWhatsapp() {
+    const numero = (this.form.controls.whatsapp.value ?? '').replace(/\D/g, '');
+    if (!numero) {
+      this.toast.info('Cadastre seu WhatsApp nos dados do perfil.');
+      this.scrollToForm();
+      return;
+    }
+    window.open(`https://wa.me/55${numero}`, '_blank', 'noopener');
+  }
+
+  protected toggleDia(indice: number, dia: number) {
+    this.workingHours.update((blocos) =>
+      blocos.map((bloco, posicao) =>
+        posicao === indice
+          ? { ...bloco, days: bloco.days.includes(dia) ? bloco.days.filter((item) => item !== dia) : [...bloco.days, dia].sort() }
+          : bloco,
+      ),
+    );
+  }
+
+  protected setHora(indice: number, campo: 'start' | 'end', evento: Event) {
+    const valor = (evento.target as HTMLInputElement).value;
+    this.workingHours.update((blocos) => blocos.map((bloco, posicao) => (posicao === indice ? { ...bloco, [campo]: valor } : bloco)));
+  }
+
+  protected adicionarBloco() {
+    this.workingHours.update((blocos) => [...blocos, { days: [6], start: '08:00', end: '12:00' }]);
+  }
+
+  protected removerBloco(indice: number) {
+    this.workingHours.update((blocos) => blocos.filter((_, posicao) => posicao !== indice));
+  }
+
   protected logout() {
     this.auth.logout();
     void this.router.navigateByUrl('/login');
@@ -303,6 +589,9 @@ export class ProfessionalAccountPageComponent implements OnInit {
       ...this.form.getRawValue(),
       categoryIds: this.selectedCategoryIds(),
       serviceIds: this.selectedServiceIds(),
+      // Blocos incompletos não vão para o banco: sem dia ou com fim antes do
+      // início, o horário não diz nada útil para o cliente.
+      workingHours: this.workingHours().filter((bloco) => bloco.days.length && bloco.start && bloco.end && bloco.start < bloco.end),
     };
     if (avatar) payload['avatar'] = avatar;
     if (cover) payload['coverImage'] = cover;
@@ -338,6 +627,7 @@ export class ProfessionalAccountPageComponent implements OnInit {
           next: (works) => this.works.set(works),
           error: () => this.works.set([]),
         });
+        this.carregarPainel();
       },
       error: (error: { error?: { message?: string } }) => {
         this.loading.set(false);
@@ -346,8 +636,18 @@ export class ProfessionalAccountPageComponent implements OnInit {
     });
   }
 
+  /** O painel é complementar: se falhar, a tela de edição continua inteira. */
+  private carregarPainel() {
+    this.api.getProfessionalDashboard().subscribe({
+      next: (painel) => this.dashboard.set(painel),
+      error: () => this.dashboard.set(null),
+    });
+  }
+
   private applyProfile(professional: Professional) {
     this.professional.set(professional);
+    const jornada = professional.workingHours ?? [];
+    this.workingHours.set(jornada.length ? jornada.map((bloco) => ({ ...bloco })) : [{ days: [1, 2, 3, 4, 5], start: '08:00', end: '18:00' }]);
     this.form.patchValue({
       name: professional.name ?? '',
       companyName: professional.companyName ?? '',

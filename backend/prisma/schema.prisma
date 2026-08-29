@@ -276,6 +276,7 @@ model Professional {
   images                 ProfessionalImage[]
   actions                ProfessionalAction[]
   conversations          Conversation[]
+  views                  ProfessionalView[]
 
   @@index([active, city])
 }
@@ -521,6 +522,23 @@ model ProfessionalImage {
 
   @@index([professionalId, isCover, displayOrder])
   @@map("professional_images")
+}
+
+/// Visualizacoes do perfil publico. Uma linha por visitante e por dia: recarregar
+/// a pagina nao infla o numero, e o proprio profissional nunca e contado.
+model ProfessionalView {
+  id             String       @id @default(cuid())
+  professionalId String
+  /// Identificador do visitante: o id do usuario logado ou um hash de IP + navegador.
+  viewerKey      String       @db.VarChar(80)
+  /// Dia da visita no formato AAAA-MM-DD, para a unicidade diaria.
+  viewedOn       String       @db.VarChar(10)
+  createdAt      DateTime     @default(now())
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, viewerKey, viewedOn])
+  @@index([professionalId])
+  @@map("professional_views")
 }
 
 model CondominiumSettings {

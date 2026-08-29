@@ -1,4 +1,10 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
+
+/** Só o que precisamos do request para identificar quem visitou um perfil. */
+interface RequisicaoComOrigem {
+  ip?: string;
+  headers?: Record<string, string | undefined>;
+}
 import { ApiTags } from '@nestjs/swagger';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { DataStoreService } from '../data/data-store.service';
@@ -9,6 +15,7 @@ import { CommunicationsService } from './communications.service';
 import { CatalogService } from '../data/catalog.service';
 import { AiSettingsService } from '../ai/ai-settings.service';
 import { NearbyProfessionalsService } from '../data/nearby-professionals.service';
+import { ProfessionalDashboardService } from '../data/professional-dashboard.service';
 import { MailSettingsService } from '../auth/mail-settings.service';
 import { MailService } from '../auth/mail.service';
 
@@ -49,6 +56,7 @@ export class ResourcesController {
     private readonly catalogService: CatalogService,
     private readonly aiSettingsService: AiSettingsService,
     private readonly nearbyProfessionalsService: NearbyProfessionalsService,
+    private readonly professionalDashboardService: ProfessionalDashboardService,
     private readonly mailSettingsService: MailSettingsService,
     private readonly mailService: MailService,
   ) {}
@@ -237,7 +245,13 @@ export class ResourcesController {
   }
 
   @Get('professionals/:id')
-  async getProfessionalById(@Param('id') id: string) {
+  async getProfessionalById(@Param('id') id: string, @Query('userId') userId?: string, @Req() request?: RequisicaoComOrigem) {
+    // Conta a visita sem segurar a resposta: a tela do cliente não depende disso.
+    void this.professionalDashboardService.registerView(id, {
+      userId,
+      ip: request?.ip,
+      userAgent: request?.headers?.['user-agent'],
+    });
     return { data: this.dataStoreService.getProfessionalById(id) };
   }
 
@@ -283,6 +297,12 @@ export class ResourcesController {
         maps: { apiKey: process.env.GOOGLE_MAPS_API_KEY ?? '' },
       },
     };
+  }
+
+  /** Painel do profissional: métricas, visão geral, trabalhos e avaliações em uma leitura. */
+  @Get('me/professional/dashboard')
+  async getProfessionalDashboard(@Query('userId') userId: string) {
+    return { data: await this.professionalDashboardService.getDashboard(userId) };
   }
 
   @Get('me/professional')

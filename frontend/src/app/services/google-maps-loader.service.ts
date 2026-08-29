@@ -33,21 +33,40 @@ export class GoogleMapsLoaderService {
 
   private async carregar() {
     if (typeof window === 'undefined') return false;
-    if ((window as unknown as Record<string, unknown>)['google']) return true;
+    if (this.mapsPronto()) return true;
 
-    const settings = await firstValueFrom(this.api.getPublicSettings());
-    const apiKey = settings.maps?.apiKey ?? '';
-    if (!apiKey) return false;
+    if (!(window as unknown as Record<string, unknown>)['google']) {
+      const settings = await firstValueFrom(this.api.getPublicSettings());
+      const apiKey = settings.maps?.apiKey ?? '';
+      if (!apiKey) return false;
 
-    (window as unknown as Record<string, unknown>)['gm_authFailure'] = () => this.autorizacaoNegada.set(true);
+      (window as unknown as Record<string, unknown>)['gm_authFailure'] = () => this.autorizacaoNegada.set(true);
 
-    return new Promise<boolean>((resolve) => {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&language=pt-BR&region=BR&loading=async`;
-      script.async = true;
-      script.onload = () => resolve(Boolean((window as unknown as Record<string, unknown>)['google']));
-      script.onerror = () => resolve(false);
-      document.head.appendChild(script);
-    });
+      const carregou = await new Promise<boolean>((resolve) => {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&language=pt-BR&region=BR&loading=async`;
+        script.async = true;
+        script.onload = () => resolve(Boolean((window as unknown as Record<string, unknown>)['google']));
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+      });
+      if (!carregou) return false;
+    }
+
+    // Com `loading=async` o script baixa apenas o carregador: `google.maps.Map`
+    // e as demais classes só existem depois de pedir cada biblioteca. Sem isto,
+    // o mapa quebrava com "google.maps.Map is not a constructor".
+    const maps = (window as unknown as { google?: { maps?: { importLibrary?: (nome: string) => Promise<unknown> } } }).google?.maps;
+    if (!maps) return false;
+    if (typeof maps.importLibrary === 'function') {
+      await Promise.all([maps.importLibrary('core'), maps.importLibrary('maps'), maps.importLibrary('marker')]);
+    }
+    return this.mapsPronto();
+  }
+
+  /** Só reportamos sucesso quando as classes que a tela usa existem de fato. */
+  private mapsPronto() {
+    const maps = (window as unknown as { google?: { maps?: Record<string, unknown> } }).google?.maps;
+    return Boolean(maps && typeof maps['Map'] === 'function');
   }
 }

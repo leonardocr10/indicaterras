@@ -72,7 +72,7 @@ type IconTarget = 'category' | 'service';
             <button class="primary-button" type="button" (click)="newCategory(true)"><svg lucidePlus /> Nova categoria</button>
           </div>
         </header>
-        <div class="admin-table-wrap"><table><thead><tr><th>Categoria</th><th>Slug</th><th>Ícone</th><th>Serviços</th><th>Ordem</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+        <div class="admin-table-wrap"><table><thead><tr><th><button type="button" class="grid-sort-button" (click)="setSort('name')">Categoria <span>{{ sortIndicator('name') }}</span></button></th><th><button type="button" class="grid-sort-button" (click)="setSort('slug')">Slug <span>{{ sortIndicator('slug') }}</span></button></th><th>Ícone</th><th><button type="button" class="grid-sort-button" (click)="setSort('services')">Serviços <span>{{ sortIndicator('services') }}</span></button></th><th><button type="button" class="grid-sort-button" (click)="setSort('displayOrder')">Ordem <span>{{ sortIndicator('displayOrder') }}</span></button></th><th><button type="button" class="grid-sort-button" (click)="setSort('active')">Status <span>{{ sortIndicator('active') }}</span></button></th><th>Ações</th></tr></thead><tbody>
           <tr *ngFor="let category of pagedCategories()"><td><strong>{{ category.name }}</strong></td><td>{{ category.slug }}</td><td><span class="taxonomy-icon"><img *ngIf="iconImage(category.icon) as iconUrl; else listGlyph" [src]="iconUrl" alt="" /><ng-template #listGlyph>{{ iconGlyph(category.icon) }}</ng-template></span></td><td>{{ category.services.length || 0 }}</td><td>{{ category.displayOrder }}</td><td><span class="category-status" [class.inactive]="category.active === false"><i></i>{{ category.active === false ? 'Inativa' : 'Ativa' }}</span></td><td class="admin-actions"><button type="button" class="icon-action" aria-label="Editar categoria" title="Editar" (click)="editCategory(category.id)"><svg lucidePencil /></button><button type="button" class="icon-action danger-action" aria-label="Excluir categoria" title="Excluir" (click)="deleteCategory(category.id)"><svg lucideTrash2 /></button></td></tr>
           <tr *ngIf="!pagedCategories().length"><td colspan="7" class="admin-empty-row">Nenhuma categoria encontrada.</td></tr>
         </tbody></table></div>
@@ -122,9 +122,9 @@ type IconTarget = 'category' | 'service';
             </div>
             <div class="category-services-table-wrap">
               <table class="category-services-table">
-                <thead><tr><th></th><th>Nome do serviço</th><th>Ícone</th><th>Sinônimos / palavras-chave</th><th>Ordem</th><th>Status</th><th>Ações</th></tr></thead>
+                <thead><tr><th></th><th><button type="button" class="grid-sort-button" (click)="setServiceSort('name')">Nome do serviço <span>{{ serviceSortIndicator('name') }}</span></button></th><th>Ícone</th><th>Sinônimos / palavras-chave</th><th><button type="button" class="grid-sort-button" (click)="setServiceSort('displayOrder')">Ordem <span>{{ serviceSortIndicator('displayOrder') }}</span></button></th><th><button type="button" class="grid-sort-button" (click)="setServiceSort('active')">Status <span>{{ serviceSortIndicator('active') }}</span></button></th><th>Ações</th></tr></thead>
                 <tbody>
-                  <tr *ngFor="let service of services()">
+                  <tr *ngFor="let service of sortedServices()">
                     <td class="drag-cell"><svg lucideGripVertical /></td>
                     <td><strong>{{ service.name }}</strong></td>
                     <td><span class="taxonomy-icon"><img *ngIf="iconImage(service.icon) as iconUrl; else serviceGlyph" [src]="iconUrl" [alt]="'Ícone de ' + service.name" /><ng-template #serviceGlyph>{{ iconGlyph(service.icon) }}</ng-template></span></td>
@@ -189,6 +189,10 @@ export class AdminCategoryPageComponent implements OnInit {
   protected readonly statusFilter = signal('');
   protected readonly page = signal(1);
   protected readonly pageSize = signal(10);
+  protected readonly sortKey = signal<'name' | 'slug' | 'services' | 'displayOrder' | 'active'>('displayOrder');
+  protected readonly sortDirection = signal<'asc' | 'desc'>('asc');
+  protected readonly serviceSortKey = signal<'name' | 'displayOrder' | 'active'>('displayOrder');
+  protected readonly serviceSortDirection = signal<'asc' | 'desc'>('asc');
   protected serviceAliasesText = '';
   protected draft: CategoryDraft = this.emptyCategory();
   protected serviceDraft: ServiceDraft = this.emptyService();
@@ -217,13 +221,31 @@ export class AdminCategoryPageComponent implements OnInit {
   ];
   protected readonly filteredCategories = computed(() => {
     const search = this.normalize(this.searchTerm());
-    return this.categories().filter((category) => {
+    const filtered = this.categories().filter((category) => {
       const matchesSearch = !search || this.normalize(`${category.name} ${category.slug} ${category.description || ''}`).includes(search);
       const matchesStatus = !this.statusFilter() || (this.statusFilter() === 'active' ? category.active !== false : category.active === false);
       return matchesSearch && matchesStatus;
     });
+    const key = this.sortKey();
+    const direction = this.sortDirection() === 'asc' ? 1 : -1;
+    return [...filtered].sort((first, second) => {
+      const firstValue = key === 'services' ? first.services.length : first[key];
+      const secondValue = key === 'services' ? second.services.length : second[key];
+      if (typeof firstValue === 'number' && typeof secondValue === 'number') return (firstValue - secondValue) * direction;
+      return String(firstValue).localeCompare(String(secondValue), 'pt-BR') * direction;
+    });
   });
   protected readonly totalPages = computed(() => Math.max(1, Math.ceil(this.filteredCategories().length / this.pageSize())));
+  protected readonly sortedServices = computed(() => {
+    const key = this.serviceSortKey();
+    const direction = this.serviceSortDirection() === 'asc' ? 1 : -1;
+    return [...this.services()].sort((first, second) => {
+      const firstValue = first[key];
+      const secondValue = second[key];
+      if (typeof firstValue === 'number' && typeof secondValue === 'number') return (firstValue - secondValue) * direction;
+      return String(firstValue).localeCompare(String(secondValue), 'pt-BR') * direction;
+    });
+  });
   protected readonly pagedCategories = computed(() => {
     const start = (this.page() - 1) * this.pageSize();
     return this.filteredCategories().slice(start, start + this.pageSize());
@@ -266,6 +288,17 @@ export class AdminCategoryPageComponent implements OnInit {
   protected closeCategoryEditor(): void { this.editorOpen.set(false); this.serviceEditorOpen.set(false); this.iconPickerOpen.set(false); }
   protected setSearch(value: string): void { this.searchTerm.set(value); this.page.set(1); }
   protected setStatusFilter(value: string): void { this.statusFilter.set(value); this.page.set(1); }
+  protected setSort(key: 'name' | 'slug' | 'services' | 'displayOrder' | 'active'): void {
+    if (this.sortKey() === key) this.sortDirection.update((direction) => direction === 'asc' ? 'desc' : 'asc');
+    else { this.sortKey.set(key); this.sortDirection.set('asc'); }
+    this.page.set(1);
+  }
+  protected sortIndicator(key: string): string { return this.sortKey() === key ? this.sortDirection() === 'asc' ? '↑' : '↓' : '↕'; }
+  protected setServiceSort(key: 'name' | 'displayOrder' | 'active'): void {
+    if (this.serviceSortKey() === key) this.serviceSortDirection.update((direction) => direction === 'asc' ? 'desc' : 'asc');
+    else { this.serviceSortKey.set(key); this.serviceSortDirection.set('asc'); }
+  }
+  protected serviceSortIndicator(key: string): string { return this.serviceSortKey() === key ? this.serviceSortDirection() === 'asc' ? '↑' : '↓' : '↕'; }
   protected setPage(value: number): void { this.page.set(Math.min(Math.max(1, Number(value)), this.totalPages())); }
   protected setPageSize(value: number): void { this.pageSize.set(Number(value)); this.page.set(1); }
   protected pageStart(): number { return this.filteredCategories().length ? (this.page() - 1) * this.pageSize() + 1 : 0; }

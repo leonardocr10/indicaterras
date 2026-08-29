@@ -169,13 +169,13 @@ export const demoUsers: DemoUser[] = [
 
 export const demoCategories: DemoCategory[] = [
   ['cat-1', 'Eletricista', 'eletricista', 'bolt'],
-  ['cat-2', 'Encanador', 'encanador', 'droplets'],
-  ['cat-3', 'Pedreiro', 'pedreiro', 'hammer'],
-  ['cat-4', 'Pintor', 'pintor', 'paintbrush'],
+  ['cat-2', 'Encanador(a)', 'encanador', 'droplets'],
+  ['cat-3', 'Pedreiro(a)', 'pedreiro', 'hammer'],
+  ['cat-4', 'Pintor(a)', 'pintor', 'paintbrush'],
   ['cat-5', 'Diarista', 'diarista', 'sparkles'],
   ['cat-6', 'Ar-condicionado', 'ar-condicionado', 'fan'],
-  ['cat-7', 'Jardineiro', 'jardineiro', 'leaf'],
-  ['cat-8', 'Montador', 'montador', 'package'],
+  ['cat-7', 'Jardineiro(a)', 'jardineiro', 'leaf'],
+  ['cat-8', 'Montador(a)', 'montador', 'package'],
   ['cat-9', 'Mais categorias', 'mais', 'grid'],
 ].map(([id, name, slug, icon], index) => ({ id, name, slug, icon, displayOrder: index + 1, active: true }));
 
@@ -301,7 +301,7 @@ export const demoProfessionals: DemoProfessional[] = [
     id: 'pro-5',
     name: 'Jardins & Cia',
     categoryId: 'cat-7',
-    category: 'Jardineiro',
+    category: 'Jardineiro(a)',
     ...professionalTaxonomy(['cat-7'], ['poda', 'paisagismo', 'manutencao-de-jardim']),
     rating: 4.8,
     reviewCount: 8,
@@ -322,7 +322,7 @@ export const demoProfessionals: DemoProfessional[] = [
     id: 'pro-6',
     name: 'Marido de Aluguel Max',
     categoryId: 'cat-8',
-    category: 'Montador',
+    category: 'Montador(a)',
     ...professionalTaxonomy(['cat-1', 'cat-2', 'cat-8'], ['tomada', 'torneira', 'montagem-de-moveis', 'instalacao-de-prateleira']),
     rating: 4.5,
     reviewCount: 6,

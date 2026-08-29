@@ -20,6 +20,7 @@ import { PrismaService } from './prisma.service';
 import { SERVICE_ALIASES } from './service-aliases';
 import { ACTION_LABELS, ACTION_TYPE_MAP, COMPLAINT_LABEL_TO_STATUS, COMPLAINT_STATUS_TO_LABEL, ComplaintAction, ComplaintEvent, ComplaintStatus } from './complaints';
 import { ProblemMatcherService } from './problem-matcher.service';
+import { CATEGORY_CATALOG, catalogSlug } from './category-catalog';
 
 @Injectable()
 export class DataStoreService implements OnModuleInit {
@@ -65,6 +66,7 @@ export class DataStoreService implements OnModuleInit {
   async onModuleInit() {
     await this.usersReady;
     try {
+      await this.syncHealthCatalog();
       await this.loadDatabaseData();
       this.databaseAvailable = true;
       this.logger.log('Dados administrativos carregados do banco de dados.');
@@ -637,6 +639,45 @@ export class DataStoreService implements OnModuleInit {
     });
     await this.prisma.passwordReset.update({ where: { id: registro.id }, data: { usedAt: new Date() } });
     await this.loadDatabaseData();
+  }
+
+  /** Mantém o catálogo de saúde disponível mesmo em bancos sem o seed inicial. */
+  private async syncHealthCatalog() {
+    const groupIndex = CATEGORY_CATALOG.findIndex((group) => group.slug === 'saude-bem-estar');
+    const groupSeed = CATEGORY_CATALOG[groupIndex];
+    if (!groupSeed) return;
+
+    const group = await this.prisma.categoryGroup.upsert({
+      where: { slug: groupSeed.slug },
+      update: { name: groupSeed.name, icon: groupSeed.icon, displayOrder: groupIndex + 1, active: true },
+      create: { name: groupSeed.name, slug: groupSeed.slug, icon: groupSeed.icon, displayOrder: groupIndex + 1, active: true },
+    });
+
+    const requestedCategories = groupSeed.categories
+      .map((category, index) => ({ category, index }))
+      .filter(({ category }) => category.slug === 'psicologo' || category.slug === 'dentista');
+    for (const { category: categorySeed, index: categoryIndex } of requestedCategories) {
+      const category = await this.prisma.category.upsert({
+        where: { slug: categorySeed.slug },
+        update: { name: categorySeed.name, icon: categorySeed.icon, groupId: group.id, active: true },
+        create: { name: categorySeed.name, slug: categorySeed.slug, icon: categorySeed.icon, groupId: group.id, displayOrder: categoryIndex + 1, active: true },
+      });
+      for (const [serviceIndex, serviceSeed] of categorySeed.services.entries()) {
+        const service = await this.prisma.categoryService.upsert({
+          where: { categoryId_slug: { categoryId: category.id, slug: catalogSlug(serviceSeed.name) } },
+          update: { name: serviceSeed.name, icon: categorySeed.icon, displayOrder: serviceIndex + 1, active: true },
+          create: { categoryId: category.id, name: serviceSeed.name, slug: catalogSlug(serviceSeed.name), icon: categorySeed.icon, displayOrder: serviceIndex + 1, active: true },
+        });
+        for (const alias of serviceSeed.aliases ?? []) {
+          const normalizedAlias = this.normalize(alias);
+          await this.prisma.categoryServiceAlias.upsert({
+            where: { categoryServiceId_normalizedAlias: { categoryServiceId: service.id, normalizedAlias } },
+            update: { alias },
+            create: { categoryServiceId: service.id, alias, normalizedAlias },
+          });
+        }
+      }
+    }
   }
 
   ensureUserCanAccess(user: Omit<DemoUser, 'password'>) {

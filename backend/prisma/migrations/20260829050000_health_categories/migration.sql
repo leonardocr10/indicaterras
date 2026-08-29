@@ -1,20 +1,20 @@
 -- Complementa o catálogo de saúde sem criar tabelas ou repetir registros existentes.
-INSERT IGNORE INTO `CategoryGroup` (`id`, `name`, `slug`, `icon`, `displayOrder`, `active`, `createdAt`, `updatedAt`)
+INSERT IGNORE INTO `category_groups` (`id`, `name`, `slug`, `icon`, `displayOrder`, `active`, `createdAt`, `updatedAt`)
 VALUES ('catalog-saude-bem-estar', 'Saúde e bem-estar', 'saude-bem-estar', 'HeartPulse', 4, true, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3));
 
 UPDATE `Category` c
-JOIN `CategoryGroup` g ON g.`slug` = 'saude-bem-estar'
+JOIN `category_groups` g ON g.`slug` = 'saude-bem-estar'
 SET c.`name` = 'Psicólogo(a)', c.`icon` = 'Brain', c.`groupId` = g.`id`, c.`active` = true
 WHERE c.`slug` = 'psicologo';
 
 INSERT INTO `Category` (`id`, `groupId`, `name`, `slug`, `icon`, `displayOrder`, `active`, `createdAt`, `updatedAt`)
 SELECT 'catalog-psicologo', `id`, 'Psicólogo(a)', 'psicologo', 'Brain', 1, true, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)
-FROM `CategoryGroup` WHERE `slug` = 'saude-bem-estar'
+FROM `category_groups` WHERE `slug` = 'saude-bem-estar'
 AND NOT EXISTS (SELECT 1 FROM `Category` WHERE `slug` = 'psicologo');
 
 INSERT INTO `Category` (`id`, `groupId`, `name`, `slug`, `icon`, `displayOrder`, `active`, `createdAt`, `updatedAt`)
 SELECT 'catalog-dentista', `id`, 'Dentista', 'dentista', 'SmilePlus', 2, true, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)
-FROM `CategoryGroup` WHERE `slug` = 'saude-bem-estar'
+FROM `category_groups` WHERE `slug` = 'saude-bem-estar'
 AND NOT EXISTS (SELECT 1 FROM `Category` WHERE `slug` = 'dentista');
 
 INSERT INTO `category_services` (`id`, `categoryId`, `name`, `slug`, `icon`, `displayOrder`, `active`, `createdAt`, `updatedAt`)

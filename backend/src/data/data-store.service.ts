@@ -1100,6 +1100,8 @@ export class DataStoreService implements OnModuleInit {
     } else {
       const password = String(payload.password ?? '');
       if (payload.email !== undefined) this.assertEmailAvailable(String(payload.email), id);
+      const userApproval = payload.approvalStatus === undefined ? undefined : this.approvalStatus(payload.approvalStatus);
+      const userActive = payload.active === undefined ? undefined : Boolean(payload.active);
       await this.prisma.user.update({
         where: { id },
         data: {
@@ -1125,6 +1127,18 @@ export class DataStoreService implements OnModuleInit {
           active: payload.active === undefined ? undefined : Boolean(payload.active),
         },
       });
+      // Aprovar ou bloquear a conta precisa valer para o perfil profissional
+      // ligado a ela. Sem isto, a conta ficava aprovada, o prestador entrava e
+      // continuava vendo "cadastro em análise" e fora das buscas.
+      if (userApproval !== undefined || userActive !== undefined) {
+        await this.prisma.professional.updateMany({
+          where: { userId: id },
+          data: {
+            approvalStatus: userApproval,
+            active: userActive,
+          },
+        });
+      }
     }
     await this.loadDatabaseData();
     return this.getAdminRecords(resource).find((record) => record.id === id);

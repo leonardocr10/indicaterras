@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, ElementRef, HostListener, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin, map, of, switchMap } from 'rxjs';
 import {
@@ -11,6 +11,7 @@ import {
   LucideCheckCircle2,
   LucideChevronDown,
   LucideChevronRight,
+  LucideEllipsisVertical,
   LucideClock,
   LucideEye,
   LucideFileCheck,
@@ -18,6 +19,7 @@ import {
   LucideHeart,
   LucideImagePlus,
   LucideInfo,
+  LucideKeyRound,
   LucideLayoutGrid,
   LucideLogOut,
   LucideMail,
@@ -30,6 +32,7 @@ import {
   LucideTrash2,
   LucideUserRound,
   LucideUsers,
+  LucideX,
 } from '@lucide/angular';
 import { Category, CategoryService, Professional, ProfessionalDashboard, ProfessionalWork } from './models';
 import { PhoneMaskDirective } from './phone-mask.directive';
@@ -43,6 +46,7 @@ import { ToastService } from './services/toast.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     RouterLink,
     PhoneMaskDirective,
     LucideAtSign,
@@ -52,6 +56,7 @@ import { ToastService } from './services/toast.service';
     LucideCheckCircle2,
     LucideChevronDown,
     LucideChevronRight,
+    LucideEllipsisVertical,
     LucideClock,
     LucideEye,
     LucideFileCheck,
@@ -59,6 +64,7 @@ import { ToastService } from './services/toast.service';
     LucideHeart,
     LucideImagePlus,
     LucideInfo,
+    LucideKeyRound,
     LucideLayoutGrid,
     LucideLogOut,
     LucideMail,
@@ -71,12 +77,19 @@ import { ToastService } from './services/toast.service';
     LucideTrash2,
     LucideUserRound,
     LucideUsers,
+    LucideX,
   ],
   template: `
     <section class="mobile-page provider-page">
       <header class="provider-topbar">
-        <div><small>Área do profissional</small><h1>{{ professional()?.name || 'Meu perfil' }}</h1></div>
-        <button type="button" aria-label="Sair da conta" (click)="logout()"><svg lucideLogOut /></button>
+        <div class="provider-topbar-identity"><small>Área do profissional</small><h1>{{ professional()?.name || 'Meu perfil' }}</h1></div>
+        <div class="provider-topbar-menu">
+          <button type="button" aria-label="Opções da conta" [attr.aria-expanded]="menuAberto()" (click)="menuAberto.set(!menuAberto())"><svg lucideEllipsisVertical /></button>
+          <div class="provider-menu" *ngIf="menuAberto()">
+            <button type="button" (click)="abrirTrocaDeSenha()"><svg lucideKeyRound />Alterar senha</button>
+            <button type="button" class="sair" (click)="logout()"><svg lucideLogOut />Sair</button>
+          </div>
+        </div>
       </header>
 
       <div *ngIf="loading()" class="provider-loading">Carregando seu perfil...</div>
@@ -358,10 +371,32 @@ import { ToastService } from './services/toast.service';
           <button class="primary-button full-width" type="submit" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar perfil' }}</button>
         </form>
       </ng-container>
+
+      <!-- Reaproveita o endpoint de troca de senha que ja existe no sistema. -->
+      <div class="provider-modal-backdrop" *ngIf="senhaAberta()" (click)="fecharTrocaDeSenha()">
+        <form class="provider-modal" (click)="$event.stopPropagation()" (ngSubmit)="trocarSenha()">
+          <header>
+            <div><h2>Alterar senha</h2><p>Use uma senha com pelo menos 6 caracteres.</p></div>
+            <button type="button" aria-label="Fechar" (click)="fecharTrocaDeSenha()"><svg lucideX /></button>
+          </header>
+          <label><span>Senha atual</span><input type="password" autocomplete="current-password" [(ngModel)]="senhaAtual" name="senhaAtual" /></label>
+          <label><span>Nova senha</span><input type="password" autocomplete="new-password" [(ngModel)]="senhaNova" name="senhaNova" /></label>
+          <label><span>Confirmar nova senha</span><input type="password" autocomplete="new-password" [(ngModel)]="senhaConfirmacao" name="senhaConfirmacao" /></label>
+          <p class="form-feedback error" *ngIf="senhaErro()">{{ senhaErro() }}</p>
+          <button class="primary-button full-width" type="submit" [disabled]="salvandoSenha()">{{ salvandoSenha() ? 'Atualizando...' : 'Atualizar senha' }}</button>
+        </form>
+      </div>
     </section>
   `,
 })
 export class ProfessionalAccountPageComponent implements OnInit {
+  /** Sem isto o menu ficaria aberto ao tocar em qualquer outro lugar da tela. */
+  @HostListener('document:click', ['$event'])
+  protected fecharMenuAoClicarFora(evento: Event) {
+    const alvo = evento.target as HTMLElement | null;
+    if (this.menuAberto() && !alvo?.closest('.provider-topbar-menu')) this.menuAberto.set(false);
+  }
+
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
@@ -373,6 +408,13 @@ export class ProfessionalAccountPageComponent implements OnInit {
   protected readonly pendenciasVisiveis = signal(false);
   /** Vazio = tudo recolhido. Só uma seção fica aberta por vez. */
   protected readonly secaoAberta = signal('');
+  protected readonly menuAberto = signal(false);
+  protected readonly senhaAberta = signal(false);
+  protected readonly salvandoSenha = signal(false);
+  protected readonly senhaErro = signal('');
+  protected senhaAtual = '';
+  protected senhaNova = '';
+  protected senhaConfirmacao = '';
   protected readonly workingHours = signal<Array<{ days: number[]; start: string; end: string }>>([]);
   @ViewChild('formAnchor') private formAnchor?: ElementRef<HTMLElement>;
   @ViewChild('jornadaAnchor') private jornadaAnchor?: ElementRef<HTMLElement>;
@@ -716,6 +758,43 @@ export class ProfessionalAccountPageComponent implements OnInit {
 
   protected removerBloco(indice: number) {
     this.workingHours.update((blocos) => blocos.filter((_, posicao) => posicao !== indice));
+  }
+
+  protected abrirTrocaDeSenha() {
+    this.menuAberto.set(false);
+    this.senhaErro.set('');
+    this.senhaAtual = '';
+    this.senhaNova = '';
+    this.senhaConfirmacao = '';
+    this.senhaAberta.set(true);
+  }
+
+  protected fecharTrocaDeSenha() {
+    this.senhaAberta.set(false);
+  }
+
+  protected trocarSenha() {
+    if (this.senhaNova.length < 6) {
+      this.senhaErro.set('A nova senha precisa de pelo menos 6 caracteres.');
+      return;
+    }
+    if (this.senhaNova !== this.senhaConfirmacao) {
+      this.senhaErro.set('A confirmação da nova senha não confere.');
+      return;
+    }
+    this.senhaErro.set('');
+    this.salvandoSenha.set(true);
+    this.api.changeMyPassword(this.senhaAtual, this.senhaNova).subscribe({
+      next: () => {
+        this.salvandoSenha.set(false);
+        this.senhaAberta.set(false);
+        this.toast.success('Senha atualizada.');
+      },
+      error: (erro: { error?: { message?: string } }) => {
+        this.salvandoSenha.set(false);
+        this.senhaErro.set(erro.error?.message ?? 'Não foi possível atualizar a senha.');
+      },
+    });
   }
 
   protected logout() {

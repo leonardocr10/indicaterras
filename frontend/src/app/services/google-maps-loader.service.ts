@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 
@@ -15,6 +15,14 @@ import { ApiService } from './api.service';
 export class GoogleMapsLoaderService {
   private readonly api = inject(ApiService);
   private carregamento: Promise<boolean> | null = null;
+  /**
+   * O Google recusa a chave DEPOIS de o script carregar (domínio não autorizado,
+   * faturamento desligado, chave inválida) e avisa só por este callback global.
+   * Sem ele, o mapa vira um quadrado branco sem explicação nenhuma.
+   */
+  private readonly autorizacaoNegada = signal(false);
+
+  readonly authFailed = this.autorizacaoNegada.asReadonly();
 
   /** Resolve true quando `google.maps` está disponível. Nunca lança. */
   load(): Promise<boolean> {
@@ -30,6 +38,8 @@ export class GoogleMapsLoaderService {
     const settings = await firstValueFrom(this.api.getPublicSettings());
     const apiKey = settings.maps?.apiKey ?? '';
     if (!apiKey) return false;
+
+    (window as unknown as Record<string, unknown>)['gm_authFailure'] = () => this.autorizacaoNegada.set(true);
 
     return new Promise<boolean>((resolve) => {
       const script = document.createElement('script');

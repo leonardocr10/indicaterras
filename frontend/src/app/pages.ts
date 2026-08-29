@@ -1455,7 +1455,15 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 
     const carregou = await this.mapsLoader.load();
     if (!carregou) {
-      this.mapError.set('Não foi possível carregar o mapa. Use a lista — ela mostra os mesmos profissionais.');
+      this.mapError.set(
+        this.mapsLoader.authFailed()
+          ? 'O Google recusou a chave do mapa neste endereço. Autorize o domínio (ou confira o faturamento) no Google Cloud Console. A lista continua funcionando.'
+          : 'Não foi possível carregar o mapa. Use a lista — ela mostra os mesmos profissionais.',
+      );
+      return;
+    }
+    if (!this.nearbyItems().some((item) => item.latitude !== null && item.longitude !== null)) {
+      this.mapError.set('Nenhum profissional deste resultado tem localização cadastrada, então não há o que marcar no mapa.');
       return;
     }
 
@@ -1507,6 +1515,16 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
 
     if (this.marcadores.length > 1) mapa.fitBounds(limites);
     else mapa.setZoom(13);
+
+    // A recusa da chave chega de forma assíncrona: sem esta checagem o usuário
+    // fica olhando um retângulo branco sem saber que o problema é a chave.
+    setTimeout(() => {
+      if (this.mapsLoader.authFailed()) {
+        this.mapError.set(
+          'O Google recusou a chave do mapa neste endereço. Autorize o domínio (ou confira o faturamento) no Google Cloud Console. A lista continua funcionando.',
+        );
+      }
+    }, 1200);
   }
 
   protected loadNearby() {

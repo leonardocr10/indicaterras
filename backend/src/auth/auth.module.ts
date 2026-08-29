@@ -7,12 +7,13 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { MailService } from './mail.service';
+import { MailSettingsService } from './mail-settings.service';
 import { RolesGuard } from './roles.guard';
 
 @Module({
   imports: [ConfigModule, DataModule, PassportModule, JwtModule.register({})],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RolesGuard, MailService],
-  exports: [JwtModule, PassportModule, RolesGuard],
+  providers: [AuthService, JwtStrategy, RolesGuard, MailService, MailSettingsService],
+  exports: [JwtModule, PassportModule, RolesGuard, MailService, MailSettingsService],
 })
 export class AuthModule {}

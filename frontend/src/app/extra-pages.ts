@@ -153,14 +153,45 @@ type AdminSection = 'reviews' | 'recommendations' | 'reports' | 'settings' | 're
 
       <footer class="admin-pagination moderation-pagination" *ngIf="isTableSection()"><span>Mostrando {{ pageStart() }}–{{ pageEnd() }} de {{ filteredRows().length }}</span><label>Itens por página <app-searchable-select class="page-size-select" [ngModel]="pageSize()" (ngModelChange)="setPageSize($event)" [items]="pageSizeOptions" searchPlaceholder="Pesquisar quantidade..." /></label><div><button type="button" [disabled]="page() === 1" (click)="setPage(page() - 1)"><svg lucideChevronLeft /></button><b>{{ page() }} / {{ totalPages() }}</b><button type="button" [disabled]="page() === totalPages()" (click)="setPage(page() + 1)"><svg lucideChevronRight /></button></div></footer>
 
+      <!-- Sete cards em grade obrigavam a rolar procurando o que mudar; as abas
+           agrupam por assunto e deixam so um conjunto por vez na tela. -->
+      <nav class="settings-tabs" *ngIf="section() === 'settings'" aria-label="Seções das configurações">
+        <button *ngFor="let aba of settingsTabs" type="button" [class.active]="settingsTab() === aba.id" (click)="settingsTab.set(aba.id)">{{ aba.label }}</button>
+      </nav>
       <form class="settings-grid" [formGroup]="settingsForm" *ngIf="section() === 'settings'" (ngSubmit)="saveSettings()">
-        <section class="settings-card"><h2>Geral</h2><label>Nome do sistema<input formControlName="systemName" /></label><label>Nome do condomínio<input formControlName="condominiumName" /></label><label>Telefone<input type="tel" inputmode="tel" maxlength="15" formControlName="phone" appPhoneMask /></label><label>E-mail<input formControlName="email" /></label></section>
-        <section class="settings-card"><h2>Identidade visual</h2><label class="file-drop-field"><span>Logo</span><input type="file" accept="image/*" /><small>Arraste um arquivo ou clique para selecionar</small></label><label class="file-drop-field"><span>Imagem de capa</span><input type="file" accept="image/*" /><small>Arraste um arquivo ou clique para selecionar</small></label><div class="color-fields"><label>Cor principal<input type="color" formControlName="primaryColor" /></label><label>Cor secundária<input type="color" formControlName="secondaryColor" /></label></div></section>
-        <section class="settings-card"><h2>Usuários e acesso</h2><label class="switch-row"><input type="checkbox" formControlName="selfRegistration" /> Permitir auto cadastro</label><label class="switch-row"><input type="checkbox" formControlName="requireUserApproval" /> Exigir aprovação administrativa após validar o código do e-mail</label><small>Quando ativo, confirmar o e-mail não libera o acesso até um administrador aprovar o usuário.</small><label class="switch-row"><input type="checkbox" formControlName="showBlock" /> Mostrar bloco e unidade</label></section>
-        <section class="settings-card"><h2>Cadastro de profissionais</h2><label class="switch-row"><input type="checkbox" formControlName="professionalSelfRegistration" /> Permitir que profissionais criem a própria conta</label><p class="settings-hint">Com a opção ligada, a tela de criar conta passa a oferecer "Sou profissional". O profissional cria o cadastro e já passa a editar o próprio perfil no app. Você continua podendo editar ou excluir o perfil dele em Profissionais.</p></section>
-        <section class="settings-card"><h2>Indicações e avaliações</h2><label class="switch-row"><input type="checkbox" formControlName="allowRecommendations" /> Permitir indicação</label><label class="switch-row"><input type="checkbox" formControlName="recommendationApproval" /> Exigir aprovação da indicação</label><label class="switch-row"><input type="checkbox" formControlName="allowReviews" /> Permitir avaliações</label><label class="switch-row"><input type="checkbox" formControlName="requireComment" /> Exigir comentário</label></section>
-        <section class="settings-card security-card"><h2>Segurança</h2><p>Sessão administrativa: 8 horas</p><p>Perfis ativos: Super Admin e Administrador de condomínio</p><button class="secondary-button" type="button" (click)="openAccessModal()">Gerenciar políticas de acesso</button></section>
-        <div class="settings-actions"><span class="form-feedback">{{ feedback() }}</span><button class="primary-button" type="submit">Salvar configurações</button></div>
+        <section class="settings-card" *ngIf="settingsTab() === 'geral'"><h2>Geral</h2><label>Nome do sistema<input formControlName="systemName" /></label><label>Nome do condomínio<input formControlName="condominiumName" /></label><label>Telefone<input type="tel" inputmode="tel" maxlength="15" formControlName="phone" appPhoneMask /></label><label>E-mail<input formControlName="email" /></label></section>
+        <section class="settings-card" *ngIf="settingsTab() === 'geral'"><h2>Identidade visual</h2><label class="file-drop-field"><span>Logo</span><input type="file" accept="image/*" /><small>Arraste um arquivo ou clique para selecionar</small></label><label class="file-drop-field"><span>Imagem de capa</span><input type="file" accept="image/*" /><small>Arraste um arquivo ou clique para selecionar</small></label><div class="color-fields"><label>Cor principal<input type="color" formControlName="primaryColor" /></label><label>Cor secundária<input type="color" formControlName="secondaryColor" /></label></div></section>
+        <section class="settings-card" *ngIf="settingsTab() === 'acesso'"><h2>Usuários e acesso</h2><label class="switch-row"><input type="checkbox" formControlName="selfRegistration" /> Permitir auto cadastro</label><label class="switch-row"><input type="checkbox" formControlName="requireUserApproval" /> Exigir aprovação administrativa após validar o código do e-mail</label><small>Quando ativo, confirmar o e-mail não libera o acesso até um administrador aprovar o usuário.</small><label class="switch-row"><input type="checkbox" formControlName="showBlock" /> Mostrar bloco e unidade</label></section>
+        <section class="settings-card" *ngIf="settingsTab() === 'acesso'"><h2>Cadastro de profissionais</h2><label class="switch-row"><input type="checkbox" formControlName="professionalSelfRegistration" /> Permitir que profissionais criem a própria conta</label><p class="settings-hint">Com a opção ligada, a tela de criar conta passa a oferecer "Sou profissional". O profissional cria o cadastro e já passa a editar o próprio perfil no app. Você continua podendo editar ou excluir o perfil dele em Profissionais.</p></section>
+        <section class="settings-card" *ngIf="settingsTab() === 'moderacao'"><h2>Indicações e avaliações</h2><label class="switch-row"><input type="checkbox" formControlName="allowRecommendations" /> Permitir indicação</label><label class="switch-row"><input type="checkbox" formControlName="recommendationApproval" /> Exigir aprovação da indicação</label><label class="switch-row"><input type="checkbox" formControlName="allowReviews" /> Permitir avaliações</label><label class="switch-row"><input type="checkbox" formControlName="requireComment" /> Exigir comentário</label></section>
+        <section class="settings-card mail-settings-card" *ngIf="settingsTab() === 'email'">
+          <h2>Envio de e-mail</h2>
+          <p class="settings-hint">Usado para enviar o código de ativação da conta e a recuperação de senha. Sem isso, o código fica apenas no log do servidor.</p>
+          <label class="switch-row"><input type="checkbox" [(ngModel)]="mail.enabled" [ngModelOptions]="{standalone: true}" /> Ativar envio de e-mail</label>
+          <div class="mail-settings-grid">
+            <label>Servidor SMTP<input [(ngModel)]="mail.host" [ngModelOptions]="{standalone: true}" placeholder="smtp.hostinger.com" /></label>
+            <label>Porta<input type="number" [(ngModel)]="mail.port" [ngModelOptions]="{standalone: true}" placeholder="465" /></label>
+          </div>
+          <label class="switch-row"><input type="checkbox" [(ngModel)]="mail.secure" [ngModelOptions]="{standalone: true}" /> Conexão segura (TLS/SSL)</label>
+          <small class="settings-hint">Porta 465 usa TLS direto; 587 costuma usar STARTTLS, com esta opção desligada.</small>
+          <label>Usuário<input [(ngModel)]="mail.username" [ngModelOptions]="{standalone: true}" placeholder="contato@seudominio.com.br" autocomplete="off" /></label>
+          <label>Senha<input type="password" [(ngModel)]="mail.password" [ngModelOptions]="{standalone: true}" [placeholder]="mailPasswordPlaceholder()" autocomplete="new-password" /></label>
+          <small class="settings-hint">{{ mailPasswordHint() }}</small>
+          <div class="mail-settings-grid">
+            <label>Nome do remetente<input [(ngModel)]="mail.fromName" [ngModelOptions]="{standalone: true}" placeholder="IndicaFácil" /></label>
+            <label>E-mail do remetente<input [(ngModel)]="mail.fromEmail" [ngModelOptions]="{standalone: true}" placeholder="contato@seudominio.com.br" /></label>
+          </div>
+          <div class="mail-settings-actions">
+            <button class="secondary-button" type="button" (click)="saveMailSettings()" [disabled]="savingMail()">{{ savingMail() ? 'Salvando...' : 'Salvar e-mail' }}</button>
+            <button class="secondary-button" type="button" (click)="testMail()" [disabled]="testingMail()">{{ testingMail() ? 'Testando...' : 'Testar conexão' }}</button>
+          </div>
+          <label>Enviar teste para<input [(ngModel)]="mailTestTo" [ngModelOptions]="{standalone: true}" placeholder="seu@email.com" /></label>
+          <small *ngIf="mailFeedback()" [class.settings-error]="mailFailed()">{{ mailFeedback() }}</small>
+          <small class="settings-hint" *ngIf="mail.envOverride">As variáveis SMTP_* do servidor estão definidas e têm prioridade sobre estes campos.</small>
+        </section>
+
+        <section class="settings-card security-card" *ngIf="settingsTab() === 'seguranca'"><h2>Segurança</h2><p>Sessão administrativa: 8 horas</p><p>Perfis ativos: Super Admin e Administrador de condomínio</p><button class="secondary-button" type="button" (click)="openAccessModal()">Gerenciar políticas de acesso</button></section>
+        <div class="settings-actions" *ngIf="settingsTab() !== 'email' && settingsTab() !== 'seguranca'"><span class="form-feedback">{{ feedback() }}</span><button class="primary-button" type="submit">Salvar configurações</button></div>
       </form>
 
       <div *ngIf="accessModalOpen()" class="admin-modal-backdrop" (click)="closeAccessModal()">
@@ -208,6 +239,21 @@ export class AdminSectionPageComponent implements OnInit {
   protected readonly reportFeedback = signal('');
   protected readonly accessModalOpen = signal(false);
   protected readonly restrictedModules = signal<string[]>([]);
+  protected readonly settingsTab = signal<'geral' | 'acesso' | 'moderacao' | 'email' | 'seguranca'>('geral');
+  protected readonly settingsTabs = [
+    { id: 'geral' as const, label: 'Geral' },
+    { id: 'acesso' as const, label: 'Usuários e acesso' },
+    { id: 'moderacao' as const, label: 'Indicações e avaliações' },
+    { id: 'email' as const, label: 'E-mail' },
+    { id: 'seguranca' as const, label: 'Segurança' },
+  ];
+  /** Configuração de SMTP: mora em tabela própria, separada das do condomínio. */
+  protected mail: Record<string, unknown> & { enabled?: boolean; host?: string; port?: number; secure?: boolean; username?: string; password?: string; fromName?: string; fromEmail?: string; envOverride?: boolean; passwordSource?: string } = { port: 587, secure: true };
+  protected mailTestTo = '';
+  protected readonly savingMail = signal(false);
+  protected readonly testingMail = signal(false);
+  protected readonly mailFeedback = signal('');
+  protected readonly mailFailed = signal(false);
   protected readonly permModules = computed(() =>
     ADMIN_MODULES.map((module) => ({ ...module, allowed: !this.restrictedModules().includes(module.key) })),
   );
@@ -239,6 +285,7 @@ export class AdminSectionPageComponent implements OnInit {
       this.searchTerm.set(''); this.statusFilter.set(''); this.page.set(1);
       if (section === 'reviews' || section === 'recommendations' || section === 'reports') this.loadSection(section);
       if (section === 'settings') {
+        this.api.getMailSettings().subscribe({ next: (settings) => (this.mail = { ...settings, password: '' }), error: () => undefined });
         this.api.getAdminSettings().subscribe((settings) => {
           this.settingsForm.patchValue(settings);
           this.restrictedModules.set(Array.isArray(settings['restrictedModules']) ? (settings['restrictedModules'] as string[]) : []);
@@ -272,6 +319,52 @@ export class AdminSectionPageComponent implements OnInit {
     this.api.updateAdminSettings(this.settingsForm.getRawValue()).subscribe({
       next: () => this.feedback.set('Configurações salvas no banco de dados com sucesso.'),
       error: (error) => this.feedback.set(this.persistenceError(error)),
+    });
+  }
+
+  protected mailPasswordPlaceholder() {
+    if (this.mail.passwordSource === 'env') return 'Definida pela variável de ambiente';
+    return this.mail.passwordSource === 'database' ? 'Senha salva (deixe em branco para manter)' : 'Senha do e-mail';
+  }
+
+  protected mailPasswordHint() {
+    if (this.mail.passwordSource === 'env') return 'A senha vem de SMTP_PASSWORD e tem prioridade sobre a salva aqui.';
+    if (this.mail.passwordSource === 'database') return 'A senha salva nunca é exibida de volta. Preencha só para substituí-la.';
+    return 'No Hostinger, use a mesma senha da caixa de e-mail.';
+  }
+
+  protected saveMailSettings() {
+    this.savingMail.set(true);
+    this.mailFeedback.set('');
+    this.api.updateMailSettings(this.mail).subscribe({
+      next: (settings) => {
+        this.mail = { ...settings, password: '' };
+        this.savingMail.set(false);
+        this.mailFailed.set(false);
+        this.mailFeedback.set('Configuração de e-mail salva.');
+      },
+      error: (erro) => {
+        this.savingMail.set(false);
+        this.mailFailed.set(true);
+        this.mailFeedback.set(erro?.error?.message ?? 'Não foi possível salvar a configuração de e-mail.');
+      },
+    });
+  }
+
+  protected testMail() {
+    this.testingMail.set(true);
+    this.mailFeedback.set('');
+    this.api.testMailSettings(this.mailTestTo.trim() || undefined).subscribe({
+      next: (resultado) => {
+        this.testingMail.set(false);
+        this.mailFailed.set(!resultado.ok);
+        this.mailFeedback.set(resultado.message);
+      },
+      error: () => {
+        this.testingMail.set(false);
+        this.mailFailed.set(true);
+        this.mailFeedback.set('Não foi possível testar a conexão.');
+      },
     });
   }
 

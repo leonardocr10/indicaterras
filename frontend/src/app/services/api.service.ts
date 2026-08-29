@@ -413,6 +413,18 @@ export class ApiService {
     return this.http.patch<ApiResponse<{ id: string; response: string; updatedAt: string }>>(`${this.baseUrl}/admin-reviews/${id}/response`, { response }).pipe(map((result) => result.data));
   }
 
+  getMailSettings() {
+    return this.http.get<ApiResponse<Record<string, unknown>>>(`${this.baseUrl}/admin-mail-settings`).pipe(map((response) => response.data));
+  }
+
+  updateMailSettings(payload: Record<string, unknown>) {
+    return this.http.patch<ApiResponse<Record<string, unknown>>>(`${this.baseUrl}/admin-mail-settings`, payload).pipe(map((response) => response.data));
+  }
+
+  testMailSettings(email?: string) {
+    return this.http.post<ApiResponse<{ ok: boolean; message: string }>>(`${this.baseUrl}/admin-mail-settings/test`, { email }).pipe(map((response) => response.data));
+  }
+
   getAdminSettings() {
     return this.http.get<ApiResponse<Record<string, unknown>>>(`${this.baseUrl}/admin-settings`).pipe(map((response) => response.data));
   }

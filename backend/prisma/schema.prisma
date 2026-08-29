@@ -680,3 +680,21 @@ model AiAnalysisLogService {
   @@index([logId])
   @@map("ai_analysis_log_services")
 }
+
+model MailSettings {
+  id        String   @id @default(cuid())
+  enabled   Boolean  @default(false)
+  host      String?
+  port      Int      @default(587)
+  // 465 usa TLS implicito; 587 usa STARTTLS. Guardado para nao depender da porta.
+  secure    Boolean  @default(true)
+  username  String?
+  // Nunca devolvida por inteiro na API: o painel recebe mascarada.
+  password  String?  @db.Text
+  fromName  String?
+  fromEmail String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("mail_settings")
+}

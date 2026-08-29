@@ -9,6 +9,8 @@ import { CommunicationsService } from './communications.service';
 import { CatalogService } from '../data/catalog.service';
 import { AiSettingsService } from '../ai/ai-settings.service';
 import { NearbyProfessionalsService } from '../data/nearby-professionals.service';
+import { MailSettingsService } from '../auth/mail-settings.service';
+import { MailService } from '../auth/mail.service';
 
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png', 'image/webp'];
 const TIPOS_SOLICITACAO = [...TIPOS_ACEITOS, 'video/mp4', 'video/webm', 'video/quicktime'];
@@ -47,6 +49,8 @@ export class ResourcesController {
     private readonly catalogService: CatalogService,
     private readonly aiSettingsService: AiSettingsService,
     private readonly nearbyProfessionalsService: NearbyProfessionalsService,
+    private readonly mailSettingsService: MailSettingsService,
+    private readonly mailService: MailService,
   ) {}
 
   @Get('condominiums')
@@ -482,6 +486,30 @@ export class ResourcesController {
   @Post('admin-reports/:id/actions')
   async applyComplaintAction(@Param('id') id: string, @Body('action') action: ComplaintAction) {
     return { data: await this.dataStoreService.applyComplaintAction(id, action) };
+  }
+
+  @Get('admin-mail-settings')
+  async getMailSettings() {
+    return { data: await this.mailSettingsService.getMasked() };
+  }
+
+  @Patch('admin-mail-settings')
+  async updateMailSettings(@Body() payload: Record<string, unknown>) {
+    return { data: await this.mailSettingsService.update(payload) };
+  }
+
+  /** Valida a conexao sem enviar mensagem; com destino, manda um e-mail de teste. */
+  @Post('admin-mail-settings/test')
+  async testMailSettings(@Body('email') email?: string) {
+    const conexao = await this.mailService.testarConexao();
+    if (!conexao.ok || !email) return { data: conexao };
+    const enviado = await this.mailService.enviarTeste(String(email));
+    return {
+      data: {
+        ok: enviado,
+        message: enviado ? `E-mail de teste enviado para ${email}.` : 'Conectou no servidor, mas o envio falhou. Verifique o remetente.',
+      },
+    };
   }
 
   @Get('admin-settings')

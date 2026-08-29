@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin, map, of, switchMap } from 'rxjs';
-import { Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import {
@@ -34,6 +34,7 @@ import { fetchAddressByZipCode, fetchBrazilianCities, neighborhoodsForCity } fro
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
 import { categoryAvatar, categoryCover } from './category-art.util';
 import { SearchableSelectComponent } from './searchable-select';
+import { GoogleMapsLoaderService } from './services/google-maps-loader.service';
 import { LocationService, RADIUS_OPTIONS } from './services/location.service';
 import { PhoneMaskDirective } from './phone-mask.directive';
 import { brand } from './brand';
@@ -1034,8 +1035,10 @@ export class HomePageComponent implements OnInit {
       this.searchProfessionals();
       return;
     }
+    // So a categoria: o servico sugerido pela IA e um palpite e, como filtro
+    // rigido, escondia profissionais que atendem a categoria toda.
     void this.router.navigate(['/app/profissionais'], {
-      queryParams: { categoria: result.category.slug, servico: result.services[0]?.slug ?? null },
+      queryParams: { categoria: result.category.slug },
     });
   }
 
@@ -1086,7 +1089,7 @@ export class HomePageComponent implements OnInit {
         // A categoria reconhecida é mais confiável que procurar toda a frase no perfil.
         // Ex.: "meu chuveiro queimou" deve abrir Eletricistas, não zerar a lista por "queimou".
         void this.router.navigate(['/app/profissionais'], {
-          queryParams: match.category ? { categoria: match.category.slug, servico: match.services[0]?.slug ?? null } : { busca: query },
+          queryParams: match.category ? { categoria: match.category.slug } : { busca: query },
         });
       },
       error: () => void this.router.navigate(['/app/profissionais'], { queryParams: { busca: query } }),
@@ -1156,7 +1159,18 @@ export class HomePageComponent implements OnInit {
           <button class="filter-chip filter-open-button" type="button" [class.has-filters]="activeFilterCount() > 0" (click)="openFilters()"><svg lucideSlidersHorizontal /><span>Filtros</span><b *ngIf="activeFilterCount()">{{ activeFilterCount() }}</b></button>
         </div>
         <ng-container *ngIf="nearbyMode() && location(); else listaPadrao">
-          <section class="other-professionals-section" *ngIf="nearbyItems().length">
+          <div class="nearby-view-toggle" role="tablist" aria-label="Forma de visualização">
+            <button type="button" role="tab" [attr.aria-selected]="!mapView()" [class.active]="!mapView()" (click)="setMapView(false)">Lista</button>
+            <button type="button" role="tab" [attr.aria-selected]="mapView()" [class.active]="mapView()" (click)="setMapView(true)">Mapa</button>
+          </div>
+
+          <section class="nearby-map-section" *ngIf="mapView()">
+            <div #mapCanvas class="nearby-map" [class.hidden]="mapError()"></div>
+            <p class="nearby-map-error" *ngIf="mapError()">{{ mapError() }}</p>
+            <p class="nearby-map-note" *ngIf="!mapError()">Os pinos usam o bairro do profissional, não o endereço exato.</p>
+          </section>
+
+          <section class="other-professionals-section" *ngIf="nearbyItems().length && !mapView()">
             <header>
               <div>
                 <h2>Mais próximos</h2>
@@ -1166,7 +1180,7 @@ export class HomePageComponent implements OnInit {
             <professional-card *ngFor="let professional of nearbyItems()" [professional]="professional" [distanceKm]="professional.distanceKm" />
           </section>
 
-          <div class="professionals-empty" *ngIf="!nearbyItems().length && !loadingNearby()">
+          <div class="professionals-empty" *ngIf="!nearbyItems().length && !loadingNearby() && !mapView()">
             <svg lucideSearch />
             <h2>Não encontramos profissionais neste raio.</h2>
             <p>Aumente a distância para encontrar mais opções.</p>
@@ -1194,7 +1208,9 @@ export class HomePageComponent implements OnInit {
           <div class="professionals-empty" *ngIf="!filteredProfessionals().length">
             <svg lucideSearch />
             <h2>Nenhum profissional encontrado</h2>
-            <p>Ainda não encontramos profissionais desta categoria na sua região.</p>
+            <p *ngIf="!serviceFilter()">Ainda não encontramos profissionais desta categoria na sua região.</p>
+            <p *ngIf="serviceFilter()">Nenhum profissional cadastrou esse serviço específico. Veja todos os profissionais da categoria.</p>
+            <button class="secondary-button" type="button" *ngIf="serviceFilter()" (click)="clearServiceFilter()">Ver todos de {{ selectedCategoryName() || 'a categoria' }}</button>
             <button class="secondary-button" type="button" (click)="requestProposals()">Quero receber propostas</button>
           </div>
         </ng-template>
@@ -1293,6 +1309,12 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
   private readonly locationService = inject(LocationService);
   /** A tela "perto de você" é a experiência do botão Buscar da navegação. */
   protected readonly nearbyMode = signal(false);
+  protected readonly mapView = signal(false);
+  protected readonly mapError = signal('');
+  @ViewChild('mapCanvas') private mapCanvas?: ElementRef<HTMLDivElement>;
+  private readonly mapsLoader = inject(GoogleMapsLoaderService);
+  private mapa: unknown = null;
+  private marcadores: Array<{ setMap(valor: unknown): void }> = [];
   protected readonly location = this.locationService.location;
   protected readonly radius = this.locationService.radius;
   protected readonly locating = this.locationService.requesting;
@@ -1415,6 +1437,78 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
   }
 
   /** Busca por proximidade no servidor: o raio e a distância dependem do banco. */
+  /**
+   * Alterna lista e mapa. A lista e o padrao: o mapa depende do SDK do Google,
+   * que exige chave e faturamento ativo, e pode simplesmente nao carregar.
+   */
+  protected setMapView(ativo: boolean) {
+    this.mapView.set(ativo);
+    if (!ativo) return;
+    this.mapError.set('');
+    setTimeout(() => void this.desenharMapa(), 0);
+  }
+
+  private async desenharMapa() {
+    const canvas = this.mapCanvas?.nativeElement;
+    const origem = this.location();
+    if (!canvas || !origem) return;
+
+    const carregou = await this.mapsLoader.load();
+    if (!carregou) {
+      this.mapError.set('Não foi possível carregar o mapa. Use a lista — ela mostra os mesmos profissionais.');
+      return;
+    }
+
+    const maps = (window as unknown as { google: { maps: Record<string, new (...args: never[]) => never> } }).google.maps as unknown as {
+      Map: new (el: HTMLElement, opcoes: unknown) => { fitBounds(limites: unknown): void; setCenter(p: unknown): void; setZoom(z: number): void };
+      Marker: new (opcoes: unknown) => { setMap(valor: unknown): void; addListener(evento: string, callback: () => void): void };
+      InfoWindow: new (opcoes: unknown) => { open(opcoes: unknown): void };
+      LatLngBounds: new () => { extend(ponto: unknown): void };
+    };
+
+    const centro = { lat: origem.latitude, lng: origem.longitude };
+    type MapaGoogle = { fitBounds(limites: unknown): void; setCenter(p: unknown): void; setZoom(z: number): void };
+    const mapa: MapaGoogle = (this.mapa as MapaGoogle | null) ?? new maps.Map(canvas, {
+      center: centro,
+      zoom: 13,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+    this.mapa = mapa;
+    mapa.setCenter(centro);
+
+    this.marcadores.forEach((marcador) => marcador.setMap(null));
+    this.marcadores = [];
+
+    const limites = new maps.LatLngBounds();
+    limites.extend(centro);
+    // Ponto do cliente, para ele se situar entre os profissionais.
+    this.marcadores.push(
+      new maps.Marker({ position: centro, map: mapa, title: 'Sua localização', zIndex: 999 }) as unknown as { setMap(v: unknown): void },
+    );
+
+    const janela = new maps.InfoWindow({});
+    for (const profissional of this.nearbyItems()) {
+      if (profissional.latitude === null || profissional.longitude === null) continue;
+      const posicao = { lat: profissional.latitude, lng: profissional.longitude };
+      const marcador = new maps.Marker({ position: posicao, map: mapa, title: profissional.name });
+      marcador.addListener('click', () => {
+        const distancia = profissional.distanceKm === null ? '' : `<div>~${profissional.distanceKm.toString().replace('.', ',')} km</div>`;
+        janela.open({
+          map: mapa,
+          anchor: marcador,
+          content: `<div style="min-width:150px;font-family:inherit"><strong>${profissional.name}</strong><div>${profissional.category}</div>${distancia}<a href="/app/profissionais/${profissional.id}" style="color:#065f46;font-weight:700">Ver perfil</a></div>`,
+        });
+      });
+      this.marcadores.push(marcador as unknown as { setMap(v: unknown): void });
+      limites.extend(posicao);
+    }
+
+    if (this.marcadores.length > 1) mapa.fitBounds(limites);
+    else mapa.setZoom(13);
+  }
+
   protected loadNearby() {
     const local = this.location();
     if (!local) {
@@ -1438,6 +1532,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
         next: (resultado) => {
           this.nearby.set(resultado);
           this.loadingNearby.set(false);
+          if (this.mapView()) setTimeout(() => void this.desenharMapa(), 0);
         },
         error: () => {
           this.nearby.set(null);
@@ -1557,6 +1652,19 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
         },
       });
     }, 220);
+  }
+
+  /** Nome da categoria selecionada, para o texto do estado vazio. */
+  protected selectedCategoryName() {
+    const slug = this.selectedCategory();
+    return this.categories().find((category) => category.slug === slug)?.name ?? '';
+  }
+
+  /** Solta so o filtro de servico, mantendo a categoria e o resto da busca. */
+  protected clearServiceFilter() {
+    this.serviceFilter.set('');
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { servico: null }, queryParamsHandling: 'merge' });
+    if (this.nearbyMode()) this.loadNearby();
   }
 
   protected clearFilters() {

@@ -230,6 +230,9 @@ export interface NearbyProfessional extends Professional {
   distanceKm: number | null;
   /** Sempre true: a coordenada vem do centroide do bairro, não do endereço. */
   approximateDistance: boolean;
+  /** Coordenada do bairro, usada para o pino no mapa. Nula quando não há. */
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface NearbyResult {

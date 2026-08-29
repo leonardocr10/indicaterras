@@ -80,6 +80,9 @@ export class NearbyProfessionalsService {
         // Aproximada pelo bairro: a interface precisa exibir com "~".
         distanceKm: distancias.get(profissional.id) ?? null,
         approximateDistance: true,
+        // Coordenada do bairro, usada para o pino no mapa.
+        latitude: profissional.latitude === null ? null : Number(profissional.latitude),
+        longitude: profissional.longitude === null ? null : Number(profissional.longitude),
       };
     });
 

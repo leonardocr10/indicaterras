@@ -392,6 +392,36 @@ import { brand } from './brand';
         </aside>
       </section>
 
+      <section class="landing-section testimonials" id="avaliacoes">
+        <span class="section-eyebrow">Reputação</span>
+        <h2>O que você vê <span>antes de contratar.</span></h2>
+
+        <div class="testimonial-grid">
+          <article *ngFor="let item of reputationCards">
+            <div class="testimonial-top">
+              <span class="testimonial-avatar">
+                <ng-container [ngSwitch]="item.icon">
+                  <svg *ngSwitchCase="'star'" lucideStar></svg>
+                  <svg *ngSwitchCase="'message-circle'" lucideMessageCircle></svg>
+                  <svg *ngSwitchCase="'users-round'" lucideUsersRound></svg>
+                </ng-container>
+              </span>
+              <div>
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.hint }}</small>
+              </div>
+            </div>
+
+            <p>{{ item.description }}</p>
+          </article>
+        </div>
+
+        <div class="testimonial-proof">
+          <svg lucideShield />
+          Tudo isso fica visível no perfil de cada profissional
+        </div>
+      </section>
+
       <section class="landing-final">
         <div>
           <h2>Pronto para resolver? Comece agora mesmo!</h2>
@@ -471,6 +501,7 @@ export class LandingPageComponent implements OnInit {
     { label: 'Como funciona', href: '#como-funciona' },
     { label: 'Benefícios', href: '#beneficios' },
     { label: 'Para profissionais', href: '#profissionais' },
+    { label: 'Reputação', href: '#avaliacoes' },
   ];
 
   protected readonly trustItems = [
@@ -510,6 +541,32 @@ export class LandingPageComponent implements OnInit {
     'Organize seus serviços e horários',
     'Acompanhe suas avaliações',
     'Construa sua reputação',
+  ];
+
+  /**
+   * Ocupa o lugar dos depoimentos antigos, que eram frases inventadas com nome
+   * e cidade de gente que nunca foi cliente. Aqui nada e citacao de ninguem:
+   * cada cartao descreve um registro que o app realmente guarda.
+   */
+  protected readonly reputationCards = [
+    {
+      icon: 'star',
+      title: 'Avaliação com nota',
+      hint: 'De quem contratou',
+      description: 'Depois do serviço o cliente dá a nota, e a média fica no perfil do profissional para quem vier depois.',
+    },
+    {
+      icon: 'message-circle',
+      title: 'Comentário público',
+      hint: 'Aberto para todos',
+      description: 'O que o cliente escreve fica visível na página do profissional, que pode responder ali mesmo.',
+    },
+    {
+      icon: 'users-round',
+      title: 'Indicação',
+      hint: 'Da comunidade',
+      description: 'Quem gostou marca o profissional como indicado, e a busca mostra quantas pessoas já fizeram isso.',
+    },
   ];
 
   protected readonly professionalHighlights = [

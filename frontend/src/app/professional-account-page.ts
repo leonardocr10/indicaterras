@@ -134,10 +134,10 @@ import { ToastService } from './services/toast.service';
         <!-- Metricas reais do banco. Sem dado, aparece 0. -->
         <section class="provider-metrics-strip" *ngIf="dashboard() as painel">
           <div><svg lucideStar class="metric-star" /><strong>{{ painel.metrics.rating | number: '1.1-1' }}</strong><small>Nota</small></div>
-          <div><svg lucideMessageSquare /><strong>{{ painel.metrics.reviews }}</strong><small>Avaliações</small></div>
-          <div><svg lucideUsers /><strong>{{ painel.metrics.recommendations }}</strong><small>Indicações</small></div>
-          <div><svg lucideHeart class="metric-heart" /><strong>{{ painel.metrics.favorites }}</strong><small>Favoritos</small></div>
-          <div><svg lucideEye class="metric-eye" /><strong>{{ painel.metrics.views }}</strong><small>Visualizações</small></div>
+          <a routerLink="/profissional/avaliacoes"><svg lucideMessageSquare /><strong>{{ painel.metrics.reviews }}</strong><small>{{ painel.metrics.reviews === 1 ? 'Avaliação' : 'Avaliações' }}</small></a>
+          <div><svg lucideUsers /><strong>{{ painel.metrics.recommendations }}</strong><small>{{ painel.metrics.recommendations === 1 ? 'Indicação' : 'Indicações' }}</small></div>
+          <a routerLink="/profissional/favoritos"><svg lucideHeart class="metric-heart" /><strong>{{ painel.metrics.favorites }}</strong><small>{{ painel.metrics.favorites === 1 ? 'Favorito' : 'Favoritos' }}</small></a>
+          <div><svg lucideEye class="metric-eye" /><strong>{{ painel.metrics.views }}</strong><small>{{ painel.metrics.views === 1 ? 'Visualização' : 'Visualizações' }}</small></div>
         </section>
 
         <section class="provider-block" *ngIf="dashboard() as painel">
@@ -211,7 +211,7 @@ import { ToastService } from './services/toast.service';
               <h2><svg lucideHeart />Clientes que favoritaram você</h2>
               <a *ngIf="painel.favoriteClients.total" routerLink="/profissional/favoritos">Ver todos</a>
             </header>
-            <div class="provider-favorites" *ngIf="painel.favoriteClients.total; else semFavoritos">
+            <a class="provider-favorites" routerLink="/profissional/favoritos" *ngIf="painel.favoriteClients.total; else semFavoritos">
               <div class="provider-favorite-avatars">
                 <span *ngFor="let cliente of painel.favoriteClients.preview">{{ cliente.initial }}</span>
                 <span class="mais" *ngIf="painel.favoriteClients.total > painel.favoriteClients.preview.length">+{{ painel.favoriteClients.total - painel.favoriteClients.preview.length }}</span>
@@ -220,7 +220,8 @@ import { ToastService } from './services/toast.service';
                 <strong>{{ painel.favoriteClients.total }} {{ painel.favoriteClients.total === 1 ? 'cliente salvou' : 'clientes salvaram' }} seu perfil</strong>
                 <p>Mostre seu trabalho e conquiste ainda mais clientes.</p>
               </div>
-            </div>
+              <svg lucideChevronRight class="provider-block-chevron" />
+            </a>
             <ng-template #semFavoritos>
               <p class="provider-empty">Ninguém favoritou seu perfil ainda. Publique fotos dos seus trabalhos para aparecer melhor.</p>
             </ng-template>
@@ -232,7 +233,7 @@ import { ToastService } from './services/toast.service';
               <a *ngIf="painel.recentReviews.length" routerLink="/profissional/avaliacoes">Ver todas</a>
             </header>
             <div class="provider-reviews" *ngIf="painel.recentReviews.length; else semAvaliacoes">
-              <article *ngFor="let review of painel.recentReviews">
+              <a *ngFor="let review of painel.recentReviews" routerLink="/profissional/avaliacoes">
                 <header>
                   <span class="provider-review-avatar">{{ review.author.charAt(0) }}</span>
                   <div>
@@ -243,7 +244,7 @@ import { ToastService } from './services/toast.service';
                 </header>
                 <p>{{ review.comment }}</p>
                 <time>{{ review.createdAt | date: 'dd/MM/yyyy' }}</time>
-              </article>
+              </a>
             </div>
             <ng-template #semAvaliacoes>
               <p class="provider-empty">Ainda não há avaliações. As avaliações dos seus clientes aparecerão aqui depois dos serviços realizados.</p>

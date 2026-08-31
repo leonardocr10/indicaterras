@@ -410,3 +410,32 @@ export interface ProfessionalDashboard {
   favoriteClients: { total: number; preview: Array<{ id: string; initial: string }> };
   recentReviews: Array<{ id: string; rating: number; comment: string; createdAt: string; author: string }>;
 }
+
+/** Cliente que salvou o profissional nos favoritos: nada de telefone, e-mail ou rua. */
+export interface FavoriteClient {
+  id: string;
+  favoritedAt: string;
+  client: { id: string; name: string; initial: string; neighborhood: string; city: string; state: string };
+}
+
+export interface FavoriteClientsPage {
+  total: number;
+  page: number;
+  limit: number;
+  items: FavoriteClient[];
+}
+
+export interface ProfessionalReview {
+  id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  client: { id: string; name: string; initial: string };
+}
+
+export interface ProfessionalReviewsPage {
+  summary: { total: number; averageRating: number };
+  page: number;
+  limit: number;
+  items: ProfessionalReview[];
+}

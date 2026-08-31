@@ -435,6 +435,8 @@ model Favorite {
   professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
 
   @@unique([userId, professionalId])
+  /// A tela "Clientes que favoritaram voce" lista por profissional, do mais recente para o mais antigo.
+  @@index([professionalId, createdAt])
 }
 
 model Report {

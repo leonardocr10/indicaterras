@@ -108,6 +108,111 @@ export class ProfessionalDashboardService {
   }
 
   /**
+   * Lista paginada de quem favoritou o profissional, do mais recente para o
+   * mais antigo. Mesma tabela e mesmo filtro do contador do painel, para os
+   * dois numeros nunca discordarem.
+   *
+   * Privacidade: sai o nome publico, o bairro/cidade e a data. Telefone,
+   * e-mail, rua e numero do cliente nao passam por aqui.
+   */
+  async getFavoriteClients(userId: string, page = 1, limit = 10) {
+    if (!userId) throw new NotFoundException('Informe o usuário.');
+    const profissional = await this.prisma.professional.findFirst({ where: { userId }, select: { id: true } });
+    if (!profissional) throw new NotFoundException('Não encontramos um perfil profissional para esta conta.');
+
+    const paginaAtual = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const porPagina = Math.min(Math.max(Number.isFinite(limit) ? Math.floor(limit) : 10, 1), 50);
+
+    const [total, favoritos] = await Promise.all([
+      this.prisma.favorite.count({ where: { professionalId: profissional.id } }),
+      this.prisma.favorite.findMany({
+        where: { professionalId: profissional.id },
+        orderBy: { createdAt: 'desc' },
+        skip: (paginaAtual - 1) * porPagina,
+        take: porPagina,
+        select: {
+          id: true,
+          createdAt: true,
+          user: { select: { id: true, name: true, neighborhood: true, city: true, state: true } },
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      page: paginaAtual,
+      limit: porPagina,
+      items: favoritos.map((favorito) => ({
+        id: favorito.id,
+        favoritedAt: favorito.createdAt,
+        client: {
+          id: favorito.user.id,
+          name: favorito.user.name.trim(),
+          initial: (favorito.user.name.trim()[0] ?? '?').toUpperCase(),
+          neighborhood: favorito.user.neighborhood ?? '',
+          city: favorito.user.city ?? '',
+          state: favorito.user.state ?? '',
+        },
+      })),
+    };
+  }
+
+  /**
+   * Avaliacoes recebidas, da mais recente para a mais antiga. Só o que o
+   * publico ja ve: avaliacao escondida pela moderacao (hidden) fica de fora,
+   * igual ao painel e ao perfil publico.
+   *
+   * A media vem das mesmas linhas do contador, entao a tela e o painel nunca
+   * mostram numeros diferentes.
+   */
+  async getProfessionalReviews(userId: string, page = 1, limit = 10) {
+    if (!userId) throw new NotFoundException('Informe o usuário.');
+    const profissional = await this.prisma.professional.findFirst({ where: { userId }, select: { id: true } });
+    if (!profissional) throw new NotFoundException('Não encontramos um perfil profissional para esta conta.');
+
+    const paginaAtual = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const porPagina = Math.min(Math.max(Number.isFinite(limit) ? Math.floor(limit) : 10, 1), 50);
+    const visiveis = { professionalId: profissional.id, hidden: false };
+
+    const [notas, avaliacoes] = await Promise.all([
+      this.prisma.review.findMany({ where: visiveis, select: { rating: true } }),
+      this.prisma.review.findMany({
+        where: visiveis,
+        orderBy: { createdAt: 'desc' },
+        skip: (paginaAtual - 1) * porPagina,
+        take: porPagina,
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          createdAt: true,
+          user: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
+
+    const soma = notas.reduce((total, item) => total + item.rating, 0);
+    const media = notas.length ? Number((soma / notas.length).toFixed(1)) : 0;
+
+    return {
+      summary: { total: notas.length, averageRating: media },
+      page: paginaAtual,
+      limit: porPagina,
+      items: avaliacoes.map((review) => ({
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt,
+        client: {
+          id: review.user.id,
+          name: review.user.name.trim(),
+          initial: (review.user.name.trim()[0] ?? '?').toUpperCase(),
+        },
+      })),
+    };
+  }
+
+  /**
    * Registra a visita ao perfil público. Uma linha por visitante e por dia:
    * recarregar a página não conta de novo, e o dono do perfil nunca é contado.
    */

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
-import { AiAnalysisLogRow, AiProblemAnalysisResult, AiPublicConfig, AiSettings, AiUsageSummary, ApiResponse, NearbyResult, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, HomePayload, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalDashboard, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
+import { AiAnalysisLogRow, AiProblemAnalysisResult, AiPublicConfig, AiSettings, AiUsageSummary, ApiResponse, NearbyResult, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, FavoriteClientsPage, HomePayload, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalDashboard, ProfessionalReviewsPage, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
@@ -344,6 +344,22 @@ export class ApiService {
     const userId = this.auth.user()?.id ?? '';
     return this.http
       .get<ApiResponse<ProfessionalDashboard>>(`${this.baseUrl}/me/professional/dashboard?userId=${encodeURIComponent(userId)}`)
+      .pipe(map((response) => response.data));
+  }
+
+  /** Quem favoritou o profissional. Mesma fonte do contador do painel. */
+  getProfessionalFavoriteClients(page = 1, limit = 10) {
+    const userId = this.auth.user()?.id ?? '';
+    return this.http
+      .get<ApiResponse<FavoriteClientsPage>>(`${this.baseUrl}/me/professional/favorites?userId=${encodeURIComponent(userId)}&page=${page}&limit=${limit}`)
+      .pipe(map((response) => response.data));
+  }
+
+  /** Avaliacoes visiveis recebidas pelo profissional, com a media do painel. */
+  getProfessionalReviews(page = 1, limit = 10) {
+    const userId = this.auth.user()?.id ?? '';
+    return this.http
+      .get<ApiResponse<ProfessionalReviewsPage>>(`${this.baseUrl}/me/professional/reviews?userId=${encodeURIComponent(userId)}&page=${page}&limit=${limit}`)
       .pipe(map((response) => response.data));
   }
 

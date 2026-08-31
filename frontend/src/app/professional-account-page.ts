@@ -209,6 +209,7 @@ import { ToastService } from './services/toast.service';
           <section class="provider-block provider-mini">
             <header class="provider-block-header">
               <h2><svg lucideHeart />Clientes que favoritaram você</h2>
+              <a *ngIf="painel.favoriteClients.total" routerLink="/profissional/favoritos">Ver todos</a>
             </header>
             <div class="provider-favorites" *ngIf="painel.favoriteClients.total; else semFavoritos">
               <div class="provider-favorite-avatars">
@@ -228,7 +229,7 @@ import { ToastService } from './services/toast.service';
           <section class="provider-block provider-mini">
             <header class="provider-block-header">
               <h2><svg lucideStar />Avaliações recentes</h2>
-              <a *ngIf="painel.recentReviews.length" [routerLink]="['/app/profissional', painel.profile.id, 'comentarios']">Ver todas</a>
+              <a *ngIf="painel.recentReviews.length" routerLink="/profissional/avaliacoes">Ver todas</a>
             </header>
             <div class="provider-reviews" *ngIf="painel.recentReviews.length; else semAvaliacoes">
               <article *ngFor="let review of painel.recentReviews">

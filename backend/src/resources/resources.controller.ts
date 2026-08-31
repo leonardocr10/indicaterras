@@ -305,6 +305,26 @@ export class ResourcesController {
     return { data: await this.professionalDashboardService.getDashboard(userId) };
   }
 
+  /** Quem favoritou o profissional, do mais recente para o mais antigo. */
+  @Get('me/professional/favorites')
+  async getProfessionalFavorites(
+    @Query('userId') userId: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
+  ) {
+    return { data: await this.professionalDashboardService.getFavoriteClients(userId, Number(page), Number(limit)) };
+  }
+
+  /** Avaliacoes visiveis recebidas pelo profissional, da mais recente para a mais antiga. */
+  @Get('me/professional/reviews')
+  async getOwnProfessionalReviews(
+    @Query('userId') userId: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
+  ) {
+    return { data: await this.professionalDashboardService.getProfessionalReviews(userId, Number(page), Number(limit)) };
+  }
+
   @Get('me/professional')
   getOwnProfessional(@Query('userId') userId: string) {
     return { data: this.dataStoreService.getOwnProfessional(userId) };

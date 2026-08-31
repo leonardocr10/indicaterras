@@ -49,6 +49,16 @@ export const routes: Routes = [
     canActivate: [professionalGuard],
   },
   {
+    path: 'profissional/favoritos',
+    loadComponent: () => import('./professional-favorites-page').then((m) => m.ProfessionalFavoritesPageComponent),
+    canActivate: [professionalGuard],
+  },
+  {
+    path: 'profissional/avaliacoes',
+    loadComponent: () => import('./professional-reviews-page').then((m) => m.ProfessionalReviewsPageComponent),
+    canActivate: [professionalGuard],
+  },
+  {
     path: 'admin',
     component: AdminLayoutComponent,
     canActivate: [adminGuard],

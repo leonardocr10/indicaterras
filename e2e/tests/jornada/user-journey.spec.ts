@@ -8,8 +8,9 @@ import { ARQUIVOS } from '../../support/arquivos';
  * Item 43: a jornada real, do cadastro a avaliacao, numa sessao so.
  *
  * Escopo honesto: os passos 9 a 12 do enunciado (profissional envia proposta,
- * cliente aceita, servico concluido) dependem do fluxo de propostas, que nao
- * existe no sistema - ver `tests/propostas/fluxo-de-propostas.spec.ts`. A
+ * cliente aceita, servico concluido) dependem do ENVIO E ACEITE de proposta, que
+ * ainda nao existe - ver `tests/profissional/oportunidades.spec.ts`, onde a
+ * listagem de oportunidades (que ja existe) e testada de verdade. A
  * jornada vai ate onde o produto vai hoje: cadastro, busca, perfil, favorito,
  * solicitacao publicada e avaliacao.
  */
@@ -115,8 +116,8 @@ test.describe('@journey @regression Jornada completa do cliente', () => {
     await expect(page.getByText(tituloDaSolicitacao)).toBeVisible({ timeout: 25_000 });
 
     // ------------------------------------------------------------------
-    // 9 a 11. Propostas e ciclo do servico: nao existem no sistema atual.
-    // Documentado em tests/propostas/fluxo-de-propostas.spec.ts.
+    // 9 a 11. Envio/aceite de proposta e ciclo do servico ainda nao existem.
+    // Documentado em tests/profissional/oportunidades.spec.ts.
     // A jornada segue para a avaliacao, que existe.
     // ------------------------------------------------------------------
 

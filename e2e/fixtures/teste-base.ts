@@ -12,6 +12,7 @@ import { CommentsPage } from '../pages/CommentsPage';
 import { FavoritesPage } from '../pages/FavoritesPage';
 import { ServiceRequestPage } from '../pages/ServiceRequestPage';
 import { ProfessionalDashboardPage } from '../pages/ProfessionalDashboardPage';
+import { ProfessionalOpportunitiesPage } from '../pages/ProfessionalOpportunitiesPage';
 import { AdminCrudPage } from '../pages/AdminCrudPage';
 import { AdminCategoriesPage } from '../pages/AdminCategoriesPage';
 import { AdminAiPage } from '../pages/AdminAiPage';
@@ -29,6 +30,7 @@ interface Paginas {
   favoritos: FavoritesPage;
   solicitacao: ServiceRequestPage;
   painelProfissional: ProfessionalDashboardPage;
+  oportunidades: ProfessionalOpportunitiesPage;
   adminCrud: AdminCrudPage;
   adminCategorias: AdminCategoriesPage;
   adminIa: AdminAiPage;
@@ -86,6 +88,7 @@ export const test = base.extend<FixturesDoProjeto>({
   favoritos: async ({ page }, usar) => usar(new FavoritesPage(page)),
   solicitacao: async ({ page }, usar) => usar(new ServiceRequestPage(page)),
   painelProfissional: async ({ page }, usar) => usar(new ProfessionalDashboardPage(page)),
+  oportunidades: async ({ page }, usar) => usar(new ProfessionalOpportunitiesPage(page)),
   adminCrud: async ({ page }, usar) => usar(new AdminCrudPage(page)),
   adminCategorias: async ({ page }, usar) => usar(new AdminCategoriesPage(page)),
   adminIa: async ({ page }, usar) => usar(new AdminAiPage(page)),

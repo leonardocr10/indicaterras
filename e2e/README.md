@@ -145,21 +145,26 @@ Há dois testes opcionais contra os serviços reais, pulados por padrão. Preenc
 
 ## O que não está coberto, e por quê
 
-`tests/propostas/fluxo-de-propostas.spec.ts` descreve os itens 13, 14 e 15 da
-especificação — profissional recebe oportunidade, envia proposta, cliente aceita,
-serviço percorre o ciclo até concluído. **Esse recurso não existe no sistema**:
+`tests/profissional/oportunidades.spec.ts` cobre o item 13 até onde o sistema vai.
+O recurso **Oportunidades** existe desde o commit `55eae07`: o profissional vê as
+solicitações abertas compatíveis com as categorias dele e dentro do raio
+(`serviceRadiusKm`, 15 km por padrão). Isso é testado de verdade.
 
-- não há modelo `Proposal` no `schema.prisma`;
-- `ServiceRequestStatus` só tem `OPEN`, `MATCHED`, `CLOSED` e `CANCELLED`;
-- `getServiceRequestsForUser` filtra por `clientId`, então o profissional não
-  enxerga solicitação nenhuma.
+O que ainda **não existe**, e por isso está como `test.fixme` no fim daquele
+arquivo:
 
-Os testes ficam como `test.fixme`, servindo de especificação executável. Um teste
-sentinela roda de verdade e **falha quando o recurso passar a existir**, avisando
-que a suíte precisa ser ativada.
+- envio de proposta pelo profissional (valor, disponibilidade, duração, mensagem);
+- aceite pelo cliente, com as demais propostas viradas em `REJECTED`;
+- ciclo do serviço `SCHEDULED` → `IN_PROGRESS` → `COMPLETED`.
+
+Não há modelo `Proposal` no `schema.prisma`, e `professional-dashboard.service.ts`
+registra em comentário: "O sistema ainda não registra proposta enviada".
+
+Um teste sentinela roda de verdade e **falha quando esses endpoints nascerem**,
+avisando que os `fixme` precisam virar testes.
 
 Pela mesma razão, a jornada em `tests/jornada/user-journey.spec.ts` vai do
-cadastro até a avaliação, pulando os passos 9 a 11 do enunciado.
+cadastro até a avaliação, sem os passos de proposta e aceite.
 
 ## Relatórios
 

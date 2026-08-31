@@ -372,6 +372,9 @@ async function main() {
       approvalStatus: 'APPROVED',
       active: true,
       workingHours: [{ days: [1, 2, 3, 4, 5], start: '09:00', end: '17:00' }],
+      // Raio explicito (o padrao do servico e 15 km): com 10 km as
+      // solicitacoes do seed caem de um lado ou do outro sem ambiguidade.
+      serviceRadiusKm: 10,
       ...aKm(1.8),
     },
   });
@@ -442,6 +445,67 @@ async function main() {
       status: 'OPEN',
       ...ORIGEM,
       services: { create: [{ categoryServiceId: servicosPorSlug.get('vazamento')! }] },
+    },
+  });
+
+  // ---------------------------------------------------------------------
+  // Oportunidades do profissional autenticado (eletricista, raio de 10 km,
+  // posicionado a 1,8 km da origem). As tres solicitacoes abaixo existem para
+  // que o casamento tenha um resultado exato:
+  //   PERTO  - mesma categoria, a 1,8 km dele  -> aparece
+  //   LONGE  - mesma categoria, a 38 km dele   -> fora do raio
+  //   FECHADA- mesma categoria e perto, mas CLOSED -> so OPEN vira oportunidade
+  // A de encanador acima ja cobre o caso "categoria diferente".
+  // ---------------------------------------------------------------------
+  await prisma.serviceRequest.create({
+    data: {
+      clientId: clienteSecundario.id,
+      categoryId: categoriasPorSlug.get('eletricista')!,
+      title: 'Chuveiro queimado E2E PERTO',
+      description: 'Solicitacao aberta de eletricista, dentro do raio do profissional autenticado.',
+      urgency: 'TODAY',
+      preferredPeriod: 'MORNING',
+      budgetType: 'OPEN',
+      city: 'Brasilia',
+      state: 'DF',
+      neighborhood: 'Asa Sul',
+      status: 'OPEN',
+      ...ORIGEM,
+      services: { create: [{ categoryServiceId: servicosPorSlug.get('chuveiro-eletrico')! }] },
+    },
+  });
+
+  await prisma.serviceRequest.create({
+    data: {
+      clientId: clienteSecundario.id,
+      categoryId: categoriasPorSlug.get('eletricista')!,
+      title: 'Chuveiro queimado E2E LONGE',
+      description: 'Solicitacao aberta de eletricista, fora do raio de 10 km do profissional.',
+      urgency: 'NO_RUSH',
+      budgetType: 'OPEN',
+      city: 'Planaltina',
+      state: 'DF',
+      neighborhood: 'Centro',
+      status: 'OPEN',
+      ...aKm(40),
+      services: { create: [{ categoryServiceId: servicosPorSlug.get('chuveiro-eletrico')! }] },
+    },
+  });
+
+  await prisma.serviceRequest.create({
+    data: {
+      clientId: clienteSecundario.id,
+      categoryId: categoriasPorSlug.get('eletricista')!,
+      title: 'Chuveiro queimado E2E FECHADA',
+      description: 'Solicitacao ja encerrada: nao pode aparecer como oportunidade.',
+      urgency: 'TODAY',
+      budgetType: 'OPEN',
+      city: 'Brasilia',
+      state: 'DF',
+      neighborhood: 'Asa Sul',
+      status: 'CLOSED',
+      ...ORIGEM,
+      services: { create: [{ categoryServiceId: servicosPorSlug.get('chuveiro-eletrico')! }] },
     },
   });
 

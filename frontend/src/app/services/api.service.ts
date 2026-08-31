@@ -54,21 +54,19 @@ export class ApiService {
   }
 
   getNotifications() {
-    const userId = this.auth.user()?.id ?? '';
-    return this.http.get<ApiResponse<NotificationsPayload>>(`${this.baseUrl}/notifications?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+    return this.http.get<ApiResponse<NotificationsPayload>>(`${this.baseUrl}/notifications`).pipe(map((response) => response.data));
   }
 
   markNotificationsRead(notificationIds?: string[]) {
-    return this.http.post<ApiResponse<NotificationsPayload>>(`${this.baseUrl}/notifications/read`, { userId: this.auth.user()?.id, notificationIds }).pipe(map((response) => response.data));
+    return this.http.post<ApiResponse<NotificationsPayload>>(`${this.baseUrl}/notifications/read`, { notificationIds }).pipe(map((response) => response.data));
   }
 
   getConversation(professionalId: string) {
-    const userId = this.auth.user()?.id ?? '';
-    return this.http.get<ApiResponse<Conversation>>(`${this.baseUrl}/conversations/${professionalId}?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+    return this.http.get<ApiResponse<Conversation>>(`${this.baseUrl}/conversations/${professionalId}`).pipe(map((response) => response.data));
   }
 
   sendConversationMessage(professionalId: string, content: string) {
-    return this.http.post<ApiResponse<Conversation>>(`${this.baseUrl}/conversations/${professionalId}/messages`, { userId: this.auth.user()?.id, content }).pipe(map((response) => response.data));
+    return this.http.post<ApiResponse<Conversation>>(`${this.baseUrl}/conversations/${professionalId}/messages`, { content }).pipe(map((response) => response.data));
   }
 
   getProfessionals(category?: string, service?: string, search?: string) {
@@ -121,9 +119,8 @@ export class ApiService {
   }
 
   getComments(professionalId: string) {
-    const userId = this.auth.user()?.id ?? '';
     return this.http
-      .get<ApiResponse<ProfessionalComment[]>>(`${this.baseUrl}/professionals/${professionalId}/comments?userId=${encodeURIComponent(userId)}`)
+      .get<ApiResponse<ProfessionalComment[]>>(`${this.baseUrl}/professionals/${professionalId}/comments`)
       .pipe(map((response) => response.data));
   }
 
@@ -135,31 +132,28 @@ export class ApiService {
 
   toggleCommentLike(commentId: string) {
     return this.http
-      .post<ApiResponse<{ reviewId: string; liked: boolean; likes: number }>>(`${this.baseUrl}/comments/${commentId}/like`, { userId: this.auth.user()?.id })
+      .post<ApiResponse<{ reviewId: string; liked: boolean; likes: number }>>(`${this.baseUrl}/comments/${commentId}/like`, {})
       .pipe(map((response) => response.data));
   }
 
   replyToComment(commentId: string, comment: string) {
     return this.http
       .post<ApiResponse<{ id: string; userId: string; userName: string; comment: string; createdAt: string }>>(`${this.baseUrl}/comments/${commentId}/replies`, {
-        userId: this.auth.user()?.id,
         comment,
       })
       .pipe(map((response) => response.data));
   }
 
   getFavorites() {
-    const userId = this.auth.user()?.id ?? '';
     return this.http
-      .get<ApiResponse<Professional[]>>(`${this.baseUrl}/favorites?userId=${userId}`)
+      .get<ApiResponse<Professional[]>>(`${this.baseUrl}/favorites`)
       .pipe(map((response) => response.data));
   }
 
   getRecommendations() {
-    const userId = this.auth.user()?.id ?? '';
     return this.http
       .get<ApiResponse<Array<{ id: string; professionalId: string; createdAt: string; status: string }>>>(
-        `${this.baseUrl}/recommendations?userId=${userId}`,
+        `${this.baseUrl}/recommendations`,
       )
       .pipe(map((response) => response.data));
   }
@@ -177,16 +171,15 @@ export class ApiService {
   }
 
   getMyAccount() {
-    const userId = this.auth.user()?.id ?? '';
-    return this.http.get<ApiResponse<MyAccount>>(`${this.baseUrl}/me/account?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+    return this.http.get<ApiResponse<MyAccount>>(`${this.baseUrl}/me/account`).pipe(map((response) => response.data));
   }
 
   updateMyAccount(payload: { name: string; email: string; phone: string } & Partial<Pick<MyAccount, 'zipCode' | 'street' | 'number' | 'complement' | 'neighborhood' | 'city' | 'state'>>) {
-    return this.http.patch<ApiResponse<MyAccount>>(`${this.baseUrl}/me/account`, { userId: this.auth.user()?.id, ...payload }).pipe(map((response) => response.data));
+    return this.http.patch<ApiResponse<MyAccount>>(`${this.baseUrl}/me/account`, { ...payload }).pipe(map((response) => response.data));
   }
 
   changeMyPassword(currentPassword: string, newPassword: string) {
-    return this.http.post<ApiResponse<{ success: boolean }>>(`${this.baseUrl}/me/account/change-password`, { userId: this.auth.user()?.id, currentPassword, newPassword }).pipe(map((response) => response.data));
+    return this.http.post<ApiResponse<{ success: boolean }>>(`${this.baseUrl}/me/account/change-password`, { currentPassword, newPassword }).pipe(map((response) => response.data));
   }
 
   getCondominiums() {
@@ -211,7 +204,7 @@ export class ApiService {
 
   // Só deve ser chamado por ação explícita do usuário (botão "Analisar"), nunca a cada tecla digitada.
   analyzeProblem(text: string) {
-    return this.http.post<ApiResponse<AiProblemAnalysisResult>>(`${this.baseUrl}/ai/problem-analysis`, { text, userId: this.auth.user()?.id }).pipe(map((response) => response.data));
+    return this.http.post<ApiResponse<AiProblemAnalysisResult>>(`${this.baseUrl}/ai/problem-analysis`, { text }).pipe(map((response) => response.data));
   }
 
   getAdminAiSettings() {
@@ -250,19 +243,16 @@ export class ApiService {
   }
 
   getMyServiceRequests() {
-    const userId = this.auth.user()?.id ?? '';
-    return this.http.get<ApiResponse<ServiceRequestRecord[]>>(`${this.baseUrl}/service-requests?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+    return this.http.get<ApiResponse<ServiceRequestRecord[]>>(`${this.baseUrl}/service-requests`).pipe(map((response) => response.data));
   }
 
   getServiceRequest(id: string) {
-    const userId = this.auth.user()?.id ?? '';
-    return this.http.get<ApiResponse<ServiceRequestRecord>>(`${this.baseUrl}/service-requests/${id}?userId=${encodeURIComponent(userId)}`).pipe(map((response) => response.data));
+    return this.http.get<ApiResponse<ServiceRequestRecord>>(`${this.baseUrl}/service-requests/${id}`).pipe(map((response) => response.data));
   }
 
   createServiceRequest(payload: CreateServiceRequestPayload) {
     return this.http.post<ApiResponse<ServiceRequestRecord>>(`${this.baseUrl}/service-requests`, {
       ...payload,
-      userId: this.auth.user()?.id,
     }).pipe(map((response) => response.data));
   }
 
@@ -341,38 +331,34 @@ export class ApiService {
 
   /** Painel do profissional: métricas, visão geral, trabalhos e avaliações. */
   getProfessionalDashboard() {
-    const userId = this.auth.user()?.id ?? '';
     return this.http
-      .get<ApiResponse<ProfessionalDashboard>>(`${this.baseUrl}/me/professional/dashboard?userId=${encodeURIComponent(userId)}`)
+      .get<ApiResponse<ProfessionalDashboard>>(`${this.baseUrl}/me/professional/dashboard`)
       .pipe(map((response) => response.data));
   }
 
   /** Quem favoritou o profissional. Mesma fonte do contador do painel. */
   getProfessionalFavoriteClients(page = 1, limit = 10) {
-    const userId = this.auth.user()?.id ?? '';
     return this.http
-      .get<ApiResponse<FavoriteClientsPage>>(`${this.baseUrl}/me/professional/favorites?userId=${encodeURIComponent(userId)}&page=${page}&limit=${limit}`)
+      .get<ApiResponse<FavoriteClientsPage>>(`${this.baseUrl}/me/professional/favorites&page=${page}&limit=${limit}`)
       .pipe(map((response) => response.data));
   }
 
   /** Avaliacoes visiveis recebidas pelo profissional, com a media do painel. */
   getProfessionalReviews(page = 1, limit = 10) {
-    const userId = this.auth.user()?.id ?? '';
     return this.http
-      .get<ApiResponse<ProfessionalReviewsPage>>(`${this.baseUrl}/me/professional/reviews?userId=${encodeURIComponent(userId)}&page=${page}&limit=${limit}`)
+      .get<ApiResponse<ProfessionalReviewsPage>>(`${this.baseUrl}/me/professional/reviews&page=${page}&limit=${limit}`)
       .pipe(map((response) => response.data));
   }
 
   getOwnProfessional() {
-    const userId = this.auth.user()?.id ?? '';
     return this.http
-      .get<ApiResponse<Professional>>(`${this.baseUrl}/me/professional?userId=${encodeURIComponent(userId)}`)
+      .get<ApiResponse<Professional>>(`${this.baseUrl}/me/professional`)
       .pipe(map((response) => response.data));
   }
 
   updateOwnProfessional(payload: Record<string, unknown>) {
     return this.http
-      .patch<ApiResponse<Professional>>(`${this.baseUrl}/me/professional`, { ...payload, userId: this.auth.user()?.id })
+      .patch<ApiResponse<Professional>>(`${this.baseUrl}/me/professional`, { ...payload })
       .pipe(map((response) => response.data));
   }
 
@@ -390,14 +376,13 @@ export class ApiService {
 
   addOwnProfessionalWorks(images: string[], title = '') {
     return this.http
-      .post<ApiResponse<ProfessionalWork[]>>(`${this.baseUrl}/me/professional/works`, { userId: this.auth.user()?.id, images, title })
+      .post<ApiResponse<ProfessionalWork[]>>(`${this.baseUrl}/me/professional/works`, { images, title })
       .pipe(map((response) => response.data));
   }
 
   removeOwnProfessionalWork(workId: string) {
-    const userId = this.auth.user()?.id ?? '';
     return this.http
-      .delete<ApiResponse<ProfessionalWork[]>>(`${this.baseUrl}/me/professional/works/${workId}?userId=${encodeURIComponent(userId)}`)
+      .delete<ApiResponse<ProfessionalWork[]>>(`${this.baseUrl}/me/professional/works/${workId}`)
       .pipe(map((response) => response.data));
   }
 
@@ -460,7 +445,6 @@ export class ApiService {
   toggleFavorite(professionalId: string) {
     return this.http
       .post<ApiResponse<{ professionalId: string; active: boolean }>>(`${this.baseUrl}/favorites/${professionalId}/toggle`, {
-        userId: this.auth.user()?.id,
       })
       .pipe(map((response) => response.data));
   }
@@ -468,21 +452,19 @@ export class ApiService {
   createRecommendation(payload: Record<string, unknown>) {
     return this.http.post(`${this.baseUrl}/recommendations`, {
       ...payload,
-      userId: this.auth.user()?.id,
       condominiumId: this.auth.user()?.condominiumId,
     });
   }
 
   toggleRecommendation(professionalId: string) {
     return this.http
-      .post<ApiResponse<{ active: boolean; recommendationCount: number }>>(`${this.baseUrl}/recommendations/${professionalId}/toggle`, { userId: this.auth.user()?.id })
+      .post<ApiResponse<{ active: boolean; recommendationCount: number }>>(`${this.baseUrl}/recommendations/${professionalId}/toggle`, {})
       .pipe(map((response) => response.data));
   }
 
   createReview(payload: { professionalId: string; rating: number; comment: string; serviceDate?: string; images?: string[] }) {
     return this.http.post(`${this.baseUrl}/reviews`, {
       ...payload,
-      userId: this.auth.user()?.id,
       condominiumId: this.auth.user()?.condominiumId,
     });
   }
@@ -497,7 +479,6 @@ export class ApiService {
     return this.http
       .post<ApiResponse<{ id: string }>>(`${this.baseUrl}/professionals/${professionalId}/reports`, {
         ...payload,
-        userId: this.auth.user()?.id,
       })
       .pipe(map((response) => response.data));
   }

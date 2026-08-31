@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 
 /** Só o que precisamos do request para identificar quem visitou um perfil. */
 interface RequisicaoComOrigem {
@@ -6,6 +6,11 @@ interface RequisicaoComOrigem {
   headers?: Record<string, string | undefined>;
 }
 import { ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { OptionalUserId, UserId } from '../auth/current-user.decorator';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { DataStoreService } from '../data/data-store.service';
 import { FileStorageService } from '../data/file-storage.service';
@@ -71,28 +76,34 @@ export class ResourcesController {
     return { data: this.dataStoreService.getCondominiumBySlug(slug) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('users')
   getUsers() {
     return { data: this.dataStoreService.getUsers() };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('notifications')
-  getNotifications(@Query('userId') userId: string) {
+  getNotifications(@UserId() userId: string) {
     return this.communicationsService.getNotifications(userId).then((data) => ({ data }));
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('notifications/read')
-  markNotificationsRead(@Body('userId') userId: string, @Body('notificationIds') notificationIds?: string[]) {
+  markNotificationsRead(@UserId() userId: string, @Body('notificationIds') notificationIds?: string[]) {
     return this.communicationsService.markNotificationsRead(userId, notificationIds).then((data) => ({ data }));
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('conversations/:professionalId')
-  getConversation(@Param('professionalId') professionalId: string, @Query('userId') userId: string) {
+  getConversation(@Param('professionalId') professionalId: string, @UserId() userId: string) {
     return this.communicationsService.getConversation(userId, professionalId).then((data) => ({ data }));
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('conversations/:professionalId/messages')
-  sendConversationMessage(@Param('professionalId') professionalId: string, @Body('userId') userId: string, @Body('content') content: string) {
+  sendConversationMessage(@Param('professionalId') professionalId: string, @UserId() userId: string, @Body('content') content: string) {
     return this.communicationsService.sendMessage(userId, professionalId, content).then((data) => ({ data }));
   }
 
@@ -106,18 +117,21 @@ export class ResourcesController {
     return this.catalogService.groups().then((data) => ({ data }));
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('me/account')
-  getOwnAccount(@Query('userId') userId: string) {
+  getOwnAccount(@UserId() userId: string) {
     return this.dataStoreService.getOwnAccount(userId).then((data) => ({ data }));
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch('me/account')
-  updateOwnAccount(@Body('userId') userId: string, @Body() payload: Record<string, unknown>) {
+  updateOwnAccount(@UserId() userId: string, @Body() payload: Record<string, unknown>) {
     return this.dataStoreService.updateOwnAccount(userId, payload).then((data) => ({ data }));
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('me/account/change-password')
-  changeOwnPassword(@Body('userId') userId: string, @Body('currentPassword') currentPassword: string, @Body('newPassword') newPassword: string) {
+  changeOwnPassword(@UserId() userId: string, @Body('currentPassword') currentPassword: string, @Body('newPassword') newPassword: string) {
     return this.dataStoreService.changeOwnPassword(userId, currentPassword, newPassword).then((data) => ({ data }));
   }
 
@@ -126,31 +140,36 @@ export class ResourcesController {
     return { data: this.dataStoreService.getCategoryServices(id, includeInactive === 'true') };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('service-requests/match-problem')
   matchProblem(@Body('query') query: string) {
     return this.catalogService.match(String(query ?? '')).then((data) => ({ data }));
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('service-requests')
-  async getServiceRequests(@Query('userId') userId: string) {
+  async getServiceRequests(@UserId() userId: string) {
     return { data: await this.dataStoreService.getServiceRequestsForUser(userId) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('service-requests')
   async createServiceRequest(@Body() payload: Parameters<DataStoreService['createServiceRequest']>[0]) {
     return { data: await this.dataStoreService.createServiceRequest(payload) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('service-requests/:id')
-  async getServiceRequestById(@Param('id') id: string, @Query('userId') userId: string) {
+  async getServiceRequestById(@Param('id') id: string, @UserId() userId: string) {
     return { data: await this.dataStoreService.getServiceRequestById(id, userId) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('service-requests/:id/media')
   @UseInterceptors(FilesInterceptor('files', 11, opcoesDeMidiaSolicitacao))
   async uploadServiceRequestMedia(
     @Param('id') id: string,
-    @Body('userId') userId: string,
+    @UserId() userId: string,
     @UploadedFiles() files: ArquivoEnviado[] = [],
   ) {
     if (!files.length) throw new BadRequestException('Selecione ao menos uma mídia para enviar.');
@@ -167,21 +186,29 @@ export class ResourcesController {
     };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Post('categories/:id/services')
   async createCategoryService(@Param('id') id: string, @Body() payload: Record<string, unknown>) {
     return { data: await this.dataStoreService.createCategoryService(id, payload) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('categories/:id')
   getCategoryById(@Param('id') id: string) {
     return { data: this.dataStoreService.getCategoryById(id) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Put('category-services/:id')
   async updateCategoryService(@Param('id') id: string, @Body() payload: Record<string, unknown>) {
     return { data: await this.dataStoreService.updateCategoryService(id, payload) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Delete('category-services/:id')
   async deleteCategoryService(@Param('id') id: string) {
     return { data: await this.dataStoreService.deleteCategoryService(id) };
@@ -239,13 +266,16 @@ export class ResourcesController {
     return { data: this.dataStoreService.getProfessionalServices(id) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Put('professionals/:id/services')
   async updateProfessionalServices(@Param('id') id: string, @Body('serviceIds') serviceIds: string[] = []) {
     return { data: await this.dataStoreService.updateProfessionalServices(id, serviceIds) };
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('professionals/:id')
-  async getProfessionalById(@Param('id') id: string, @Query('userId') userId?: string, @Req() request?: RequisicaoComOrigem) {
+  async getProfessionalById(@Param('id') id: string, @OptionalUserId() userId?: string, @Req() request?: RequisicaoComOrigem) {
     // Conta a visita sem segurar a resposta: a tela do cliente não depende disso.
     void this.professionalDashboardService.registerView(id, {
       userId,
@@ -260,15 +290,17 @@ export class ResourcesController {
     return { data: this.dataStoreService.getProfessionalReviews(id) };
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('professionals/:id/comments')
-  getProfessionalComments(@Param('id') id: string, @Query('userId') userId?: string) {
+  getProfessionalComments(@Param('id') id: string, @OptionalUserId() userId?: string) {
     return { data: this.dataStoreService.getProfessionalComments(id, userId) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('professionals/:id/reports')
   async submitComplaint(
     @Param('id') id: string,
-    @Body('userId') userId: string,
+    @UserId() userId: string,
     @Body('reason') reason: string,
     @Body('description') description: string,
     @Body('images') images: string[] = [],
@@ -276,13 +308,15 @@ export class ResourcesController {
     return { data: await this.dataStoreService.submitComplaint({ userId, professionalId: id, reason, description, images }) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('comments/:id/like')
-  async toggleCommentLike(@Param('id') id: string, @Body('userId') userId: string) {
+  async toggleCommentLike(@Param('id') id: string, @UserId() userId: string) {
     return { data: await this.dataStoreService.toggleCommentLike(id, userId) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('comments/:id/replies')
-  async replyToComment(@Param('id') id: string, @Body('userId') userId: string, @Body('comment') comment: string) {
+  async replyToComment(@Param('id') id: string, @UserId() userId: string, @Body('comment') comment: string) {
     return { data: await this.dataStoreService.replyToComment(id, userId, comment) };
   }
 
@@ -300,15 +334,17 @@ export class ResourcesController {
   }
 
   /** Painel do profissional: métricas, visão geral, trabalhos e avaliações em uma leitura. */
+  @UseGuards(JwtAuthGuard)
   @Get('me/professional/dashboard')
-  async getProfessionalDashboard(@Query('userId') userId: string) {
+  async getProfessionalDashboard(@UserId() userId: string) {
     return { data: await this.professionalDashboardService.getDashboard(userId) };
   }
 
   /** Quem favoritou o profissional, do mais recente para o mais antigo. */
+  @UseGuards(JwtAuthGuard)
   @Get('me/professional/favorites')
   async getProfessionalFavorites(
-    @Query('userId') userId: string,
+    @UserId() userId: string,
     @Query('page') page = '1',
     @Query('limit') limit = '10',
   ) {
@@ -316,22 +352,25 @@ export class ResourcesController {
   }
 
   /** Avaliacoes visiveis recebidas pelo profissional, da mais recente para a mais antiga. */
+  @UseGuards(JwtAuthGuard)
   @Get('me/professional/reviews')
   async getOwnProfessionalReviews(
-    @Query('userId') userId: string,
+    @UserId() userId: string,
     @Query('page') page = '1',
     @Query('limit') limit = '10',
   ) {
     return { data: await this.professionalDashboardService.getProfessionalReviews(userId, Number(page), Number(limit)) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('me/professional')
-  getOwnProfessional(@Query('userId') userId: string) {
+  getOwnProfessional(@UserId() userId: string) {
     return { data: this.dataStoreService.getOwnProfessional(userId) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch('me/professional')
-  async updateOwnProfessional(@Body('userId') userId: string, @Body() payload: Record<string, unknown>) {
+  async updateOwnProfessional(@UserId() userId: string, @Body() payload: Record<string, unknown>) {
     return { data: await this.dataStoreService.updateOwnProfessional(userId, payload) };
   }
 
@@ -340,21 +379,26 @@ export class ResourcesController {
     return { data: this.dataStoreService.getProfessionalWorks(id) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('me/professional/works')
-  async addOwnProfessionalWorks(@Body('userId') userId: string, @Body('images') images: string[] = [], @Body('title') title = '') {
+  async addOwnProfessionalWorks(@UserId() userId: string, @Body('images') images: string[] = [], @Body('title') title = '') {
     return { data: await this.dataStoreService.addOwnProfessionalWorks(userId, images, title) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete('me/professional/works/:workId')
-  async removeOwnProfessionalWork(@Param('workId') workId: string, @Query('userId') userId: string) {
+  async removeOwnProfessionalWork(@Param('workId') workId: string, @UserId() userId: string) {
     return { data: await this.dataStoreService.removeOwnProfessionalWork(userId, workId) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('recommendations')
-  getRecommendations(@Query('userId') userId?: string) {
+  getRecommendations(@UserId() userId: string) {
     return { data: this.dataStoreService.getRecommendations(userId) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('reviews')
   getReviews(@Query('professionalId') professionalId?: string) {
     const items = professionalId
@@ -363,11 +407,14 @@ export class ResourcesController {
     return { data: items };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('favorites')
-  getFavorites(@Query('userId') userId = 'user-leonardo') {
+  getFavorites(@UserId() userId: string) {
     return { data: this.dataStoreService.getFavorites(userId) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('reports')
   getReports() {
     return {
@@ -378,41 +425,51 @@ export class ResourcesController {
     };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('dashboard')
   async getDashboard() {
     return { data: this.dataStoreService.getDashboard() };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('dashboard/home')
   async getHomePayload() {
     return { data: this.dataStoreService.getHomePayload() };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('admin-pending')
   async getPendingItems() {
     return { data: await this.dataStoreService.getPendingItems() };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('favorites/:professionalId/toggle')
-  async toggleFavorite(@Param('professionalId') professionalId: string, @Body('userId') userId: string) {
+  async toggleFavorite(@Param('professionalId') professionalId: string, @UserId() userId: string) {
     return { data: await this.dataStoreService.toggleFavorite(userId, professionalId) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('recommendations')
   async createRecommendation(@Body() payload: Parameters<DataStoreService['createRecommendation']>[0]) {
     return { data: await this.dataStoreService.createRecommendation(payload) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('recommendations/:professionalId/toggle')
-  async toggleProfessionalRecommendation(@Param('professionalId') professionalId: string, @Body('userId') userId: string) {
+  async toggleProfessionalRecommendation(@Param('professionalId') professionalId: string, @UserId() userId: string) {
     return { data: await this.dataStoreService.toggleProfessionalRecommendation(userId, professionalId) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('recommendations/:id/remove')
-  async removeRecommendation(@Param('id') id: string, @Body('userId') userId: string) {
+  async removeRecommendation(@Param('id') id: string, @UserId() userId: string) {
     return { data: await this.dataStoreService.removeRecommendation(id, userId) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('reviews')
   async createReview(@Body() payload: Parameters<DataStoreService['createReview']>[0]) {
     return { data: await this.dataStoreService.createReview(payload) };
@@ -428,6 +485,7 @@ export class ResourcesController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('uploads/comments')
   @UseInterceptors(FilesInterceptor('files', 10, opcoesDeUpload(10)))
   async uploadCommentPhotos(@UploadedFiles() files: ArquivoEnviado[] = []) {
@@ -435,6 +493,7 @@ export class ResourcesController {
     return { data: await this.fileStorageService.salvarVarios('comments', files) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('uploads/works')
   @UseInterceptors(FilesInterceptor('files', 10, opcoesDeUpload(10)))
   async uploadWorkPhotos(@UploadedFiles() files: ArquivoEnviado[] = []) {
@@ -442,6 +501,7 @@ export class ResourcesController {
     return { data: await this.fileStorageService.salvarVarios('works', files) };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('uploads/reports')
   @UseInterceptors(FilesInterceptor('files', 10, opcoesDeUpload(10)))
   async uploadReportPhotos(@UploadedFiles() files: ArquivoEnviado[] = []) {
@@ -449,6 +509,8 @@ export class ResourcesController {
     return { data: await this.fileStorageService.salvarVarios('reports', files) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Post('admin/uploads/professionals')
   @UseInterceptors(FileInterceptor('file', opcoesDeUpload(5)))
   async uploadProfessionalPhoto(@UploadedFile() file?: ArquivoEnviado) {
@@ -456,6 +518,8 @@ export class ResourcesController {
     return { data: { url: await this.fileStorageService.salvar('professionals', file) } };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Post('admin/uploads/condominiums')
   @UseInterceptors(FileInterceptor('file', opcoesDeUpload(5)))
   async uploadCondominiumPhoto(@UploadedFile() file?: ArquivoEnviado) {
@@ -463,82 +527,114 @@ export class ResourcesController {
     return { data: { url: await this.fileStorageService.salvar('condominiums', file) } };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('admin/:resource')
   async getAdminRecords(@Param('resource') resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories') {
     return { data: await this.dataStoreService.getAdminRecords(resource) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Post('admin/:resource')
   async createAdminRecord(@Param('resource') resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', @Body() payload: Record<string, unknown>) {
     return { data: await this.dataStoreService.createAdminRecord(resource, payload) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Patch('admin/:resource/:id')
   async updateAdminRecord(@Param('resource') resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', @Param('id') id: string, @Body() payload: Record<string, unknown>) {
     return { data: await this.dataStoreService.updateAdminRecord(resource, id, payload) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Delete('admin/:resource/:id')
   async deleteAdminRecord(@Param('resource') resource: 'condominiums' | 'residents' | 'users' | 'professionals' | 'categories', @Param('id') id: string) {
     return { data: await this.dataStoreService.deleteAdminRecord(resource, id) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('admin-sections/:section')
   getAdminSection(@Param('section') section: 'reviews' | 'recommendations' | 'reports') {
     return { data: this.dataStoreService.getAdminSection(section) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Patch('admin-sections/:section/:id')
   updateAdminSectionStatus(@Param('section') section: 'reviews' | 'recommendations' | 'reports', @Param('id') id: string, @Body('status') status: string) {
     return { data: this.dataStoreService.updateAdminSectionStatus(section, id, status) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('admin-reviews/:id')
   getAdminReviewDetails(@Param('id') id: string) {
     return { data: this.dataStoreService.getAdminReviewDetails(id) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Patch('admin-reviews/:id/response')
   saveAdminReviewResponse(@Param('id') id: string, @Body('response') response: string) {
     return { data: this.dataStoreService.saveAdminReviewResponse(id, response ?? '') };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('admin-reports')
   async getComplaints() {
     return { data: await this.dataStoreService.getComplaints() };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('admin-reports/:id')
   async getComplaintDetails(@Param('id') id: string) {
     return { data: await this.dataStoreService.getComplaintDetails(id) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Patch('admin-reports/:id/status')
   async updateComplaintStatus(@Param('id') id: string, @Body('status') status: ComplaintStatus) {
     return { data: await this.dataStoreService.updateComplaintStatus(id, status) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Patch('admin-reports/:id/note')
   async saveComplaintNote(@Param('id') id: string, @Body('note') note: string, @Body('notify') notify = true) {
     return { data: await this.dataStoreService.saveComplaintNote(id, note, notify) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Post('admin-reports/:id/actions')
   async applyComplaintAction(@Param('id') id: string, @Body('action') action: ComplaintAction) {
     return { data: await this.dataStoreService.applyComplaintAction(id, action) };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('admin-mail-settings')
   async getMailSettings() {
     return { data: await this.mailSettingsService.getMasked() };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Patch('admin-mail-settings')
   async updateMailSettings(@Body() payload: Record<string, unknown>) {
     return { data: await this.mailSettingsService.update(payload) };
   }
 
   /** Valida a conexao sem enviar mensagem; com destino, manda um e-mail de teste. */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Post('admin-mail-settings/test')
   async testMailSettings(@Body('email') email?: string) {
     const conexao = await this.mailService.testarConexao();
@@ -552,11 +648,15 @@ export class ResourcesController {
     };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Get('admin-settings')
   getAdminSettings() {
     return { data: this.dataStoreService.getAdminSettings() };
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'CONDO_ADMIN')
   @Patch('admin-settings')
   async updateAdminSettings(@Body() payload: Record<string, unknown>) {
     return { data: await this.dataStoreService.updateAdminSettings(payload) };

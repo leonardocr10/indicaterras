@@ -100,8 +100,8 @@ export class CategoryCardComponent {
 
   private static readonly iconBySlug: Record<string, string> = {
     eletricista: '/assets/categories/electrician.png',
-    encanador: '/assets/categories/handyman.png',
-    pedreiro: '/assets/categories/plumber.png',
+    encanador: '/assets/taxonomy-icons/wrench.svg',
+    pedreiro: '/assets/taxonomy-icons/trowel.svg',
     // Os PNGs de pintor e diarista viram silhueta ilegível depois do filtro que
     // pinta o ícone de verde; os traços do Lucide sobrevivem e são reconhecíveis.
     pintor: '/assets/taxonomy-icons/paintbrush.svg',
@@ -117,8 +117,8 @@ export class CategoryCardComponent {
     piscineiro: '/assets/categories/pool.svg',
     dedetizacao: '/assets/categories/pest-control.svg',
     'energia-solar': '/assets/categories/solar-energy.svg',
-    'cameras-seguranca': '/assets/categories/security-camera.svg',
-    seguranca: '/assets/categories/security-camera.svg',
+    'cameras-seguranca': '/assets/taxonomy-icons/cctv.svg',
+    seguranca: '/assets/taxonomy-icons/cctv.svg',
     outros: '/assets/categories/more.png',
     mais: '/assets/categories/more.png',
   };

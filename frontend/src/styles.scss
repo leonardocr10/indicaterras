@@ -860,7 +860,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .provider-accordion-body .provider-hint-spaced{margin-top:14px}
 .provider-sections .form-feedback{margin:4px 2px 0}
 .provider-sections .full-width{margin-top:4px}
-@media(min-width:520px){.provider-sections{max-width:min(520px, 100% - 32px);margin-inline:auto}.provider-summary-pair{grid-template-columns:1fr 1fr}}
+@media(min-width:520px){.provider-sections{max-width:min(520px, 100% - 32px);margin-inline:auto}}
 
 .provider-pending{margin-top:12px;padding:13px 14px;border:1px solid #dbe7ff;border-radius:10px;background:#f4f8ff}
 .provider-pending strong{display:block;color:#1e3a5f;font-size:13px;line-height:18px}
@@ -877,6 +877,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .provider-favorites p{margin:3px 0 0;color:#64748b;font-size:12px;line-height:17px}
 
 .provider-reviews{display:grid;gap:10px}
+@media(min-width:400px){.provider-reviews{grid-template-columns:repeat(2,minmax(0,1fr))}.provider-reviews header{grid-template-columns:30px minmax(0,1fr) auto;gap:8px}.provider-reviews header strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.provider-reviews header b{padding:3px 7px;font-size:11px}.provider-review-avatar{width:30px;height:30px;font-size:13px}}
 .provider-reviews article{padding:13px;border:1px solid #eef2ef;border-radius:10px;background:#fbfdfc}
 .provider-reviews header{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:10px;margin-bottom:8px}
 .provider-review-avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#065f46;background:#e3f1ea;font-size:15px;font-weight:700}

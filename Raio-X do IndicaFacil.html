@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Raio-X do IndicaFácil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+*{box-sizing:border-box}
+
+  :root {
+    --ground: #f4f7f5;
+    --surface: #ffffff;
+    --surface-2: #eef3f0;
+    --ink: #0f1f19;
+    --ink-2: #33453d;
+    --muted: #61756c;
+    --line: #dbe5e0;
+    --line-strong: #c3d3cb;
+    --accent: #065f46;
+    --accent-ink: #065f46;
+    --accent-soft: #e9f6ef;
+    --ok: #0e7a54;
+    --ok-soft: #e4f4ec;
+    --warn: #8a6100;
+    --warn-soft: #fbf1dd;
+    --new: #1d4ed8;
+    --new-soft: #e6ecfd;
+    --danger: #a5261d;
+    --danger-soft: #fbeceb;
+    --shadow: 0 10px 30px rgba(10, 40, 28, .06);
+    --radius: 14px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0c1411;
+      --surface: #131e1a;
+      --surface-2: #182722;
+      --ink: #e7f0eb;
+      --ink-2: #c2d3cb;
+      --muted: #8ea79c;
+      --line: #223129;
+      --line-strong: #2e4137;
+      --accent: #4fbf8b;
+      --accent-ink: #7ad3aa;
+      --accent-soft: #163024;
+      --ok: #58c894;
+      --ok-soft: #142e23;
+      --warn: #d9a441;
+      --warn-soft: #2e2617;
+      --new: #7ea2f5;
+      --new-soft: #17203a;
+      --danger: #f08b83;
+      --danger-soft: #33191a;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0c1411;
+    --surface: #131e1a;
+    --surface-2: #182722;
+    --ink: #e7f0eb;
+    --ink-2: #c2d3cb;
+    --muted: #8ea79c;
+    --line: #223129;
+    --line-strong: #2e4137;
+    --accent: #4fbf8b;
+    --accent-ink: #7ad3aa;
+    --accent-soft: #163024;
+    --ok: #58c894;
+    --ok-soft: #142e23;
+    --warn: #d9a441;
+    --warn-soft: #2e2617;
+    --new: #7ea2f5;
+    --new-soft: #17203a;
+    --danger: #f08b83;
+    --danger-soft: #33191a;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .3);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 20px 90px;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  .prose { max-width: 68ch; }
+
+  h1, h2, h3 {
+    font-family: Nunito, system-ui, sans-serif;
+    text-wrap: balance;
+    margin: 0;
+    letter-spacing: -.015em;
+  }
+
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .86em;
+  }
+
+  code {
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+
+  a { color: var(--accent-ink); }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 3px; border-radius: 4px; }
+
+  /* ---------- topo ---------- */
+  header.top { padding: 54px 0 30px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+
+  header.top h1 { font-size: clamp(34px, 6vw, 52px); font-weight: 800; line-height: 1.05; }
+  header.top .sub { margin: 16px 0 0; font-size: 18px; color: var(--ink-2); max-width: 60ch; }
+
+  .meta {
+    margin-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    font-size: 13px;
+    color: var(--muted);
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  /* ---------- alerta ---------- */
+  .alert {
+    margin: 30px 0 8px;
+    border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--line));
+    border-left: 5px solid var(--danger);
+    border-radius: var(--radius);
+    background: var(--danger-soft);
+    padding: 22px 24px;
+  }
+  .alert h2 { font-size: 20px; font-weight: 800; color: var(--danger); }
+  .alert p { margin: 10px 0 0; color: var(--ink-2); max-width: 72ch; }
+  .alert .proof {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    color: var(--ink-2);
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* ---------- seções ---------- */
+  section { padding: 46px 0 0; }
+  section > h2 {
+    font-size: 26px;
+    font-weight: 800;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 22px;
+  }
+  section > h2 .num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-right: 12px;
+    vertical-align: 2px;
+  }
+  h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  p { margin: 0 0 14px; }
+
+  /* ---------- placar ---------- */
+  .score {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 26px;
+  }
+  .score div {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .score b {
+    display: block;
+    font-family: Nunito, sans-serif;
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .score span { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .score .s-ok b { color: var(--ok); }
+  .score .s-warn b { color: var(--warn); }
+  .score .s-new b { color: var(--new); }
+
+  /* ---------- chips ---------- */
+  .chip {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .04em;
+    white-space: nowrap;
+  }
+  .c-ok { background: var(--ok-soft); color: var(--ok); }
+  .c-warn { background: var(--warn-soft); color: var(--warn); }
+  .c-new { background: var(--new-soft); color: var(--new); }
+
+  /* ---------- tabelas ---------- */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 640px; }
+  thead th {
+    text-align: left;
+    padding: 12px 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  tbody td { padding: 11px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.n { font-family: "IBM Plex Mono", monospace; color: var(--muted); font-variant-numeric: tabular-nums; width: 46px; }
+  td.what { font-weight: 600; color: var(--ink); }
+  td.ev { color: var(--muted); font-size: 13px; }
+  td.ev code { background: transparent; padding: 0; color: var(--muted); }
+
+  /* ---------- achados ---------- */
+  .finding {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+  }
+  .finding h3 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .finding h3 .tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: .06em;
+  }
+  .finding p { color: var(--ink-2); max-width: 74ch; }
+  .finding p:last-child { margin-bottom: 0; }
+
+  /* ---------- fases ---------- */
+  .phase {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .phase > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .phase > summary::-webkit-details-marker { display: none; }
+  .phase .idx {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--surface);
+    background: var(--accent);
+    border-radius: 8px;
+    padding: 5px 9px;
+    flex: none;
+  }
+  :root[data-theme="dark"] .phase .idx { color: #0c1411; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .phase .idx { color: #0c1411; } }
+  .phase .title { font-family: Nunito, sans-serif; font-size: 18px; font-weight: 800; flex: 1; min-width: 0; }
+  .phase .hint { font-size: 13px; color: var(--muted); flex: none; }
+  .phase .content { padding: 0 24px 22px; border-top: 1px solid var(--line); }
+  .phase .content > *:first-child { margin-top: 18px; }
+
+  .task { padding: 16px 0; border-bottom: 1px dashed var(--line); }
+  .task:last-child { border-bottom: 0; padding-bottom: 0; }
+  .task h4 { margin: 0 0 8px; font-family: Nunito, sans-serif; font-size: 16px; font-weight: 700; }
+  .task ul { margin: 0; padding-left: 18px; color: var(--ink-2); }
+  .task li { margin-bottom: 4px; }
+  .task li b { font-weight: 600; color: var(--ink); }
+  .dep { display: inline-block; margin-top: 8px; font-size: 12px; font-family: "IBM Plex Mono", monospace; color: var(--muted); }
+
+  ul.plain { padding-left: 18px; color: var(--ink-2); max-width: 70ch; }
+  ul.plain li { margin-bottom: 7px; }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 70ch;
+  }
+
+  @media (max-width: 700px) {
+    .score { grid-template-columns: 1fr; }
+    .phase > summary { flex-wrap: wrap; }
+    .phase .hint { width: 100%; padding-left: 46px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">Diagnóstico técnico · 31 ago 2026</p>
+    <h1>Raio-X do IndicaFácil</h1>
+    <p class="sub">Levantamento do que existe hoje no código, classificação dos 39 pontos da especificação e um plano por fases para virar marketplace sem reescrever o sistema.</p>
+    <div class="meta">
+      <span>35 tabelas</span>
+      <span>~70 rotas</span>
+      <span>Angular 21 · NestJS · MySQL</span>
+      <span>commit ebd5bfc</span>
+    </div>
+  </header>
+
+  <div class="alert">
+    <h2>Antes de qualquer roadmap: a API administrativa está aberta</h2>
+    <p>Nenhuma rota do <code>ResourcesController</code> usa <code>JwtAuthGuard</code>. Os guards existem no projeto, mas só estão aplicados no <code>ai-admin.controller.ts</code>. A identidade viaja como <code>userId</code> na query, então quem souber um id lê os dados daquela pessoa — e as rotas <code>admin/*</code> nem isso exigem.</p>
+    <p>Confirmei em produção com uma leitura sem token nenhum:</p>
+    <div class="proof">GET https://indicafacil.pro/api/admin/residents → HTTP 200 (2.854 bytes)<br>GET https://indicafacil.pro/api/dashboard → HTTP 200</div>
+    <p>Isso devolve a lista de clientes para qualquer pessoa na internet. No mesmo controller, sem guard, estão <code>POST/PATCH/DELETE admin/:resource</code> e <code>PATCH admin-settings</code> — não testei escrita em produção, mas estão no mesmo caminho. É a Fase 0 do plano e não deveria esperar o resto.</p>
+  </div>
+
+  <section>
+    <h2><span class="num">01</span>Onde o sistema está</h2>
+
+    <div class="score">
+      <div class="s-ok"><b>9</b><span>já existem e funcionam</span></div>
+      <div class="s-warn"><b>15</b><span>existem pela metade</span></div>
+      <div class="s-new"><b>15</b><span>não existem</span></div>
+    </div>
+
+    <div class="prose">
+      <p>O IndicaFácil hoje é um catálogo muito bem resolvido: a IA entende o problema e cai num matcher local quando desligada, a busca por proximidade calcula distância real no MySQL, o mapa tem marcador com foto e ficha inferior, o profissional tem painel com métricas reais e o cliente tem favoritos, indicações, avaliações e chat.</p>
+      <p><strong>O que falta não é interface — é o miolo transacional.</strong> Não existe proposta, não existe ordem de serviço e o profissional não enxerga nenhuma solicitação. Doze dos itens que você listou dependem dessas três peças; enquanto elas não existirem, funil, ranking, selo de resposta rápida, histórico, recontratação e recorrência não têm de onde tirar dado.</p>
+      <p>A boa notícia é que a fundação está pronta e é melhor do que parece: taxonomia com grupos, categorias, serviços e sinônimos; solicitação de serviço já modelada com urgência, período, orçamento, endereço, coordenadas e mídia; log de análise da IA guardando o que as pessoas digitam; e uma suíte Playwright que já descreve o fluxo de propostas em testes <code>fixme</code>, esperando o recurso existir.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">02</span>Os 39 pontos, um a um</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Ponto da especificação</th><th>Estado</th><th>Evidência no código</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="n">1</td><td class="what">Fluxo inteligente de necessidade</td><td><span class="chip c-ok">já existe</span></td><td class="ev">IA + fallback local em <code>ai/problem-analysis.service.ts</code>; matcher por palavra-chave roda antes da IA</td></tr>
+          <tr><td class="n">2</td><td class="what">Busca e mapa</td><td><span class="chip c-warn">ajuste</span></td><td class="ev">raio, lista/mapa, marcador com foto e ficha existem; faltam filtro de disponibilidade e ordenação por distância fora do modo proximidade</td></tr>
+          <tr><td class="n">3</td><td class="what">Distância real</td><td><span class="chip c-warn">ajuste</span></td><td class="ev"><code>ST_Distance_Sphere</code> em <code>nearby-professionals.service.ts:156</code>; a listagem comum não devolve lat/lng, então o card fica sem distância</td></tr>
+          <tr><td class="n">4</td><td class="what">Fluxo “quero receber propostas”</td><td><span class="chip c-warn">ajuste</span></td><td class="ev">as 5 etapas gravam <code>ServiceRequest</code> com status OPEN; nada é distribuído a ninguém</td></tr>
+          <tr><td class="n">5</td><td class="what">Oportunidades para o profissional</td><td><span class="chip c-new">nova</span></td><td class="ev">não existe rota, tela nem raio de atendimento no <code>Professional</code></td></tr>
+          <tr><td class="n">6</td><td class="what">Propostas</td><td><span class="chip c-new">nova</span></td><td class="ev">sem modelo <code>Proposal</code>, sem endpoint, sem status</td></tr>
+          <tr><td class="n">7</td><td class="what">Ranking do IndicaFácil</td><td><span class="chip c-new">nova</span></td><td class="ev">há ordenações simples (nota, indicações, distância), não um score composto</td></tr>
+          <tr><td class="n">8</td><td class="what">Reputação no perfil</td><td><span class="chip c-warn">ajuste</span></td><td class="ev">nota, avaliações, indicações, trabalhos e favoritos existem; “serviços realizados” e “tempo de resposta” não têm origem</td></tr>
+          <tr><td class="n">9</td><td class="what">Selo responde rápido</td><td><span class="chip c-new">nova</span></td><td class="ev">nenhum dado de tempo de resposta é registrado hoje</td></tr>
+          <tr><td class="n">10</td><td class="what">Disponibilidade</td><td><span class="chip c-warn">ajuste</span></td><td class="ev"><code>workingHours</code> + <code>working-hours.util.ts</code> dão “disponível hoje”; faltam exceções, pausa e “próximo horário”</td></tr>
+          <tr><td class="n">11</td><td class="what">Solicitação urgente</td><td><span class="chip c-warn">ajuste</span></td><td class="ev"><code>ServiceRequestUrgency</code> já tem EMERGENCY/TODAY; falta a priorização, que depende das oportunidades</td></tr>
+          <tr><td class="n">12</td><td class="what">Mensagens internas</td><td><span class="chip c-warn">ajuste</span></td><td class="ev"><code>conversations</code> e <code>direct_messages</code> funcionam; sem anexo e sem vínculo com solicitação ou proposta</td></tr>
+          <tr><td class="n">13</td><td class="what">Histórico de serviços</td><td><span class="chip c-new">nova</span></td><td class="ev">não existe ordem de serviço nem os status SCHEDULED…COMPLETED</td></tr>
+          <tr><td class="n">14</td><td class="what">Contratar novamente</td><td><span class="chip c-new">nova</span></td><td class="ev">depende do item 13</td></tr>
+          <tr><td class="n">15</td><td class="what">Serviços recorrentes</td><td><span class="chip c-new">nova</span></td><td class="ev">depende do item 13</td></tr>
+          <tr><td class="n">16</td><td class="what">Dashboard do profissional</td><td><span class="chip c-ok">já existe</span></td><td class="ev">métricas, visão geral, trabalhos, favoritos, avaliações e accordions</td></tr>
+          <tr><td class="n">17</td><td class="what">Funil do profissional</td><td><span class="chip c-new">nova</span></td><td class="ev">só existe contagem de visualizações</td></tr>
+          <tr><td class="n">18</td><td class="what">Eventos do funil</td><td><span class="chip c-warn">ajuste</span></td><td class="ev"><code>ProfessionalView</code> já faz PROFILE_VIEW com deduplicação por dia; os outros 11 eventos não existem</td></tr>
+          <tr><td class="n">19</td><td class="what">Clientes que favoritaram</td><td><span class="chip c-ok">já existe</span></td><td class="ev">tela e endpoint paginado entregues hoje</td></tr>
+          <tr><td class="n">20</td><td class="what">Avaliações recebidas</td><td><span class="chip c-ok">já existe</span></td><td class="ev">tela e endpoint entregues hoje; o chip de serviço não é possível — <code>Review</code> não tem vínculo com serviço</td></tr>
+          <tr><td class="n">21</td><td class="what">Alertas para profissionais</td><td><span class="chip c-warn">ajuste</span></td><td class="ev">tabela, rotas e sino existem, mas só mensagem gera notificação e a área do profissional não tem o sino</td></tr>
+          <tr><td class="n">22</td><td class="what">IA para redigir proposta</td><td><span class="chip c-new">nova</span></td><td class="ev">depende do item 6; a camada de IA e o provider já estão prontos para reuso</td></tr>
+          <tr><td class="n">23</td><td class="what">Dashboard admin de demanda</td><td><span class="chip c-new">nova</span></td><td class="ev"><code>AiAnalysisLog</code> já guarda o que foi digitado — é a matéria-prima; nada foi construído sobre ela</td></tr>
+          <tr><td class="n">24</td><td class="what">Serviços em falta na região</td><td><span class="chip c-new">nova</span></td><td class="ev">depende do item 23 e da contagem de profissionais por região</td></tr>
+          <tr><td class="n">25</td><td class="what">Índice de oportunidade</td><td><span class="chip c-new">nova</span></td><td class="ev">depende dos itens 23 e 24</td></tr>
+          <tr><td class="n">26</td><td class="what">Evolução semana a semana</td><td><span class="chip c-new">nova</span></td><td class="ev">nenhuma métrica é armazenada com recorte de período</td></tr>
+          <tr><td class="n">27</td><td class="what">Perfil completo</td><td><span class="chip c-ok">já existe</span></td><td class="ev"><code>completude()</code> e <code>missingProfileItems</code> no serviço do painel</td></tr>
+          <tr><td class="n">28</td><td class="what">Recomendações ao profissional</td><td><span class="chip c-warn">ajuste</span></td><td class="ev">as pendências de perfil são o embrião; falta a camada de regras</td></tr>
+          <tr><td class="n">29</td><td class="what">Perfil do cliente</td><td><span class="chip c-warn">ajuste</span></td><td class="ev">favoritos, solicitações e indicações existem; propostas e serviços não</td></tr>
+          <tr><td class="n">30</td><td class="what">Listas de favoritos</td><td><span class="chip c-new">nova</span></td><td class="ev"><code>Favorite</code> não tem agrupamento</td></tr>
+          <tr><td class="n">31</td><td class="what">Favoritar ≠ recomendar ≠ avaliar</td><td><span class="chip c-ok">já existe</span></td><td class="ev">três tabelas separadas e três ações distintas na interface</td></tr>
+          <tr><td class="n">32</td><td class="what">Aceite de proposta → ordem de serviço</td><td><span class="chip c-new">nova</span></td><td class="ev">depende dos itens 6 e 13</td></tr>
+          <tr><td class="n">33</td><td class="what">Monitoramento do marketplace</td><td><span class="chip c-warn">ajuste</span></td><td class="ev"><code>getDashboard()</code> lê arrays em memória (<code>demoProfessionals</code>), não o banco</td></tr>
+          <tr><td class="n">34</td><td class="what">Testes E2E com Playwright</td><td><span class="chip c-ok">já existe</span></td><td class="ev">suíte completa em <code>e2e/</code> com smoke, jornada e specs de proposta em <code>fixme</code> — mas está fora do git</td></tr>
+          <tr><td class="n">35</td><td class="what">Performance</td><td><span class="chip c-warn">ajuste</span></td><td class="ev">a listagem devolve categorias, serviços e sinônimos inteiros por profissional</td></tr>
+          <tr><td class="n">36</td><td class="what">PWA</td><td><span class="chip c-warn">ajuste</span></td><td class="ev">service worker, aviso de versão e prompt de instalação existem; sem skeleton e sem estado offline</td></tr>
+          <tr><td class="n">37</td><td class="what">Privacidade</td><td><span class="chip c-ok">já existe</span></td><td class="ev">bairro e cidade no lugar de endereço, coordenada do bairro no mapa, favoritos sem contato</td></tr>
+          <tr><td class="n">38</td><td class="what">Segurança</td><td><span class="chip c-warn">ajuste</span></td><td class="ev">ver o alerta no topo</td></tr>
+          <tr><td class="n">39</td><td class="what">Sem funcionalidades falsas</td><td><span class="chip c-ok">já existe</span></td><td class="ev">textos de proposta, verificação e números inventados saíram hoje</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">03</span>Cinco achados que mudam o plano</h2>
+
+    <div class="finding">
+      <h3>A API não tem porteiro <span class="tag">item 38 · crítico</span></h3>
+      <p>Os guards existem e funcionam — só não foram aplicados. Aplicar <code>JwtAuthGuard</code> no <code>ResourcesController</code> e trocar <code>userId</code> da query pelo id do token é uma tarefa de poucas horas, mas quebra qualquer cliente que ainda mande o id na URL, então precisa ser feita de uma vez, com a suíte E2E rodando junto.</p>
+    </div>
+
+    <div class="finding">
+      <h3>O painel do admin não olha para o banco <span class="tag">item 33</span></h3>
+      <p><code>getDashboard()</code> soma arrays em memória vindos do seed de demonstração. Os números que você vê no admin hoje não são os do MySQL. Isso significa que os itens 23, 24, 25 e 33 não são “melhorias do dashboard”: são a construção do primeiro dashboard que lê dados reais.</p>
+    </div>
+
+    <div class="finding">
+      <h3>Proposta e ordem de serviço são o gargalo de doze itens <span class="tag">itens 5, 6, 13, 32</span></h3>
+      <p>Ranking, funil, selo de resposta, histórico, recontratação, recorrência, alertas úteis, IA de proposta e metade dos relatórios administrativos só existem depois que houver proposta enviada e serviço concluído. É a tarefa mais cara e a que destrava o resto — e é onde eu começaria depois da segurança.</p>
+    </div>
+
+    <div class="finding">
+      <h3>Falta o raio de atendimento do profissional <span class="tag">itens 5, 11</span></h3>
+      <p>O <code>Professional</code> tem latitude e longitude, mas não tem até onde ele atende. Sem esse campo, “oportunidades compatíveis” vira chute. É uma coluna e um campo no formulário — pequeno, mas bloqueia a Fase 1 inteira.</p>
+    </div>
+
+    <div class="finding">
+      <h3>A suíte E2E já existe e já sabe o que falta <span class="tag">item 34</span></h3>
+      <p>Em <code>e2e/</code> há Playwright configurado, banco de teste isolado com três travas contra rodar em produção, page objects e uma jornada completa. Os testes de proposta estão marcados como <code>fixme</code> descrevendo exatamente o que não existe. Só que a pasta não está versionada: some se a máquina sumir. Versionar isso é a primeira coisa barata a fazer.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">04</span>Plano por fases</h2>
+    <p class="prose">Sua ordem de fases está certa em produto; mexi só no começo, para pôr a segurança antes e o campo de raio junto da Fase 1, que depende dele. Cada tarefa abaixo abre com o que muda em banco, backend, frontend e teste.</p>
+
+    <details class="phase" open>
+      <summary><span class="idx">F0</span><span class="title">Fechar a casa</span><span class="hint">1 a 2 dias</span></summary>
+      <div class="content">
+        <div class="task">
+          <h4>Autenticação e autorização de verdade</h4>
+          <ul>
+            <li><b>Backend</b> — <code>JwtAuthGuard</code> no <code>ResourcesController</code>; <code>RolesGuard</code> nas rotas <code>admin/*</code> e <code>admin-*</code>; ler o usuário do token em vez de <code>@Query('userId')</code>.</li>
+            <li><b>Frontend</b> — remover <code>userId</code> das URLs; o interceptor já manda o Bearer.</li>
+            <li><b>Atenção</b> — a rota curinga <code>GET admin/:resource</code> engole caminhos novos; qualquer módulo com rota <code>admin/…</code> tem que ser registrado antes do <code>ResourcesModule</code>.</li>
+            <li><b>Testes</b> — <code>e2e/tests/auth/permissoes.spec.ts</code> já cobre parte disso; ampliar para os endpoints administrativos.</li>
+          </ul>
+        </div>
+        <div class="task">
+          <h4>Versionar a suíte E2E</h4>
+          <ul>
+            <li><b>Repo</b> — commitar <code>e2e/</code> e <code>backend/prisma/seed-e2e.ts</code> com <code>node_modules</code> e <code>reports</code> no gitignore; conferir que nenhum <code>.env.e2e</code> com segredo entre junto.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="idx">F1</span><span class="title">Conversão: da solicitação à proposta</span><span class="hint">o gargalo</span></summary>
+      <div class="content">
+        <div class="task">
+          <h4>1 · Raio de atendimento</h4>
+          <ul>
+            <li><b>Banco</b> — <code>Professional.serviceRadiusKm INT</code> com padrão conservador; migration incremental.</li>
+            <li><b>Frontend</b> — campo no accordion de localização do painel.</li>
+          </ul>
+        </div>
+        <div class="task">
+          <h4>2 · Oportunidades <span class="chip c-new">nova</span></h4>
+          <ul>
+            <li><b>Backend</b> — <code>GET /api/me/professional/opportunities</code>: solicitações OPEN, categoria ou serviço em comum, dentro do raio (reusar o <code>ST_Distance_Sphere</code> do nearby), profissional ativo e aprovado. Sem dados privados do cliente: bairro, cidade e distância só.</li>
+            <li><b>Frontend</b> — aba Oportunidades no painel, cartão com problema, categoria, urgência, distância e região.</li>
+            <li><b>Índice</b> — <code>ServiceRequest(status, categoryId, createdAt)</code>.</li>
+          </ul>
+          <span class="dep">depende de: raio de atendimento</span>
+        </div>
+        <div class="task">
+          <h4>3 · Propostas <span class="chip c-new">nova</span></h4>
+          <ul>
+            <li><b>Banco</b> — <code>Proposal</code> (requestId, professionalId, amount, availability, estimatedDuration, message, status, timestamps) com enum SENT/VIEWED/ACCEPTED/REJECTED/WITHDRAWN/EXPIRED; única por solicitação e profissional; índices <code>(requestId, status)</code> e <code>(professionalId, createdAt)</code>.</li>
+            <li><b>Backend</b> — enviar, listar por solicitação (cliente), listar próprias (profissional), marcar como vista, retirar. Regra: uma proposta aceita por solicitação.</li>
+            <li><b>Frontend</b> — envio pelo cartão de oportunidade; comparação na tela da solicitação do cliente, com nota, indicações, distância e disponibilidade lado a lado.</li>
+            <li><b>Testes</b> — tirar o <code>fixme</code> de <code>e2e/tests/propostas/fluxo-de-propostas.spec.ts</code>.</li>
+          </ul>
+          <span class="dep">depende de: oportunidades</span>
+        </div>
+        <div class="task">
+          <h4>4 · Distância em toda listagem</h4>
+          <ul>
+            <li><b>Backend</b> — devolver lat/lng (ou a distância já calculada) na listagem comum e enxugar o payload: hoje vão categorias, serviços e sinônimos inteiros por profissional.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="idx">F2</span><span class="title">Transação: do aceite à avaliação</span></summary>
+      <div class="content">
+        <div class="task">
+          <h4>5 · Ordem de serviço <span class="chip c-new">nova</span></h4>
+          <ul>
+            <li><b>Banco</b> — <code>ServiceOrder</code> (requestId, proposalId, clientId, professionalId, status SCHEDULED/IN_PROGRESS/COMPLETED/CANCELLED/DISPUTED, datas).</li>
+            <li><b>Backend</b> — aceitar proposta em transação: proposta ACCEPTED, demais REJECTED, solicitação MATCHED, ordem criada.</li>
+            <li><b>Frontend</b> — “Meus serviços” para o cliente e a mesma lista no painel do profissional.</li>
+          </ul>
+        </div>
+        <div class="task">
+          <h4>6 · Avaliação amarrada ao serviço</h4>
+          <ul>
+            <li><b>Banco</b> — <code>Review.serviceOrderId</code> opcional. Resolve o chip de serviço da tela de avaliações e permite “só avalia quem contratou”.</li>
+          </ul>
+        </div>
+        <div class="task">
+          <h4>7 · Chat com contexto e recontratação</h4>
+          <ul>
+            <li><b>Banco</b> — <code>Conversation.serviceRequestId</code> opcional; anexos como tabela nova só se for realmente usar.</li>
+            <li><b>Frontend</b> — “Contratar novamente” a partir de um serviço concluído, pré-preenchendo profissional, categoria e serviço.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="idx">F3</span><span class="title">Retenção do profissional</span></summary>
+      <div class="content">
+        <div class="task">
+          <h4>8 · Eventos e funil</h4>
+          <ul>
+            <li><b>Banco</b> — uma tabela <code>ProfessionalEvent</code> (professionalId, type, actorKey, createdAt, metadata) em vez de uma coluna por métrica. <code>ProfessionalView</code> vira um caso dela ou continua ao lado, sem duplicar contagem.</li>
+            <li><b>Backend</b> — deduplicar por ator e dia, como o view já faz, para refresh não inflar número.</li>
+            <li><b>Frontend</b> — bloco “seu perfil esta semana” com comparação contra a semana anterior.</li>
+          </ul>
+        </div>
+        <div class="task">
+          <h4>9 · Selo “responde rápido” e alertas</h4>
+          <ul>
+            <li><b>Backend</b> — tempo de resposta a partir dos eventos de proposta e mensagem; selo calculado, nunca ligado à mão.</li>
+            <li><b>Backend</b> — gerar notificação nos eventos que importam (proposta vista, proposta aceita, novo favorito, nova avaliação), reusando a tabela que já existe.</li>
+            <li><b>Frontend</b> — sino na área do profissional, que hoje não tem.</li>
+          </ul>
+          <span class="dep">depende de: eventos, propostas</span>
+        </div>
+        <div class="task">
+          <h4>10 · Ranking</h4>
+          <ul>
+            <li><b>Backend</b> — score composto com os pesos da especificação, isolado num serviço só dele para os pesos mudarem sem espalhar. Ordenação no SQL, não em memória.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="idx">F4</span><span class="title">Inteligência administrativa</span></summary>
+      <div class="content">
+        <div class="task">
+          <h4>11 · Dashboard que lê o banco</h4>
+          <ul>
+            <li><b>Backend</b> — reescrever <code>getDashboard()</code> em Prisma: clientes e profissionais ativos, solicitações abertas e concluídas, propostas enviadas e aceitas, avaliações, favoritos, taxa de resposta.</li>
+          </ul>
+        </div>
+        <div class="task">
+          <h4>12 · Demanda por região e índice de oportunidade</h4>
+          <ul>
+            <li><b>Backend</b> — cruzar <code>AiAnalysisLog</code> (o que as pessoas digitam), solicitações por bairro e contagem de profissionais ativos por categoria e região. Regra matemática, sem IA.</li>
+            <li><b>Frontend</b> — relatório “demanda sem oferta” no admin, ordenado pelo índice.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="idx">F5</span><span class="title">Expansão</span></summary>
+      <div class="content">
+        <div class="task">
+          <h4>13 · Recorrência, listas de favoritos e IA de proposta</h4>
+          <ul>
+            <li><b>Banco</b> — <code>Favorite.listId</code> e uma tabela de listas; recorrência como frequência e próximo atendimento sobre a ordem de serviço.</li>
+            <li><b>Backend</b> — sugestão de texto da proposta reusando o provider de IA que já existe. Sugere e devolve para o profissional revisar; nunca envia.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2><span class="num">05</span>O que eu adiaria</h2>
+    <ul class="plain">
+      <li><b>Listas de favoritos (item 30)</b> — cria complexidade de interface para um problema que ninguém tem com poucos favoritos por pessoa. Deixe a coluna preparada e volte quando houver volume.</li>
+      <li><b>Serviços recorrentes (item 15)</b> — depende de as pessoas contratarem uma primeira vez pelo app. Antes disso, é arquitetura para um comportamento que ainda não existe.</li>
+      <li><b>IA para redigir proposta (item 22)</b> — bom recurso, mas só faz sentido quando houver propostas suficientes para ele economizar tempo de alguém.</li>
+      <li><b>Filtros de avaliação por estrela (item 13 da tela)</b> — sua própria especificação já sugere adiar; com 18 avaliações não muda nada.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>Levantamento feito lendo <code>backend/prisma/schema.prisma</code>, os quatro controllers, <code>data-store.service.ts</code>, <code>professional-dashboard.service.ts</code>, <code>nearby-professionals.service.ts</code>, o módulo de IA, as rotas e componentes do Angular e a suíte <code>e2e/</code>. Os únicos números medidos em produção são os do alerta de segurança; o resto é leitura de código.</p>
+    <p>Nada foi implementado a partir deste documento — ele é o passo 41 da sua especificação, o diagnóstico antes do código.</p>
+  </footer>
+
+</div>
+
+</body>
+</html>

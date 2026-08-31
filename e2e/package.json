@@ -1,0 +1,29 @@
+{
+  "name": "indicafacil-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Suite E2E do IndicaFacil com Playwright.",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --grep @smoke",
+    "test:e2e:regression": "playwright test --grep @regression",
+    "test:e2e:journey": "playwright test --grep @journey",
+    "test:e2e:a11y": "playwright test --grep @a11y",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed --project=chromium-desktop",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report reports/html",
+    "test:e2e:all-browsers": "playwright test --project=chromium-desktop --project=firefox-desktop --project=webkit-desktop",
+    "db:e2e:reset": "node scripts/reset-db.mjs",
+    "codegen": "playwright codegen http://localhost:4200",
+    "db:e2e:setup": "node scripts/setup-db.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^24.0.0",
+    "dotenv": "^17.0.0",
+    "typescript": "~5.9.2"
+  },
+  "type": "module"
+}

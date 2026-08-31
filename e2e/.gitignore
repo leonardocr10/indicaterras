@@ -1,0 +1,6 @@
+node_modules/
+.env.e2e
+reports/
+test-results/
+.auth/
+support/generated/

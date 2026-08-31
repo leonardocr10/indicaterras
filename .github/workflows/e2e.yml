@@ -1,0 +1,128 @@
+# Suite E2E do IndicaFacil.
+#
+# O repositorio nao tinha pipeline quando esta suite foi criada; este arquivo
+# deixa os testes prontos para CI (item 47). Sobe um MySQL de servico, aplica as
+# migrations, roda o seed E2E e executa a suite - sempre contra banco efemero,
+# nunca contra producao.
+name: E2E
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: 'Qual suite rodar'
+        type: choice
+        default: regression
+        options: [smoke, regression, journey, a11y, all]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: indicafacil_e2e
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      # O banco vive no runner e morre com ele. A trava do env.ts exige host
+      # local e nome com "e2e", entao nao ha caminho ate o Supabase daqui.
+      E2E_DATABASE_URL: 'mysql://root:root@127.0.0.1:3306/indicafacil_e2e'
+      E2E_BASE_URL: 'http://localhost:4200'
+      E2E_API_URL: 'http://localhost:3000/api'
+      E2E_API_PORT: '3000'
+      E2E_MANAGE_SERVERS: 'true'
+      E2E_RESET_DB: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            e2e/package-lock.json
+
+      - name: Instalar dependencias
+        run: |
+          npm ci --prefix backend
+          npm ci --prefix frontend
+          npm ci --prefix e2e
+
+      - name: Gerar o cliente Prisma
+        run: npm run prisma:generate --prefix backend
+
+      - name: Aplicar as migrations no banco de teste
+        run: npx prisma migrate deploy
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.E2E_DATABASE_URL }}
+
+      - name: Instalar os navegadores
+        run: npx playwright install --with-deps chromium firefox webkit
+        working-directory: e2e
+
+      - name: Rodar a suite
+        working-directory: e2e
+        run: |
+          case "${{ inputs.suite || 'regression' }}" in
+            smoke)      npm run test:e2e:smoke ;;
+            journey)    npm run test:e2e:journey ;;
+            a11y)       npm run test:e2e:a11y ;;
+            all)        npm run test:e2e ;;
+            *)          npm run test:e2e:regression ;;
+          esac
+
+      - name: Publicar o relatorio
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/reports/
+            e2e/test-results/
+          retention-days: 14
+
+  # Smoke apos o deploy no ambiente de teste. Nunca em producao: a suite cria e
+  # apaga registros.
+  smoke-pos-deploy:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --prefix e2e
+      - run: npx playwright install --with-deps chromium
+        working-directory: e2e
+      - name: Smoke contra o staging ja publicado
+        working-directory: e2e
+        env:
+          # Aponta para o ambiente ja no ar; a suite nao sobe servidor nem
+          # mexe no banco.
+          E2E_MANAGE_SERVERS: 'false'
+          E2E_RESET_DB: 'false'
+          E2E_BASE_URL: ${{ vars.STAGING_URL }}
+          E2E_API_URL: ${{ vars.STAGING_API_URL }}
+        run: npm run test:e2e:smoke

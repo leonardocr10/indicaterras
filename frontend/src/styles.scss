@@ -242,7 +242,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 
 /* Unified professional card used across Home, search and favorites */
 .professional-card,.professional-card.compact-card,.professional-card.favorite-card,.recommended-section .professional-card.compact-card,.favorites-content .professional-card.favorite-card{position:relative;min-height:126px;margin-top:10px;padding:14px;border:1px solid #eef1ef;border-radius:12px;display:grid;grid-template-columns:70px minmax(0,1fr) 78px;align-items:center;gap:12px;background:#fff;box-shadow:0 7px 20px rgba(15,47,35,.075);overflow:visible}
-.professional-card .avatar,.professional-card.compact-card .avatar,.professional-card.favorite-card .avatar,.recommended-section .compact-card .avatar{position:static;width:70px;height:70px;border:2px solid #edf1ef;border-radius:50%;align-self:start;display:grid;place-items:center;overflow:hidden;color:#fff;background:#365d50;font-size:20px;font-weight:700}
+.professional-card .avatar,.professional-card.compact-card .avatar,.professional-card.favorite-card .avatar,.recommended-section .compact-card .avatar{position:relative;width:70px;height:70px;border:2px solid #edf1ef;border-radius:50%;align-self:start;display:grid;place-items:center;overflow:hidden;color:#fff;background:#365d50;font-size:20px;font-weight:700}
 .professional-card .card-main{position:static;min-width:0;align-self:start}
 .professional-card .card-top{display:block;min-width:0}
 .professional-card .card-top h3,.professional-card.compact-card .card-top h3,.favorites-content .favorite-card .card-top h3{margin:0 0 2px;overflow:hidden;color:#07553a;font-family:var(--font-family);font-size:16px;font-weight:700;line-height:21px;letter-spacing:0;text-overflow:ellipsis;white-space:nowrap}
@@ -967,7 +967,7 @@ input::placeholder,textarea::placeholder{font-size:var(--font-md);font-weight:40
 .recommended-strip::-webkit-scrollbar{display:none}
 .recommended-section .recommended-strip professional-card{flex:0 0 min(208px,70%);display:block}
 .recommended-section .recommended-strip .professional-card.compact-card{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:6px;height:100%;min-height:0;margin:0;padding:14px 13px 13px;border-radius:10px;overflow:visible}
-.recommended-section .recommended-strip .professional-card.compact-card .avatar{position:static;width:54px;height:54px;margin:0;font-size:17px}
+.recommended-section .recommended-strip .professional-card.compact-card .avatar{position:relative;width:54px;height:54px;margin:0;font-size:17px}
 .recommended-section .recommended-strip .professional-card.compact-card .card-main{width:100%;min-width:0}
 .recommended-section .recommended-strip .professional-card.compact-card .card-top h3{margin:0 0 2px;overflow:visible;white-space:normal;text-overflow:clip;font-size:15px;line-height:20px}
 .recommended-section .recommended-strip .professional-card.compact-card .card-top p{margin:0;font-size:12px;line-height:17px}
@@ -1471,7 +1471,7 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
 .request-address-hint{margin:0;padding:11px 13px;border:1px solid #cde9d9;border-radius:10px;color:#245c43;background:#f1faf5;font-size:12px;line-height:17px}
 
 /* Altura da barra inferior por faixa, na mesma ordem das regras de .bottom-nav.
-   O rodape de acoes do fluxo de propostas se apoia nesse valor. */
+   O rodape de acoes do fluxo de solicitacao se apoia nesse valor. */
 @media(max-width:980px){:root{--if-bottom-nav-height:76px}}
 @media(max-width:760px){:root{--if-bottom-nav-height:84px}}
 
@@ -1643,3 +1643,19 @@ input[type='file']:not([hidden])::file-selector-button{margin-right:10px;padding
 .provider-approval p{margin:5px 0 0;color:#38566a;font-size:12px;line-height:18px}
 .provider-approval.rejected{border-color:#f0cdca;background:#fdf3f2}
 .provider-approval.rejected strong{color:#a3302a}
+
+/* Ajustes de layout do mobile (foco principal do app) */
+/* Os selos são itens de grid dentro do card: sem isso esticam na coluna inteira. */
+.professional-card .location-badge,.professional-card .availability-badge{justify-self:start;width:fit-content;max-width:100%}
+.professionals-page .professional-card .availability-badge{margin-top:3px;padding:3px 8px;font-size:9px;line-height:13px}
+.professionals-page .professional-card .availability-badge i{width:6px;height:6px}
+/* Em telas de 320px os três botões não cabiam em uma linha e "Filtros" saía da tela. */
+.category-filter-row{flex-wrap:wrap;row-gap:8px}
+/* Cabeçalho com título de duas linhas: a seta fica no topo, não no meio do texto. */
+.professionals-heading{align-items:flex-start}
+.professionals-heading .professionals-back{margin-top:1px}
+@media(max-width:410px){
+  /* Cinco colunas deixavam "Ar-condicionado" e "Encanador(a)" vazando do cartão. */
+  .category-grid,.home-page .category-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .category-card span{overflow-wrap:anywhere;hyphens:auto}
+}

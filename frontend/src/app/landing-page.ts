@@ -7,12 +7,10 @@ import {
   LucideCheck,
   LucideCircleHelp,
   LucideClipboardList,
-  LucideHeadset,
   LucideLink,
   LucideMapPinned,
   LucideMenu,
   LucideMessageCircle,
-  LucideMessagesSquare,
   LucidePhoneCall,
   LucideSearch,
   LucideShield,
@@ -34,12 +32,10 @@ import { brand } from './brand';
     LucideCheck,
     LucideCircleHelp,
     LucideClipboardList,
-    LucideHeadset,
     LucideLink,
     LucideMapPinned,
     LucideMenu,
     LucideMessageCircle,
-    LucideMessagesSquare,
     LucidePhoneCall,
     LucideSearch,
     LucideShield,
@@ -63,7 +59,7 @@ import { brand } from './brand';
         <div class="landing-nav-actions">
           <a routerLink="/login" class="landing-login">Entrar</a>
           <a routerLink="/cadastro" class="landing-cta small">
-            Quero receber propostas
+            Criar minha conta
             <svg lucideArrowRight />
           </a>
         </div>
@@ -84,7 +80,7 @@ import { brand } from './brand';
           <a *ngFor="let item of navItems" [href]="item.href" (click)="mobileMenuOpen = false">{{ item.label }}</a>
           <a routerLink="/login" (click)="mobileMenuOpen = false">Entrar</a>
           <a routerLink="/cadastro" class="landing-cta" (click)="mobileMenuOpen = false">
-            Quero receber propostas
+            Criar minha conta
             <svg lucideArrowRight />
           </a>
         </div>
@@ -94,14 +90,14 @@ import { brand } from './brand';
         <div class="landing-hero-copy">
           <span class="landing-kicker">
             <svg lucideShield />
-            Milhares de clientes conectados aos melhores profissionais
+            Profissionais avaliados e indicados por quem já contratou
           </span>
 
           <h1>Precisou?<br />Indica<span>Fácil.</span></h1>
 
           <p>
-            Encontre profissionais para resolver o que você precisa ou receba propostas de quem
-            pode ajudar.
+            Encontre o profissional certo para o que você precisa e fale direto com ele, pelo
+            app ou pelo WhatsApp.
           </p>
 
           <div class="landing-hero-actions">
@@ -116,7 +112,7 @@ import { brand } from './brand';
           </div>
 
           <a routerLink="/cadastro" class="landing-inline-cta">
-            Quero receber propostas
+            Criar minha conta
             <svg lucideArrowRight />
           </a>
 
@@ -126,7 +122,7 @@ import { brand } from './brand';
                 <svg *ngSwitchCase="'star'" lucideStar></svg>
                 <svg *ngSwitchCase="'clipboard-list'" lucideClipboardList></svg>
                 <svg *ngSwitchCase="'sparkles'" lucideSparkles></svg>
-                <svg *ngSwitchCase="'headset'" lucideHeadset></svg>
+                <svg *ngSwitchCase="'map-pinned'" lucideMapPinned></svg>
               </ng-container>
               {{ item.label }}
             </span>
@@ -155,56 +151,39 @@ import { brand } from './brand';
               <span>Mais</span>
             </div>
             <div class="phone-request">
-              Quero receber propostas
-              <button>Começar agora</button>
-              <small>É rápido e gratuito</small>
+              Não sabe quem chamar?
+              <button>Descrever problema</button>
+              <small>A IA indica a categoria certa</small>
             </div>
           </article>
 
           <article class="phone-mock phone-proposals">
             <i></i>
-            <h3>Propostas recebidas</h3>
-            <p><b>5 propostas</b> para sua solicitação</p>
+            <h3>Quem atende perto</h3>
+            <p><b>Ar-condicionado</b> no seu bairro</p>
 
             <div class="proposal-card">
               <span class="proposal-avatar first"></span>
               <div>
                 <b>Clima Certo</b>
-                <small>Instalações</small>
+                <small>Ar-condicionado</small>
                 <em>4,9 (120)</em>
-                <strong>R$ 250,00</strong>
+                <strong>~1,2 km</strong>
               </div>
-              <button>Aceitar proposta</button>
+              <button>Ver perfil</button>
             </div>
 
             <div class="proposal-card muted">
               <span class="proposal-avatar second"></span>
               <div>
                 <b>Ar Plus</b>
-                <small>Instalações</small>
+                <small>Ar-condicionado</small>
                 <em>4,8 (89)</em>
-                <strong>R$ 230,00</strong>
+                <strong>~2,4 km</strong>
               </div>
             </div>
           </article>
         </div>
-      </section>
-
-      <section class="landing-stats" aria-label="Números da plataforma">
-        <article *ngFor="let item of stats">
-          <div class="stats-icon">
-            <ng-container [ngSwitch]="item.icon">
-              <svg *ngSwitchCase="'users-round'" lucideUsersRound></svg>
-              <svg *ngSwitchCase="'clipboard-list'" lucideClipboardList></svg>
-              <svg *ngSwitchCase="'messages-square'" lucideMessagesSquare></svg>
-              <svg *ngSwitchCase="'star'" lucideStar></svg>
-            </ng-container>
-          </div>
-          <div>
-            <b>{{ item.value }}</b>
-            <span>{{ item.label }}</span>
-          </div>
-        </article>
       </section>
 
       <section class="landing-section landing-steps" id="como-funciona">
@@ -216,7 +195,7 @@ import { brand } from './brand';
           <article *ngFor="let item of steps; let index = index">
             <i [ngSwitch]="item.icon">
               <svg *ngSwitchCase="'message-circle'" lucideMessageCircle></svg>
-              <svg *ngSwitchCase="'messages-square'" lucideMessagesSquare></svg>
+              <svg *ngSwitchCase="'search'" lucideSearch></svg>
               <svg *ngSwitchCase="'sparkles'" lucideSparkles></svg>
               <svg *ngSwitchCase="'check'" lucideCheck></svg>
             </i>
@@ -231,7 +210,7 @@ import { brand } from './brand';
         <div class="benefits-copy">
           <span class="section-eyebrow">Benefícios</span>
           <h2>Mais confiança para escolher o <span>melhor profissional.</span></h2>
-          <p>Compare experiências, avaliações e propostas antes de contratar.</p>
+          <p>Compare avaliações, comentários e indicações antes de contratar.</p>
 
           <ul>
             <li *ngFor="let item of benefits">
@@ -293,25 +272,19 @@ import { brand } from './brand';
             </div>
           </article>
 
-          <article class="floating-review">
-            <p>“Excelente atendimento, chegou no horário combinado e fez um ótimo serviço.”</p>
-            <strong>Mariana S.</strong>
-            <small>Uberlândia, MG</small>
-          </article>
-
           <div class="benefits-badges">
-            <span>Resposta rápida</span>
-            <span>Recomendado por clientes</span>
-            <span>Mais de 120 serviços</span>
+            <span>Avaliações</span>
+            <span>Comentários públicos</span>
+            <span>Indicações</span>
           </div>
         </div>
       </section>
 
       <section class="landing-section landing-request-flow">
         <div class="request-flow-copy">
-          <span class="section-eyebrow">Receba propostas</span>
-          <h2>Não quer procurar profissional por <span>profissional?</span></h2>
-          <p>Conte seu problema uma vez e receba propostas de profissionais interessados.</p>
+          <span class="section-eyebrow">Assistente de IA</span>
+          <h2>Não sabe qual profissional <span>procurar?</span></h2>
+          <p>Conte o que aconteceu com suas palavras. A IA identifica o serviço e mostra quem atende perto de você.</p>
 
           <div class="request-flow-steps">
             <span *ngFor="let item of requestFlow; let last = last">
@@ -321,7 +294,7 @@ import { brand } from './brand';
           </div>
 
           <a routerLink="/cadastro" class="landing-cta">
-            Quero receber propostas
+            Criar minha conta
             <svg lucideArrowRight />
           </a>
         </div>
@@ -329,7 +302,7 @@ import { brand } from './brand';
         <div class="request-flow-visual">
           <article class="proposal-showcase">
             <div class="proposal-showcase-header">
-              <strong>Solicitação enviada</strong>
+              <strong>Solicitação registrada</strong>
               <span>Instalação de ar-condicionado</span>
             </div>
 
@@ -347,8 +320,8 @@ import { brand } from './brand';
                 Informe sua região
               </li>
               <li>
-                <svg lucideMessagesSquare />
-                Receba propostas
+                <svg lucideSearch />
+                Veja quem atende
               </li>
             </ul>
           </article>
@@ -356,8 +329,8 @@ import { brand } from './brand';
           <article class="request-floating-card">
             <span class="proposal-avatar first"></span>
             <div>
-              <b>3 novas propostas</b>
-              <small>Compare valores, histórico e avaliações.</small>
+              <b>Eletricista</b>
+              <small>Compare avaliações, comentários e indicações.</small>
             </div>
           </article>
         </div>
@@ -367,7 +340,7 @@ import { brand } from './brand';
         <div class="landing-professionals-copy">
           <span class="section-eyebrow dark">Para profissionais</span>
           <h2>Mais serviços,<br />mais clientes,<br /><span>mais crescimento.</span></h2>
-          <p>Cadastre-se e encontre oportunidades de serviço na sua região.</p>
+          <p>Cadastre-se para ser encontrado por quem precisa do seu serviço na sua região.</p>
 
           <ul>
             <li *ngFor="let item of professionalBenefits">
@@ -384,21 +357,21 @@ import { brand } from './brand';
 
         <article class="professional-phone">
           <i></i>
-          <h3>Propostas</h3>
+          <h3>Mensagens</h3>
           <span>
             Instalação de ar-condicionado
             <small>Uberlândia, MG</small>
-            <button>Enviar proposta</button>
+            <button>Responder</button>
           </span>
           <span>
             Limpeza de caixa d'água
             <small>Uberlândia, MG</small>
-            <button>Enviar proposta</button>
+            <button>Responder</button>
           </span>
           <span>
             Manutenção elétrica
             <small>Uberlândia, MG</small>
-            <button>Enviar proposta</button>
+            <button>Responder</button>
           </span>
         </article>
 
@@ -419,36 +392,10 @@ import { brand } from './brand';
         </aside>
       </section>
 
-      <section class="landing-section testimonials" id="depoimentos">
-        <span class="section-eyebrow">O que nossos clientes dizem</span>
-        <h2>Histórias <span>reais</span> de quem já resolveu aqui.</h2>
-
-        <div class="testimonial-grid">
-          <article *ngFor="let item of testimonials">
-            <div class="testimonial-top">
-              <span class="testimonial-avatar">{{ item.initials }}</span>
-              <div>
-                <strong>{{ item.name }}</strong>
-                <small>{{ item.location }}</small>
-              </div>
-            </div>
-
-            <div class="testimonial-stars">★★★★★</div>
-            <p>{{ item.quote }}</p>
-            <em *ngIf="item.role">{{ item.role }}</em>
-          </article>
-        </div>
-
-        <div class="testimonial-proof">
-          <svg lucideShield />
-          Mais de 10.000 avaliações reais de clientes
-        </div>
-      </section>
-
       <section class="landing-final">
         <div>
           <h2>Pronto para resolver? Comece agora mesmo!</h2>
-          <p>É rápido, gratuito e você recebe propostas em poucos minutos.</p>
+          <p>Crie sua conta e encontre quem já foi indicado por outros clientes.</p>
         </div>
 
         <div class="landing-final-actions">
@@ -524,85 +471,50 @@ export class LandingPageComponent implements OnInit {
     { label: 'Como funciona', href: '#como-funciona' },
     { label: 'Benefícios', href: '#beneficios' },
     { label: 'Para profissionais', href: '#profissionais' },
-    { label: 'Depoimentos', href: '#depoimentos' },
   ];
 
   protected readonly trustItems = [
-    { label: 'Avaliações reais de clientes', icon: 'star' },
-    { label: 'Propostas comparadas', icon: 'clipboard-list' },
-    { label: 'Histórico e recomendações', icon: 'sparkles' },
-    { label: 'Atendimento e suporte', icon: 'headset' },
-  ];
-
-  protected readonly stats = [
-    { icon: 'users-round', value: '+15 mil', label: 'Profissionais cadastrados' },
-    { icon: 'clipboard-list', value: '+50 mil', label: 'Serviços solicitados' },
-    { icon: 'messages-square', value: '+120 mil', label: 'Propostas enviadas' },
-    { icon: 'star', value: '4,8 ★', label: 'Avaliação média' },
+    { label: 'Avaliações de clientes', icon: 'star' },
+    { label: 'Comentários públicos', icon: 'clipboard-list' },
+    { label: 'Indicações da comunidade', icon: 'sparkles' },
+    { label: 'Busca por bairro e distância', icon: 'map-pinned' },
   ];
 
   protected readonly steps = [
-    { icon: 'message-circle', title: 'Conte seu problema', description: 'Descreva o que você precisa resolver.' },
-    { icon: 'messages-square', title: 'Receba propostas', description: 'Profissionais interessados enviam propostas.' },
-    { icon: 'sparkles', title: 'Compare e escolha', description: 'Compare preço, reputação e avaliações.' },
-    { icon: 'check', title: 'Problema resolvido', description: 'Acompanhe o serviço e avalie o profissional.' },
+    { icon: 'message-circle', title: 'Conte seu problema', description: 'Descreva o que você precisa resolver, com suas palavras.' },
+    { icon: 'search', title: 'Veja quem atende', description: 'A busca mostra os profissionais da categoria perto de você.' },
+    { icon: 'sparkles', title: 'Compare e escolha', description: 'Notas, comentários e indicações de outros clientes.' },
+    { icon: 'check', title: 'Fale direto', description: 'Chame pelo WhatsApp, telefone ou mensagem no app.' },
   ];
 
   protected readonly benefits = [
-    'Avaliações reais de clientes',
+    'Avaliações de clientes',
     'Comentários públicos',
-    'Recomendações da comunidade',
-    'Compare propostas e valores',
-    'Consulte o histórico do profissional',
-    'Veja serviços e especialidades',
-    'Atendimento e suporte pela plataforma',
+    'Indicações da comunidade',
+    'Distância aproximada até o profissional',
+    'Serviços e especialidades no perfil',
+    'Conversa pelo app ou pelo WhatsApp',
   ];
 
   protected readonly requestFlow = [
     'Descreva seu problema',
-    'Adicione fotos',
-    'Informe sua região',
-    'Receba propostas',
-    'Compare',
-    'Escolha',
+    'A IA identifica o serviço',
+    'Veja quem atende perto',
+    'Fale direto',
   ];
 
   protected readonly professionalBenefits = [
-    'Receba solicitações de clientes próximos',
-    'Envie propostas',
-    'Converse com clientes',
-    'Organize seus serviços',
-    'Acompanhe avaliações',
+    'Apareça na busca da sua categoria',
+    'Seja encontrado por bairro e distância',
+    'Converse com clientes pelo app',
+    'Organize seus serviços e horários',
+    'Acompanhe suas avaliações',
     'Construa sua reputação',
   ];
 
   protected readonly professionalHighlights = [
-    { icon: 'users-round', title: '+ de 15 mil', description: 'Profissionais ativos' },
-    { icon: 'waypoints', title: '+ de 50 mil', description: 'Serviços realizados' },
+    { icon: 'users-round', title: 'Perfil na busca', description: 'Apareça por categoria e proximidade' },
+    { icon: 'waypoints', title: 'Conversa direta', description: 'O cliente fala com você pelo app ou WhatsApp' },
     { icon: 'shield', title: 'Reputação visível', description: 'Avaliações e histórico no perfil' },
-  ];
-
-  protected readonly testimonials = [
-    {
-      initials: 'JP',
-      name: 'João P.',
-      location: 'Uberlândia, MG',
-      quote: 'Encontrei um profissional incrível para instalar meu ar-condicionado. Atendimento rápido, educado e preço justo.',
-      role: '',
-    },
-    {
-      initials: 'AL',
-      name: 'Ana L.',
-      location: 'Uberlândia, MG',
-      quote: 'A plataforma é muito fácil de usar e as propostas chegaram rapidinho. Recomendo demais!',
-      role: '',
-    },
-    {
-      initials: 'CA',
-      name: 'Carlos A.',
-      location: 'Uberlândia, MG',
-      quote: 'Consigo receber novas oportunidades e organizar melhor meus atendimentos dentro da plataforma.',
-      role: 'Profissional',
-    },
   ];
 }

@@ -286,6 +286,8 @@ import { ToastService } from './services/toast.service';
                 <label><span>Cidade <i>*</i></span><input formControlName="city" /></label>
                 <label><span>Bairro</span><input formControlName="neighborhood" /></label>
               </div>
+              <label><span>Até quantos km você atende</span><input type="number" inputmode="numeric" min="1" max="200" placeholder="Ex.: 15" formControlName="serviceRadiusKm" /></label>
+              <small class="provider-hint">Usamos isso para te mostrar só as solicitações que estão ao seu alcance. Deixe em branco se ainda não souber.</small>
             </div>
           </section>
 
@@ -509,6 +511,7 @@ export class ProfessionalAccountPageComponent implements OnInit {
     whatsapp: [''],
     city: ['', Validators.required],
     neighborhood: [''],
+    serviceRadiusKm: [''],
     instagram: [''],
     bio: [''],
   });
@@ -880,6 +883,7 @@ export class ProfessionalAccountPageComponent implements OnInit {
       whatsapp: professional.whatsapp ?? '',
       city: professional.city ?? '',
       neighborhood: professional.neighborhood ?? '',
+      serviceRadiusKm: professional.serviceRadiusKm ? String(professional.serviceRadiusKm) : '',
       instagram: professional.instagram ?? '',
       bio: professional.bio ?? '',
     });

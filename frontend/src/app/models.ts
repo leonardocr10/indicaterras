@@ -53,6 +53,8 @@ export interface Professional {
   services: string[];
   city: string;
   neighborhood: string;
+  /** Ate onde ele atende, em km. Nulo quando ainda nao informou. */
+  serviceRadiusKm?: number | null;
   condominiumId: string;
   bio: string;
   whatsapp: string;

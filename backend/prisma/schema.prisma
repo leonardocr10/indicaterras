@@ -253,6 +253,9 @@ model Professional {
   coverImage             String?                @db.Text
   // Centroide do bairro, preenchido pelo geocode. A precisao e de bairro, nunca
   // de endereco - a interface sempre mostra a distancia como aproximada.
+  // Ate onde ele aceita atender, em km. Nulo = nao informado; as
+  // oportunidades tratam esse caso com um raio padrao conservador.
+  serviceRadiusKm        Int?
   latitude               Decimal?               @db.Decimal(10, 7)
   longitude              Decimal?               @db.Decimal(10, 7)
   // Blocos de atendimento: [{ "days": [1,2,3,4,5], "start": "08:00", "end": "18:00" }]

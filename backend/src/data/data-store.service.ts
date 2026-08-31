@@ -230,6 +230,7 @@ export class DataStoreService implements OnModuleInit {
           // Disponibilidade e coordenada nos cards de todas as listas, não só
           // na busca por proximidade: a regra da jornada é a mesma do painel.
           availability: disponibilidadePublica(item.workingHours),
+          serviceRadiusKm: item.serviceRadiusKm ?? null,
           latitude: item.latitude === null ? null : Number(item.latitude),
           longitude: item.longitude === null ? null : Number(item.longitude),
           // Sem serviço escolhido ele não aparece em busca por serviço, e sem
@@ -553,7 +554,7 @@ export class DataStoreService implements OnModuleInit {
   async updateOwnProfessional(userId: string, payload: Record<string, unknown>) {
     const professionalId = this.professionalByUserId.get(userId);
     if (!professionalId) throw new NotFoundException('Nenhum perfil profissional vinculado a esta conta');
-    const editable = ['name', 'companyName', 'phone', 'whatsapp', 'instagram', 'city', 'neighborhood', 'bio', 'avatar', 'coverImage', 'categoryIds', 'serviceIds', 'workingHours'];
+    const editable = ['name', 'companyName', 'phone', 'whatsapp', 'instagram', 'city', 'neighborhood', 'bio', 'avatar', 'coverImage', 'categoryIds', 'serviceIds', 'workingHours', 'serviceRadiusKm'];
     const allowed = Object.fromEntries(Object.entries(payload).filter(([key]) => editable.includes(key)));
     const updated = await this.updateAdminRecord('professionals', professionalId, allowed);
     const refreshed = this.getProfessionalById(professionalId);
@@ -1074,6 +1075,7 @@ export class DataStoreService implements OnModuleInit {
             instagram: String(payload.instagram ?? '') || null,
             city: String(payload.city ?? '') || undefined,
             neighborhood: String(payload.neighborhood ?? '') || undefined,
+            serviceRadiusKm: payload.serviceRadiusKm === undefined ? undefined : this.raioDeAtendimento(payload.serviceRadiusKm),
             avatar: String(payload.avatar ?? '') || null,
             coverImage: payload.coverImage === undefined ? undefined : String(payload.coverImage) || null,
             // Sem isto, ocultar/suspender/bloquear pela moderação não tinha efeito:
@@ -1216,6 +1218,13 @@ export class DataStoreService implements OnModuleInit {
       active: service.active,
       aliases: service.aliases.map((item) => item.alias),
     };
+  }
+
+  /** Raio em km: fora de 1..200 nao e raio de atendimento, e engano de digitacao. */
+  private raioDeAtendimento(valor: unknown): number | null {
+    const numero = Number(valor);
+    if (!Number.isFinite(numero) || numero <= 0) return null;
+    return Math.min(Math.max(Math.round(numero), 1), 200);
   }
 
   private stringArray(value: unknown, fallback?: unknown): string[] {

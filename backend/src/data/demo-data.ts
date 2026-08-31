@@ -96,6 +96,8 @@ export interface DemoProfessional {
   /** Resumo da jornada para os cards. Sem jornada, pede para consultar. */
   availability?: { today: boolean; text: string };
   /** Centroide do bairro: permite calcular a distância quando há localização. */
+  /** Ate onde ele atende, em km. Nulo quando ainda nao informou. */
+  serviceRadiusKm?: number | null;
   latitude?: number | null;
   longitude?: number | null;
   /** Falta algo para o cadastro entrar na fila de aprovação. */

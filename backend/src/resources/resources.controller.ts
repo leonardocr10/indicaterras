@@ -21,6 +21,7 @@ import { CatalogService } from '../data/catalog.service';
 import { AiSettingsService } from '../ai/ai-settings.service';
 import { NearbyProfessionalsService } from '../data/nearby-professionals.service';
 import { ProfessionalDashboardService } from '../data/professional-dashboard.service';
+import { OpportunitiesService } from '../data/opportunities.service';
 import { MailSettingsService } from '../auth/mail-settings.service';
 import { MailService } from '../auth/mail.service';
 
@@ -62,6 +63,7 @@ export class ResourcesController {
     private readonly aiSettingsService: AiSettingsService,
     private readonly nearbyProfessionalsService: NearbyProfessionalsService,
     private readonly professionalDashboardService: ProfessionalDashboardService,
+    private readonly opportunitiesService: OpportunitiesService,
     private readonly mailSettingsService: MailSettingsService,
     private readonly mailService: MailService,
   ) {}
@@ -338,6 +340,17 @@ export class ResourcesController {
   @Get('me/professional/dashboard')
   async getProfessionalDashboard(@UserId() userId: string) {
     return { data: await this.professionalDashboardService.getDashboard(userId) };
+  }
+
+  /** Solicitacoes abertas compativeis com o que o profissional atende. */
+  @UseGuards(JwtAuthGuard)
+  @Get('me/professional/opportunities')
+  async getProfessionalOpportunities(
+    @UserId() userId: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '10',
+  ) {
+    return { data: await this.opportunitiesService.listar(userId, Number(page), Number(limit)) };
   }
 
   /** Quem favoritou o profissional, do mais recente para o mais antigo. */

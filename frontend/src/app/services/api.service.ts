@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
-import { AiAnalysisLogRow, AiProblemAnalysisResult, AiPublicConfig, AiSettings, AiUsageSummary, ApiResponse, NearbyResult, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, FavoriteClientsPage, HomePayload, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalDashboard, ProfessionalReviewsPage, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
+import { AiAnalysisLogRow, AiProblemAnalysisResult, AiPublicConfig, AiSettings, AiUsageSummary, ApiResponse, NearbyResult, Category, CategoryService, ComplaintDetails, ComplaintRow, Condominium, Conversation, DashboardPayload, FavoriteClientsPage, HomePayload, OpportunitiesPage, NotificationsPayload, PendingItem, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalDashboard, ProfessionalReviewsPage, ProfessionalWork, Review, ServiceRequestRecord } from '../models';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
@@ -333,6 +333,13 @@ export class ApiService {
   getProfessionalDashboard() {
     return this.http
       .get<ApiResponse<ProfessionalDashboard>>(`${this.baseUrl}/me/professional/dashboard`)
+      .pipe(map((response) => response.data));
+  }
+
+  /** Solicitacoes abertas compativeis com o que o profissional atende. */
+  getProfessionalOpportunities(page = 1, limit = 10) {
+    return this.http
+      .get<ApiResponse<OpportunitiesPage>>(`${this.baseUrl}/me/professional/opportunities?page=${page}&limit=${limit}`)
       .pipe(map((response) => response.data));
   }
 

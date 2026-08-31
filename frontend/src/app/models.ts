@@ -435,6 +435,36 @@ export interface ProfessionalReview {
   client: { id: string; name: string; initial: string };
 }
 
+/** Solicitacao aberta compativel com o que o profissional atende. */
+export interface Opportunity {
+  id: string;
+  title: string;
+  summary: string;
+  urgency: 'EMERGENCY' | 'TODAY' | 'NEXT_DAYS' | 'NO_RUSH';
+  preferredDate: string | null;
+  preferredPeriod: 'MORNING' | 'AFTERNOON' | 'EVENING' | null;
+  category: { id: string; name: string; slug: string } | null;
+  services: Array<{ id: string; name: string }>;
+  mediaCount: number;
+  neighborhood: string;
+  city: string;
+  state: string;
+  createdAt: string;
+  distanceKm: number | null;
+}
+
+export interface OpportunitiesPage {
+  total: number;
+  page: number;
+  limit: number;
+  /** Raio usado no filtro; o padrao entra quando o profissional nao informou o dele. */
+  radiusKm: number;
+  usingDefaultRadius: boolean;
+  /** Perfil inativo ou ainda em analise nao recebe oportunidade. */
+  blocked: boolean;
+  items: Opportunity[];
+}
+
 export interface ProfessionalReviewsPage {
   summary: { total: number; averageRating: number };
   page: number;

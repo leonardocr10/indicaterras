@@ -6,9 +6,10 @@ import { ProblemMatcherService } from './problem-matcher.service';
 import { CatalogService } from './catalog.service';
 import { NearbyProfessionalsService } from './nearby-professionals.service';
 import { ProfessionalDashboardService } from './professional-dashboard.service';
+import { OpportunitiesService } from './opportunities.service';
 
 @Module({
-  providers: [PrismaService, DataStoreService, FileStorageService, ProblemMatcherService, CatalogService, NearbyProfessionalsService, ProfessionalDashboardService],
-  exports: [PrismaService, DataStoreService, FileStorageService, ProblemMatcherService, CatalogService, NearbyProfessionalsService, ProfessionalDashboardService],
+  providers: [PrismaService, DataStoreService, FileStorageService, ProblemMatcherService, CatalogService, NearbyProfessionalsService, ProfessionalDashboardService, OpportunitiesService],
+  exports: [PrismaService, DataStoreService, FileStorageService, ProblemMatcherService, CatalogService, NearbyProfessionalsService, ProfessionalDashboardService, OpportunitiesService],
 })
 export class DataModule {}

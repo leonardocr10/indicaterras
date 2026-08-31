@@ -152,12 +152,12 @@ import { ToastService } from './services/toast.service';
               <strong>Novas mensagens</strong>
               <small>{{ painel.overview.unreadMessages ? painel.overview.unreadMessages + ' não lidas' : 'Nenhuma não lida' }}</small>
             </button>
-            <button type="button" class="provider-overview-card solicitacoes" (click)="abrirSolicitacoes()">
+            <a class="provider-overview-card solicitacoes" routerLink="/profissional/oportunidades">
               <span class="provider-overview-badge alerta" *ngIf="painel.overview.pendingRequests">{{ painel.overview.pendingRequests }}</span>
               <svg lucideFileText />
               <strong>Solicitações abertas</strong>
               <small>{{ painel.overview.pendingRequests ? 'Nas suas categorias' : 'Nenhuma no momento' }}</small>
-            </button>
+            </a>
             <button type="button" class="provider-overview-card completude" (click)="mostrarPendencias()">
               <span class="provider-progress">{{ painel.overview.profileCompletion }}%</span>
               <strong>Perfil completo</strong>
@@ -701,20 +701,6 @@ export class ProfessionalAccountPageComponent implements OnInit {
       total
         ? `Você tem ${total} ${total === 1 ? 'mensagem não lida' : 'mensagens não lidas'}. Elas chegam pela conversa que o cliente abre no seu perfil.`
         : 'Nenhuma mensagem não lida no momento.',
-    );
-  }
-
-  /**
-   * O contador é real (pedidos abertos nas categorias dele), mas o envio da
-   * solicitação ao profissional ainda não existe. O texto diz isso em vez de
-   * sugerir que há orçamento esperando resposta.
-   */
-  protected abrirSolicitacoes() {
-    const total = this.dashboard()?.overview.pendingRequests ?? 0;
-    this.toast.info(
-      total
-        ? `${total} ${total === 1 ? 'cliente descreveu' : 'clientes descreveram'} um problema nas suas categorias. As solicitações ainda não são enviadas aos profissionais: os clientes chegam até você pelo seu perfil, WhatsApp ou mensagem no app.`
-        : 'Nenhuma solicitação aberta nas suas categorias agora.',
     );
   }
 

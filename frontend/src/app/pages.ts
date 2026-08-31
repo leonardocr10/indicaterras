@@ -25,7 +25,7 @@ import {
   LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideMapPin, LucideBuilding2,
   LucideHouse, LucideHandshake, LucideX,
   LucideDownload, LucidePlus, LucideChevronLeft, LucideChevronRight, LucideShieldCheck,
-  LucideBadgeCheck, LucideClipboardList, LucidePencil, LucideTrash2, LucideCheck, LucideBan,
+  LucidePencil, LucideTrash2, LucideCheck, LucideBan,
 } from '@lucide/angular';
 import { AiProblemAnalysisResult, AiPublicConfig, Category, NearbyProfessional, NearbyResult, CategoryService, Condominium, DashboardPayload, HomePayload, ProblemMatchResult, Professional, ProfessionalComment, ProfessionalWork, Review } from './models';
 import { SpreadsheetService } from './services/spreadsheet.service';
@@ -52,16 +52,16 @@ import { brand } from './brand';
 @Component({
   selector: 'login-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideBadgeCheck, LucideClipboardList, LucideShieldCheck, LucideX, LucideCheckCircle2],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, LucideMail, LucideLockKeyhole, LucideEye, LucideEyeOff, LucideUserRound, LucideStar, LucideMessageCircle, LucideMapPin, LucideX, LucideCheckCircle2],
   template: `
     <section class="auth-page resident-login-page">
       <aside class="login-showcase" aria-hidden="true">
         <img [src]="brand.assets.logoReverse" [alt]="brand.name" />
         <h2>Encontrar quem resolve<br /><b>ficou fácil.</b></h2>
         <ul>
-          <li><svg lucideBadgeCheck /><div><b>Profissionais verificados</b><small>Avaliados por quem já contratou</small></div></li>
-          <li><svg lucideClipboardList /><div><b>Compare propostas</b><small>Receba orçamentos e escolha o melhor</small></div></li>
-          <li><svg lucideShieldCheck /><div><b>Do começo ao fim</b><small>Acompanhe o serviço com segurança</small></div></li>
+          <li><svg lucideStar /><div><b>Avaliações de verdade</b><small>Notas e comentários de outros clientes</small></div></li>
+          <li><svg lucideMessageCircle /><div><b>Fale direto com o profissional</b><small>Pelo WhatsApp, telefone ou mensagem no app</small></div></li>
+          <li><svg lucideMapPin /><div><b>Perto de você</b><small>Busque por bairro e distância</small></div></li>
         </ul>
       </aside>
       <div class="auth-card resident-login-card">
@@ -227,7 +227,7 @@ export class LoginPageComponent {
           </a>
           <div>
             <h1>Crie sua conta</h1>
-            <p>{{ isProfessional() ? 'Monte seu perfil e receba propostas.' : 'Encontre profissionais para o que precisar.' }}</p>
+            <p>{{ isProfessional() ? 'Monte seu perfil e seja encontrado por quem precisa.' : 'Encontre profissionais para o que precisar.' }}</p>
           </div>
         </header>
 
@@ -732,6 +732,7 @@ export class RegisterPageComponent implements OnInit {
     LucideSearch,
     LucideSlidersHorizontal,
     LucideShieldCheck,
+    LucideThumbsUp,
     LucideMessageCircle,
     LucideUsersRound,
     LucideArrowRight,
@@ -818,7 +819,7 @@ export class RegisterPageComponent implements OnInit {
             </ul>
             <div class="home-ai-actions">
               <button type="button" class="primary-button" (click)="viewProfessionalsForAnalysis()">Ver profissionais</button>
-              <button type="button" class="secondary-button" (click)="createRequest()">Quero receber propostas</button>
+              <button type="button" class="secondary-button" (click)="createRequest()">Descrever o que preciso</button>
               <button type="button" class="ghost-button" (click)="resetAnalysis()">Ajustar</button>
             </div>
           </article>
@@ -837,20 +838,20 @@ export class RegisterPageComponent implements OnInit {
         <aside class="home-problem-suggestion" *ngIf="!analysis() && problemSuggestion() as match">
           <p *ngIf="match.category; else noMatch">Parece que você precisa de <b>{{ match.category.name }}</b><span *ngIf="match.services[0]">: {{ match.services[0].name }}</span>.</p>
           <ng-template #noMatch><p>Não identificamos o serviço com segurança. Você pode escolher manualmente.</p></ng-template>
-          <div *ngIf="match.category"><button type="button" (click)="searchProfessionals()">Ver profissionais</button><button type="button" (click)="createRequest()">Quero receber propostas</button></div>
+          <div *ngIf="match.category"><button type="button" (click)="searchProfessionals()">Ver profissionais</button><button type="button" (click)="createRequest()">Descrever o que preciso</button></div>
         </aside>
         <section class="home-decision-grid">
           <article class="home-decision-card request">
             <span><svg lucideMessageCircle /></span><h2>Descreva seu problema</h2>
             <p>Conte o que precisa resolver. Ex.: Meu chuveiro não esquenta</p>
-            <button type="button" class="primary-button" (click)="createRequest()">Quero receber propostas<svg lucideArrowRight /></button>
-            <small><svg lucideArrowRight />Receba propostas de profissionais interessados no seu serviço.</small>
+            <button type="button" class="primary-button" (click)="createRequest()">Descrever o que preciso<svg lucideArrowRight /></button>
+            <small><svg lucideArrowRight />Guarde os detalhes e as fotos para levar na conversa com o profissional.</small>
           </article>
           <article class="home-decision-card browse">
             <span><svg lucideUsersRound /></span><h2>Ver profissionais</h2>
             <p>{{ aiEnabled() ? 'Prefere escolher manualmente? Navegue por categorias e profissionais.' : 'Navegue e escolha o profissional ideal para o que você precisa.' }}</p>
             <a routerLink="/app/profissionais" class="secondary-button">Ver profissionais<svg lucideArrowRight /></a>
-            <small><svg lucideShieldCheck />Compare avaliações, preços e escolha com segurança.</small>
+            <small><svg lucideShieldCheck />Compare avaliações e indicações antes de escolher.</small>
           </article>
         </section>
         <div class="home-popular" *ngIf="popularCategories(home).length">
@@ -864,11 +865,11 @@ export class RegisterPageComponent implements OnInit {
           <a routerLink="/app/profissionais">Ver todas</a>
         </div>
         <div class="category-grid">
-          <category-card *ngFor="let category of home.categories" [category]="category" />
+          <category-card *ngFor="let category of orderedCategories(home)" [category]="category" />
         </div>
         <a class="home-verified" routerLink="/app/profissionais">
-          <span><svg lucideShieldCheck /></span>
-          <div><strong>Profissionais verificados e avaliados</strong><small>Aqui você encontra confiança, qualidade e o melhor atendimento da sua região.</small></div>
+          <span><svg lucideThumbsUp /></span>
+          <div><strong>Indicados por quem já contratou</strong><small>Veja notas, comentários e quantas pessoas recomendam cada profissional.</small></div>
           <div class="verified-avatars" aria-hidden="true"><i></i><i></i><i></i><b>+15k</b></div>
         </a>
       </section>
@@ -1050,6 +1051,18 @@ export class HomePageComponent implements OnInit {
     void this.router.navigate(['/app/profissionais'], {
       queryParams: { categoria: result.category.slug },
     });
+  }
+
+  /**
+   * "Outros" é o balde de quem não se encaixa em nenhuma categoria, então nunca
+   * deve competir com as categorias reais no topo da grade — vai sempre no fim.
+   */
+  protected orderedCategories(home: HomePayload) {
+    const fim = ['outros', 'mais'];
+    return [
+      ...home.categories.filter((category) => !fim.includes(category.slug)),
+      ...home.categories.filter((category) => fim.includes(category.slug)),
+    ];
   }
 
   protected popularCategories(home: HomePayload) {
@@ -1250,7 +1263,7 @@ export class HomePageComponent implements OnInit {
               <button type="button" class="secondary-button" (click)="setRadius(10)">Buscar em 10 km</button>
               <button type="button" class="secondary-button" (click)="setRadius(20)">Buscar em 20 km</button>
             </div>
-            <button class="primary-button" type="button" (click)="requestProposals()">Quero receber propostas</button>
+            <button class="primary-button" type="button" (click)="registrarSolicitacao()">Descrever o que preciso</button>
           </div>
 
           <p class="nearby-without-location" *ngIf="nearbyWithoutLocation() > 0">
@@ -1273,7 +1286,7 @@ export class HomePageComponent implements OnInit {
             <p *ngIf="!serviceFilter()">Ainda não encontramos profissionais desta categoria na sua região.</p>
             <p *ngIf="serviceFilter()">Nenhum profissional cadastrou esse serviço específico. Veja todos os profissionais da categoria.</p>
             <button class="secondary-button" type="button" *ngIf="serviceFilter()" (click)="clearServiceFilter()">Ver todos de {{ selectedCategoryName() || 'a categoria' }}</button>
-            <button class="secondary-button" type="button" (click)="requestProposals()">Quero receber propostas</button>
+            <button class="secondary-button" type="button" (click)="registrarSolicitacao()">Descrever o que preciso</button>
           </div>
         </ng-template>
       </div>
@@ -1933,7 +1946,7 @@ export class ProfessionalsPageComponent implements OnInit, OnDestroy {
     void this.router.navigate([], { relativeTo: this.route, queryParams: { ordem: sort === 'recommended' ? null : sort }, queryParamsHandling: 'merge' });
   }
 
-  protected requestProposals() {
+  protected registrarSolicitacao() {
     void this.router.navigate(['/app/solicitacoes/nova'], { queryParams: { categoria: this.selectedCategory() || null, servico: this.serviceFilter() || null } });
   }
 

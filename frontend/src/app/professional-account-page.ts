@@ -699,11 +699,16 @@ export class ProfessionalAccountPageComponent implements OnInit {
     );
   }
 
+  /**
+   * O contador é real (pedidos abertos nas categorias dele), mas o envio da
+   * solicitação ao profissional ainda não existe. O texto diz isso em vez de
+   * sugerir que há orçamento esperando resposta.
+   */
   protected abrirSolicitacoes() {
     const total = this.dashboard()?.overview.pendingRequests ?? 0;
     this.toast.info(
       total
-        ? `${total} ${total === 1 ? 'cliente pediu' : 'clientes pediram'} orçamento nas suas categorias.`
+        ? `${total} ${total === 1 ? 'cliente descreveu' : 'clientes descreveram'} um problema nas suas categorias. As solicitações ainda não são enviadas aos profissionais: os clientes chegam até você pelo seu perfil, WhatsApp ou mensagem no app.`
         : 'Nenhuma solicitação aberta nas suas categorias agora.',
     );
   }

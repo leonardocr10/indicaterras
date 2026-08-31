@@ -161,7 +161,7 @@ export class RequestProblemStepComponent {
           </div>
         </article>
       </div>
-      <ng-template #noMedia><p class="request-muted">Você pode publicar sem mídia, mas fotos costumam gerar propostas melhores.</p></ng-template>
+      <ng-template #noMedia><p class="request-muted">Você pode publicar sem mídia, mas fotos ajudam a explicar o problema para o profissional.</p></ng-template>
     </section>
   `,
 })
@@ -315,7 +315,7 @@ export class RequestLocationStepComponent {
 
       <div class="request-warning">
         <svg lucideCircleAlert />
-        <p>Ao publicar, sua solicitação entra com status <b>OPEN</b> e fica pronta para as próximas fases de matching e propostas.</p>
+        <p>A solicitação fica guardada na sua lista, com os detalhes e as fotos. Ela ainda não é enviada aos profissionais: use esses dados para falar com quem você escolher.</p>
       </div>
     </section>
   `,
@@ -380,7 +380,7 @@ export class RequestConfirmStepComponent {
           <div class="request-empty-state">
             <svg lucideFileText />
             <h2>Nenhuma solicitação publicada</h2>
-            <p>Crie sua primeira solicitação para descrever um problema e preparar o fluxo de propostas.</p>
+            <p>Crie sua primeira solicitação para deixar registrado o que você precisa, com detalhes e fotos.</p>
           </div>
         </ng-template>
       </section>
@@ -511,13 +511,13 @@ export class ServiceRequestDetailsPageComponent implements OnInit {
     <section class="mobile-page service-request-new-page">
       <header class="request-flow-topbar">
         <a class="request-flow-back" routerLink="/app/solicitacoes" aria-label="Voltar"><svg lucideArrowLeft /></a>
-        <strong>Quero receber propostas</strong>
+        <strong>Descrever o que preciso</strong>
         <span aria-hidden="true"></span>
       </header>
       <section class="request-page-body request-flow-body">
         <header class="request-builder-header">
           <div>
-            <p>Conte os detalhes para receber propostas mais precisas.</p>
+            <p>Conte os detalhes para não precisar repetir tudo a cada profissional.</p>
           </div>
           <strong>Passo {{ currentStep() + 1 }} de 5</strong>
         </header>

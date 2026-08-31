@@ -1215,7 +1215,7 @@ export class HomePageComponent implements OnInit {
                   <span><svg lucideBuilding2 />{{ regiaoDe(escolhido) }}</span>
                 </div>
 
-                <div class="map-sheet-services" *ngIf="escolhido.services?.length">
+                <div class="map-sheet-services" *ngIf="escolhido.services.length">
                   <small>Principais serviços</small>
                   <div>
                     <span *ngFor="let servico of servicosPrincipais(escolhido)">{{ servico }}</span>
@@ -1223,11 +1223,11 @@ export class HomePageComponent implements OnInit {
                   </div>
                 </div>
 
-                <div class="map-sheet-availability" [class.indisponivel]="!escolhido.availability?.today">
+                <div class="map-sheet-availability" [class.indisponivel]="!escolhido.availability.today">
                   <i></i>
                   <div>
-                    <strong>{{ escolhido.availability?.today ? 'Disponível hoje' : 'Consulte disponibilidade' }}</strong>
-                    <small>{{ escolhido.availability?.text }}</small>
+                    <strong>{{ escolhido.availability.today ? 'Disponível hoje' : 'Consulte disponibilidade' }}</strong>
+                    <small>{{ escolhido.availability.text }}</small>
                   </div>
                 </div>
 

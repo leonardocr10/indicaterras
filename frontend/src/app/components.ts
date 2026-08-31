@@ -152,7 +152,7 @@ export class CategoryCardComponent {
         </div>
         <span *ngIf="distanceLabel" class="location-badge distance-badge"><svg lucideMapPin />{{ distanceLabel }}</span>
         <span *ngIf="!distanceLabel && professional.matchesLocation" class="location-badge"><svg lucideMapPin />Atende sua região</span>
-        <span class="availability-badge" [class.indisponivel]="!professional.availability?.today" *ngIf="professional.availability">
+        <span class="availability-badge" [class.indisponivel]="!professional.availability.today" *ngIf="professional.availability">
           <i></i>{{ professional.availability.today ? 'Atende hoje' : 'Consulte a agenda' }}
         </span>
         <div *ngIf="professional.rating > 0 && professional.reviewCount > 0; else noReviews" class="rating-line">

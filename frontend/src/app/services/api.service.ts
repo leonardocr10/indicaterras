@@ -346,14 +346,14 @@ export class ApiService {
   /** Quem favoritou o profissional. Mesma fonte do contador do painel. */
   getProfessionalFavoriteClients(page = 1, limit = 10) {
     return this.http
-      .get<ApiResponse<FavoriteClientsPage>>(`${this.baseUrl}/me/professional/favorites&page=${page}&limit=${limit}`)
+      .get<ApiResponse<FavoriteClientsPage>>(`${this.baseUrl}/me/professional/favorites?page=${page}&limit=${limit}`)
       .pipe(map((response) => response.data));
   }
 
   /** Avaliacoes visiveis recebidas pelo profissional, com a media do painel. */
   getProfessionalReviews(page = 1, limit = 10) {
     return this.http
-      .get<ApiResponse<ProfessionalReviewsPage>>(`${this.baseUrl}/me/professional/reviews&page=${page}&limit=${limit}`)
+      .get<ApiResponse<ProfessionalReviewsPage>>(`${this.baseUrl}/me/professional/reviews?page=${page}&limit=${limit}`)
       .pipe(map((response) => response.data));
   }
 

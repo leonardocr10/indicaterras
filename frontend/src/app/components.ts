@@ -102,8 +102,10 @@ export class CategoryCardComponent {
     eletricista: '/assets/categories/electrician.png',
     encanador: '/assets/categories/handyman.png',
     pedreiro: '/assets/categories/plumber.png',
-    pintor: '/assets/categories/painter.png',
-    diarista: '/assets/categories/cleaner.png',
+    // Os PNGs de pintor e diarista viram silhueta ilegível depois do filtro que
+    // pinta o ícone de verde; os traços do Lucide sobrevivem e são reconhecíveis.
+    pintor: '/assets/taxonomy-icons/paintbrush.svg',
+    diarista: '/assets/taxonomy-icons/broom.svg',
     'ar-condicionado': '/assets/categories/air-conditioner.png',
     jardineiro: '/assets/categories/gardening-flower.png',
     montador: '/assets/categories/furniture-assembly.svg',

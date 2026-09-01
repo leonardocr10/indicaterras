@@ -5,10 +5,15 @@ import { fileURLToPath } from 'node:url';
 
 const aqui = dirname(fileURLToPath(import.meta.url));
 
-// .env.e2e primeiro: se alguem exportou DATABASE_URL no shell apontando para
-// producao, o arquivo local do E2E tem que ganhar. Por isso `override: true`.
+// Sem `override`: variavel definida no shell vence o arquivo, que e o
+// comportamento esperado de `E2E_RESET_DB=false npx playwright test`.
+//
+// Isso nao afrouxa a seguranca: quem protege contra apontar para producao e
+// `exigirBancoDeTeste()` la embaixo, que valida o valor final venha ele de onde
+// vier. Antes este load usava `override: true` e engolia em silencio qualquer
+// ajuste feito na linha de comando.
 const arquivoLocal = resolve(aqui, '.env.e2e');
-if (existsSync(arquivoLocal)) loadEnv({ path: arquivoLocal, override: true });
+if (existsSync(arquivoLocal)) loadEnv({ path: arquivoLocal });
 loadEnv({ path: resolve(aqui, '.env.e2e.example') });
 
 function texto(nome: string, padrao = ''): string {

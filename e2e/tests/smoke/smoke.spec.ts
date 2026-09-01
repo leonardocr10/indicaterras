@@ -41,10 +41,13 @@ test.describe('@smoke Fumaca', () => {
     await expect(busca.cartoes.first()).toBeVisible({ timeout: 20_000 });
   });
 
-  test('o perfil do cliente abre', async ({ comoCliente, page }) => {
+  test('o perfil do cliente abre com os dados da conta', async ({ comoCliente, page }) => {
     void comoCliente;
     await page.goto('/app/perfil');
-    await expect(page.locator('resident-profile-page, .mobile-page')).toBeVisible();
+    // Confere o conteudo, nao so o container: a tela so serve se mostrar
+    // de quem e a conta.
+    await expect(page.getByRole('heading', { name: CONTAS.cliente.nome, level: 1 })).toBeVisible();
+    await expect(page.getByText(CONTAS.cliente.email)).toBeVisible();
   });
 
   test('o painel do admin abre', async ({ comoAdmin, page }) => {

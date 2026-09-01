@@ -19,9 +19,11 @@ const reset = spawnSync('npx', ['prisma', 'migrate', 'reset', '--force', '--skip
 });
 if (reset.status !== 0) process.exit(reset.status ?? 1);
 
-const seed = spawnSync('npx', ['ts-node', '--compiler-options', '{"module":"CommonJS"}', 'prisma/seed-e2e.ts'], {
+// TS_NODE_COMPILER_OPTIONS em vez de --compiler-options: o JSON inline como
+// argumento e destrocado pelas aspas do shell do Windows.
+const seed = spawnSync('npx', ['ts-node', 'prisma/seed-e2e.ts'], {
   cwd: raizBackend,
-  env: ambiente,
+  env: { ...ambiente, TS_NODE_COMPILER_OPTIONS: JSON.stringify({ module: 'CommonJS' }) },
   stdio: 'inherit',
   shell: true,
 });

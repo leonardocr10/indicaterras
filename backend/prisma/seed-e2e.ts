@@ -44,8 +44,35 @@ function normalizar(texto: string) {
     .trim();
 }
 
+/**
+ * Esvazia o banco antes de semear.
+ *
+ * `prisma migrate reset` nao deixa o banco vazio: a migration
+ * `20260829050000_health_categories` insere categorias e servicos por SQL, e
+ * eles colidem com os nomes do catalogo daqui. Truncar tudo (menos o controle
+ * de migrations) e o que torna o seed repetivel de verdade.
+ *
+ * FOREIGN_KEY_CHECKS desligado durante o truncate: as tabelas se referenciam em
+ * ciclo, entao nao existe uma ordem de exclusao que funcione sozinha.
+ */
+async function limparBanco() {
+  const tabelas = await prisma.$queryRawUnsafe<Array<Record<string, string>>>(
+    'SELECT table_name AS nome FROM information_schema.tables WHERE table_schema = DATABASE()',
+  );
+  const nomes = tabelas
+    .map((linha) => linha.nome ?? Object.values(linha)[0])
+    .filter((nome) => nome && nome !== '_prisma_migrations');
+
+  await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
+  for (const nome of nomes) {
+    await prisma.$executeRawUnsafe(`TRUNCATE TABLE \`${nome}\``);
+  }
+  await prisma.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
+}
+
 async function main() {
   exigirBancoDeTeste();
+  await limparBanco();
   const senha = await bcrypt.hash('Senha@123', 10);
 
   const condominio = await prisma.condominium.create({
@@ -201,7 +228,10 @@ async function main() {
       ],
     },
     {
-      grupo: { nome: 'Saude e bem-estar', slug: 'saude-e-bem-estar', icone: 'heart' },
+      // Nome propositalmente distinto do catalogo do app ('Saude e bem-estar'):
+      // o boot roda syncHealthCatalog(), e a colacao utf8mb4_unicode_ci ignora
+      // acento, entao nomes so diferentes por acento colidem na constraint unica.
+      grupo: { nome: 'Bem-estar E2E', slug: 'bem-estar-e2e', icone: 'heart' },
       categorias: [
         {
           nome: 'Psicologia',

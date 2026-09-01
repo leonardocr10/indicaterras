@@ -1,5 +1,4 @@
 import { request, type FullConfig } from '@playwright/test';
-import { spawnSync } from 'node:child_process';
 import { env, exigirBancoDeTeste } from '../env';
 import { CONTAS } from '../fixtures/contas';
 import { garantirArquivosDeApoio } from './arquivos';
@@ -22,17 +21,10 @@ export default async function globalSetup(_config: FullConfig) {
 
   await garantirArquivosDeApoio();
 
-  if (env.resetarBanco && env.gerenciarServidores) {
-    console.log('[e2e] Resetando o banco de teste e recarregando o seed...');
-    const resultado = spawnSync('node', ['scripts/reset-db.mjs'], {
-      cwd: env.raizE2e,
-      stdio: 'inherit',
-      shell: true,
-    });
-    if (resultado.status !== 0) {
-      throw new Error('Falhou ao preparar o banco de teste. Rode `npm run db:e2e:setup` primeiro.');
-    }
-  }
+  // O reset/seed acontece em scripts/start-api.mjs, ANTES de o Nest subir.
+  // O Playwright inicia o webServer antes deste globalSetup, e a API carrega
+  // usuarios e configuracoes para a memoria no boot - semear aqui deixaria a
+  // API com cache de dados que acabaram de ser apagados.
 
   await confirmarApiDeTeste();
 }

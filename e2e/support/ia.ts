@@ -23,21 +23,19 @@ async function autenticarAdmin(requisicao: APIRequestContext): Promise<string> {
   return tokenDoAdmin;
 }
 
-async function configuracoesAtuais(requisicao: APIRequestContext, token: string) {
-  const resposta = await requisicao.get(`${env.apiUrl}/admin/ai-settings`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!resposta.ok()) throw new Error(`GET /admin/ai-settings falhou: ${resposta.status()}`);
-  return (await resposta.json()).data as Record<string, unknown>;
-}
-
-/** Aplica um patch nas configuracoes de IA, preservando o resto. */
+/**
+ * Aplica um patch nas configuracoes de IA.
+ *
+ * Envia SO os campos a mudar. `AiSettingsService.update` faz update parcial no
+ * Prisma, entao devolver o objeto inteiro do GET era desnecessario - e
+ * quebrava: o DTO roda sob `forbidNonWhitelisted` e recusa os campos que o GET
+ * acrescenta (`id`, `apiKeySource`, `createdAt`...) com 400.
+ */
 export async function ajustarIa(requisicao: APIRequestContext, patch: Record<string, unknown>) {
   const token = await autenticarAdmin(requisicao);
-  const atuais = await configuracoesAtuais(requisicao, token);
   const resposta = await requisicao.put(`${env.apiUrl}/admin/ai-settings`, {
     headers: { Authorization: `Bearer ${token}` },
-    data: { ...atuais, ...patch },
+    data: patch,
   });
   if (!resposta.ok()) {
     throw new Error(`PUT /admin/ai-settings falhou: ${resposta.status()} ${await resposta.text()}`);

@@ -7,7 +7,7 @@ import { ToastService } from './services/toast.service';
 import { LocationService } from './services/location.service';
 import { AuthService } from './services/auth.service';
 import { buildPhoneLink, buildWhatsappLink } from './contact.util';
-import { categoryAvatar } from './category-art.util';
+import { categoryAvatar, categoryIconUrl } from './category-art.util';
 import { brand } from './brand';
 import {
   LucideBell,
@@ -128,8 +128,12 @@ export class CategoryCardComponent {
     if (mapped) return mapped;
     // categories created later fall back to the icon chosen in the admin
     const icon = (this.category.icon ?? '').trim();
-    if (icon.startsWith('data:image/') || icon.startsWith('http') || icon.startsWith('/')) return icon;
-    if (icon && icon !== 'grid') return `/assets/taxonomy-icons/${icon === 'sparkles' ? 'broom' : icon}.svg`;
+    // `categoryIconUrl` em vez de montar o caminho aqui: ele converte o nome do
+    // componente Lucide ("SmilePlus") para o do arquivo ("smile-plus"). Sem
+    // isso, as categorias criadas por `syncHealthCatalog` - Psicólogo(a) com
+    // ícone "Brain" e Dentista com "SmilePlus" - pediam um arquivo inexistente
+    // e apareciam sem ícone na Home.
+    if (icon && icon !== 'grid') return categoryIconUrl(icon);
     return CategoryCardComponent.iconBySlug['mais'];
   }
 }

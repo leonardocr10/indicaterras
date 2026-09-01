@@ -3,6 +3,7 @@ import { SENHA_PADRAO } from '../../fixtures/contas';
 import { ORIGEM } from '../../fixtures/contas';
 import { definirLocalizacaoSalva } from '../../fixtures/sessao';
 import { ARQUIVOS } from '../../support/arquivos';
+import { esperarCodigoDeVerificacao } from '../../support/banco';
 
 /**
  * Item 43: a jornada real, do cadastro a avaliacao, numa sessao so.
@@ -15,8 +16,9 @@ import { ARQUIVOS } from '../../support/arquivos';
  * solicitacao publicada e avaliacao.
  */
 test.describe('@journey @regression Jornada completa do cliente', () => {
-  test('do cadastro a avaliacao', async ({ page, cadastro, home, busca, perfilProfissional, favoritos, solicitacao, comentarios, navegacao }) => {
+  test('do cadastro a avaliacao', async ({ page, cadastro, home, busca, perfilProfissional, favoritos, solicitacao, comentarios, navegacao, diagnostico }) => {
     test.setTimeout(300_000);
+    void diagnostico;
 
     const marca = Date.now();
     const email = `jornada.${marca}.e2e@example.test`;
@@ -40,8 +42,16 @@ test.describe('@journey @regression Jornada completa do cliente', () => {
     });
 
     // ------------------------------------------------------------------
-    // 2. Entra (o seed desliga a aprovacao manual, entao a conta ja vale)
+    // 2. Confirma o e-mail e entra
+    //
+    // `AuthService.register` sempre devolve `session: null` e dispara um codigo
+    // de seis digitos - nao existe caminho que pule essa etapa. O codigo so
+    // vive dentro do e-mail, entao o teste o le do banco (support/banco.ts).
     // ------------------------------------------------------------------
+    await expect(cadastro.campoCodigo).toBeVisible({ timeout: 30_000 });
+    await cadastro.campoCodigo.fill(await esperarCodigoDeVerificacao(email));
+    await cadastro.botaoConfirmarEmail.click();
+
     await expect(page).toHaveURL(/\/app\/home|\/login/, { timeout: 30_000 });
     if (page.url().includes('/login')) {
       const { LoginPage } = await import('../../pages/LoginPage');

@@ -239,7 +239,13 @@ export class LoginPageComponent {
           <ng-container *ngIf="!emailConfirmed(); else registrationConfirmed">
             <h2>Confirme seu e-mail</h2>
             <p>Enviamos um código de seis dígitos para <strong>{{ email }}</strong>.</p>
-            <form (ngSubmit)="confirmEmail()" class="register-confirm-form">
+            <!-- Evento submit nativo, e não ngSubmit: este formulário não tem
+                 formGroup nem ngForm, e o componente importa apenas o
+                 ReactiveFormsModule. Sem uma dessas diretivas ninguém emite
+                 ngSubmit, então o binding nunca disparava, o submit nativo
+                 seguia e a página recarregava - perdendo o cadastro e
+                 tornando impossível confirmar o e-mail. -->
+            <form (submit)="$event.preventDefault(); confirmEmail()" class="register-confirm-form">
               <label class="auth-field">Código de confirmação
                 <span><input #verificationInput type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" [value]="verificationCode()" (input)="updateVerificationCode(verificationInput.value)" /></span>
               </label>

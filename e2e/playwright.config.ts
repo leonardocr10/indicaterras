@@ -88,7 +88,9 @@ export default defineConfig({
           command: 'node scripts/start-api.mjs',
           cwd: env.raizE2e,
           url: `${env.apiUrl}/public-settings`,
-          reuseExistingServer: !env.ci,
+          // Com reset de banco, reaproveitar uma API ja no ar significa rodar
+          // contra o cache em memoria dela, carregado do estado anterior.
+          reuseExistingServer: !env.ci && !env.resetarBanco,
           timeout: 180_000,
           stdout: 'pipe',
           stderr: 'pipe',

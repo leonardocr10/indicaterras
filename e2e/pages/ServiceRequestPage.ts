@@ -45,7 +45,9 @@ export class ServiceRequestPage extends PaginaBase {
   }
 
   get botaoProximo(): Locator {
-    return this.page.getByRole('button', { name: 'Próximo' });
+    // `exact`: sem isso o nome tambem casa com o chip "Próximos dias" do passo
+    // de preferencias, e o clique falha por ambiguidade.
+    return this.page.getByRole('button', { name: 'Próximo', exact: true });
   }
 
   get botaoAnterior(): Locator {
@@ -56,8 +58,73 @@ export class ServiceRequestPage extends PaginaBase {
     return this.page.getByRole('button', { name: /Publicar solicitação|Publicando/i });
   }
 
+
+  /**
+   * Le o rascunho direto do componente, via ferramentas de debug do Angular.
+   *
+   * So serve para diagnostico: quando o wizard recusa avancar, saber o que o
+   * store tinha no instante do clique separa "a aplicacao esta errada" de "o
+   * teste clicou cedo demais". Devolve null em build de producao, onde
+   * window.ng nao existe.
+   */
+  private async lerRascunho(): Promise<string> {
+    return this.page
+      .evaluate(() => {
+        const ng = (window as unknown as { ng?: { getComponent?: (el: Element) => unknown } }).ng;
+        const elemento = document.querySelector('service-request-new-page');
+        if (!ng?.getComponent || !elemento) return '(indisponivel)';
+        const componente = ng.getComponent(elemento) as { draft?: () => Record<string, unknown> } | null;
+        const rascunho = componente?.draft?.();
+        if (!rascunho) return '(sem rascunho)';
+        return JSON.stringify({
+          title: rascunho.title,
+          categoryId: rascunho.categoryId,
+          serviceIds: rascunho.serviceIds,
+        });
+      })
+      .catch(() => '(falhou ao ler)');
+  }
+
+  /**
+   * Avanca um passo e confirma que avancou.
+   *
+   * `validateStep` apenas mostra um toast e nao avanca quando algo falta, sem
+   * lancar nada. Sem esta checagem o teste seguia clicando em campos do passo
+   * seguinte e falhava com um timeout que nao explicava a causa. Aqui a
+   * mensagem do toast entra no erro.
+   */
   async avancar() {
+    const antes = await this.numeroDoPasso();
+    const rascunhoAntes = await this.lerRascunho();
     await this.botaoProximo.click();
+
+    // O toast some sozinho; capturamos logo apos o clique, senao a mensagem
+    // que explica a recusa ja desapareceu quando o assert falha.
+    const aviso = await this.toast
+      .first()
+      .innerText({ timeout: 3_000 })
+      .catch(() => '');
+
+    try {
+      await expect(this.indicadorDePasso).toHaveText(new RegExp(`Passo ${antes + 1} de 5`), { timeout: 10_000 });
+    } catch {
+      const descricao = await this.campoDescricao.inputValue().catch(() => '(ausente)');
+      const titulo = await this.campoTitulo.inputValue().catch(() => '(ausente)');
+      const identificado = await this.blocoIdentificado
+        .innerText()
+        .catch(() => '(bloco Identificamos ausente)');
+      throw new Error(
+        `O wizard nao saiu do passo ${antes}.\n` +
+          (aviso ? `  Aviso na tela: ${aviso}\n` : '  Nenhum aviso capturado.\n') +
+          `  Descricao: "${descricao}"\n` +
+          `  Titulo: "${titulo}"\n` +
+          `  Bloco Identificamos: ${JSON.stringify(identificado)}
+` +
+          `  Rascunho ANTES do clique: ${rascunhoAntes}
+` +
+          `  Rascunho DEPOIS: ${await this.lerRascunho()}`,
+      );
+    }
   }
 
   async avancarAte(passo: 1 | 2 | 3 | 4 | 5) {
@@ -95,13 +162,47 @@ export class ServiceRequestPage extends PaginaBase {
     return this.page.locator('.request-chip-grid').getByRole('button', { name: nome });
   }
 
-  /** Descreve o problema e espera a identificacao automatica assentar. */
+  /**
+   * Servicos ja escolhidos, dentro do bloco "Identificamos".
+   *
+   * O `:not(.request-muted)` importa: quando nenhum servico foi escolhido o
+   * bloco mostra um `<p class="request-muted">Nenhum serviço específico
+   * selecionado</p>`. Mirar o paragrafo certo permite esperar de forma
+   * POSITIVA (ele aparecer), em vez de negativa - `not.toHaveText` sobre um
+   * elemento que ainda nao existe passa vazio e libera o teste cedo demais.
+   */
+  get servicosIdentificados(): Locator {
+    return this.blocoIdentificado.locator('p:not(.request-muted)');
+  }
+
+  /**
+   * Descreve o problema e espera a identificacao automatica assentar por
+   * completo.
+   *
+   * Nao basta esperar o bloco "Identificamos" aparecer: ele surge assim que a
+   * categoria e reconhecida, mas os serviços vem de uma segunda requisicao
+   * (os serviços da categoria). Avancar nesse intervalo deixava
+   * `draft.serviceIds` vazio e o wizard recusava com "Selecione a categoria e
+   * pelo menos um serviço" - sem que nada estivesse errado na aplicacao.
+   */
   async descreverProblema(descricao: string, titulo?: string) {
     await this.campoDescricao.fill(descricao);
-    // O match e disparado por debounce; esperar o bloco "Identificamos" evita
-    // avancar de passo antes de a categoria ser gravada no rascunho.
-    await expect(this.blocoIdentificado.or(this.page.getByText(/Não identificamos o serviço/i)))
-      .toBeVisible({ timeout: 15_000 });
+
+    // Espera unica e POSITIVA: o paragrafo com os serviços dentro do bloco
+    // "Identificamos". Ele so existe quando `draft.serviceIds` ja foi
+    // preenchido, que e exatamente o que `validateStep(0)` exige.
+    //
+    // Duas armadilhas foram descobertas aqui, ambas do teste:
+    //  - esperar pelo bloco "ou" pela mensagem "Não identificamos o serviço"
+    //    liberava cedo: essa mensagem aparece ENQUANTO o matcher roda, some
+    //    quando ele responde, e o clique acontecia com o rascunho vazio;
+    //  - `not.toHaveText(...)` sobre um elemento que ainda nao existe passa
+    //    vazio, entao tambem nao segurava nada.
+    await expect(
+      this.servicosIdentificados,
+      'a identificacao automatica nao preencheu categoria e serviços a tempo',
+    ).toBeVisible({ timeout: 25_000 });
+
     if (titulo) await this.campoTitulo.fill(titulo);
   }
 

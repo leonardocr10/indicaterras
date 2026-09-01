@@ -2,6 +2,7 @@ import { test as base, expect, type Page } from '@playwright/test';
 import { Diagnostico } from './diagnostics';
 import { entrarComo } from './sessao';
 import { mockGoogleMaps } from './maps-mock';
+import { mockConsultaDeCep } from './cep-mock';
 import { LoginPage } from '../pages/LoginPage';
 import { AdminLoginPage } from '../pages/AdminLoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
@@ -62,6 +63,9 @@ export const test = base.extend<FixturesDoProjeto>({
   // Os testes marcados @maps-real desfazem isso explicitamente.
   page: async ({ page }, usar) => {
     await mockGoogleMaps(page);
+    // A consulta de CEP tambem sai da rede: ela preenche o endereco sozinha e
+    // a resposta atrasada sobrescrevia o que o teste tinha digitado.
+    await mockConsultaDeCep(page);
     await usar(page);
   },
 

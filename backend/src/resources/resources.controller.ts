@@ -156,8 +156,14 @@ export class ResourcesController {
 
   @UseGuards(JwtAuthGuard)
   @Post('service-requests')
-  async createServiceRequest(@Body() payload: Parameters<DataStoreService['createServiceRequest']>[0]) {
-    return { data: await this.dataStoreService.createServiceRequest(payload) };
+  async createServiceRequest(
+    @UserId() userId: string,
+    @Body() payload: Omit<Parameters<DataStoreService['createServiceRequest']>[0], 'userId'>,
+  ) {
+    // A identidade vem do token, nunca do corpo. O frontend parou de enviar
+    // `userId` quando a API passou a exigir Bearer, mas este handler continuou
+    // lendo do payload - e respondia 401 para todo mundo.
+    return { data: await this.dataStoreService.createServiceRequest({ ...payload, userId }) };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -466,8 +472,12 @@ export class ResourcesController {
 
   @UseGuards(JwtAuthGuard)
   @Post('recommendations')
-  async createRecommendation(@Body() payload: Parameters<DataStoreService['createRecommendation']>[0]) {
-    return { data: await this.dataStoreService.createRecommendation(payload) };
+  async createRecommendation(
+    @UserId() userId: string,
+    @Body() payload: Omit<Parameters<DataStoreService['createRecommendation']>[0], 'userId'>,
+  ) {
+    // Mesmo caso do createServiceRequest: identidade pelo token.
+    return { data: await this.dataStoreService.createRecommendation({ ...payload, userId }) };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -484,8 +494,12 @@ export class ResourcesController {
 
   @UseGuards(JwtAuthGuard)
   @Post('reviews')
-  async createReview(@Body() payload: Parameters<DataStoreService['createReview']>[0]) {
-    return { data: await this.dataStoreService.createReview(payload) };
+  async createReview(
+    @UserId() userId: string,
+    @Body() payload: Omit<Parameters<DataStoreService['createReview']>[0], 'userId'>,
+  ) {
+    // Mesmo caso do createServiceRequest: identidade pelo token.
+    return { data: await this.dataStoreService.createReview({ ...payload, userId }) };
   }
 
   @Get('uploads')

@@ -125,7 +125,38 @@ export class RegisterPage extends PaginaBase {
     return this.page.getByRole('button', { name: /Reenviar código|Reenviar codigo|Enviando código/i });
   }
 
-  /** Preenche os 3 passos de um cliente e envia. */
+  /** Indicador "Etapa N de 3", a forma confiavel de saber onde estamos. */
+  get etapaAtual(): Locator {
+    return this.page.locator('.register-step-label');
+  }
+
+  async numeroDaEtapa(): Promise<number> {
+    const texto = await this.etapaAtual.innerText();
+    return Number(texto.match(/Etapa (\d+)/)?.[1] ?? 0);
+  }
+
+  /**
+   * Avanca um passo e confirma que avancou de fato.
+   *
+   * `nextStep()` valida os campos e simplesmente nao avanca quando algo esta
+   * invalido, sem lancar nada. Sem esta checagem o teste seguia clicando em
+   * campos do passo seguinte e falhava com um timeout que nao dizia o motivo.
+   */
+  private async avancar() {
+    const antes = await this.numeroDaEtapa();
+    await this.botaoContinuar.click();
+    await expect(this.etapaAtual, `o cadastro nao saiu da etapa ${antes} — confira os campos obrigatorios`)
+      .toHaveText(new RegExp(`Etapa ${antes + 1} de 3`), { timeout: 10_000 });
+  }
+
+  /**
+   * Preenche os 3 passos de um cliente e envia.
+   *
+   * A ordem no passo 2 nao e arbitraria: digitar o CEP dispara a consulta que
+   * preenche rua/bairro/cidade/estado sozinha. Preencher esses campos antes da
+   * resposta chegar significa te-los sobrescritos. Por isso o CEP vem primeiro
+   * e esperamos o preenchimento automatico assentar.
+   */
   async cadastrarCliente(dados: {
     nome: string;
     email: string;
@@ -141,16 +172,21 @@ export class RegisterPage extends PaginaBase {
     await this.nome.fill(dados.nome);
     await this.email.fill(dados.email);
     await this.whatsapp.fill(dados.telefone);
-    await this.botaoContinuar.click();
+    await this.avancar();
 
     if (await this.cep.count()) {
-      if (dados.cep) await this.cep.fill(dados.cep);
+      if (dados.cep) {
+        await this.cep.fill(dados.cep);
+        // A consulta preenche a rua; esperar por ela evita a corrida.
+        await expect(this.rua).not.toHaveValue('', { timeout: 15_000 }).catch(() => undefined);
+      }
+      // Depois da consulta, o que o teste informou explicitamente prevalece.
       if (dados.rua) await this.rua.fill(dados.rua);
       if (dados.numero) await this.numero.fill(dados.numero);
       if (dados.bairro) await this.bairro.fill(dados.bairro);
       if (dados.cidade) await this.cidade.fill(dados.cidade);
       if (dados.estado) await this.estado.fill(dados.estado);
-      await this.botaoContinuar.click();
+      await this.avancar();
     }
 
     await this.senha.fill(dados.senha);

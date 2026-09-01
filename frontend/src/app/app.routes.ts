@@ -54,6 +54,11 @@ export const routes: Routes = [
     canActivate: [professionalGuard],
   },
   {
+    path: 'profissional/trabalhos',
+    loadComponent: () => import('./professional-works-page').then((m) => m.ProfessionalWorksPageComponent),
+    canActivate: [professionalGuard],
+  },
+  {
     path: 'profissional/favoritos',
     loadComponent: () => import('./professional-favorites-page').then((m) => m.ProfessionalFavoritesPageComponent),
     canActivate: [professionalGuard],

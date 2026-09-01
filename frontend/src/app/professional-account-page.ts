@@ -187,11 +187,14 @@ import { ToastService } from './services/toast.service';
         <section class="provider-block provider-works">
           <header class="provider-block-header">
             <h2>Meus trabalhos</h2>
-            <a *ngIf="professional() as perfil" [routerLink]="['/app/profissional', perfil.id]">Ver tudo</a>
+            <a routerLink="/profissional/trabalhos">Ver tudo</a>
           </header>
           <p class="provider-hint">Publique fotos dos serviços que você já fez. Elas aparecem no seu perfil para os clientes.</p>
+          <!-- Só uma prévia: a galeria completa vive em /profissional/trabalhos.
+               Mesma fonte e mesma ordem, então as quatro primeiras aqui são as
+               quatro primeiras lá e no perfil público. -->
           <div *ngIf="works().length" class="provider-work-grid">
-            <figure *ngFor="let work of works()">
+            <figure *ngFor="let work of works().slice(0, 4)">
               <img [src]="assetUrl(work.image)" [alt]="work.title || 'Trabalho publicado'" />
               <button type="button" [attr.aria-label]="'Remover trabalho'" (click)="removeWork(work)"><svg lucideTrash2 /></button>
             </figure>

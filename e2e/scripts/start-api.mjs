@@ -20,7 +20,10 @@ const alvo = exigirBancoDeTeste(config.E2E_DATABASE_URL);
 // seed depois, a API ficava com cache apontando para linhas ja apagadas: o
 // cadastro respondia sem sessao e a tela pedia confirmacao de e-mail que nao
 // deveria existir. Semear antes de subir elimina a janela.
-if ((config.E2E_RESET_DB ?? 'true') !== 'false') {
+// process.env vence o arquivo, como no env.ts: `E2E_RESET_DB=false node
+// scripts/start-api.mjs` precisa realmente pular o seed.
+const resetSolicitado = process.env.E2E_RESET_DB ?? config.E2E_RESET_DB ?? 'true';
+if (resetSolicitado !== 'false') {
   console.log('[e2e] Preparando o banco de teste antes de subir a API...');
   const preparo = spawnSync('node', ['scripts/reset-db.mjs'], {
     cwd: resolve(raizE2e),
